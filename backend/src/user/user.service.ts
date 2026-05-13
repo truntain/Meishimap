@@ -3,7 +3,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from ' entities/user.entity';
+import { User } from './entities/user.entity';
 
 @Injectable()
 export class UserService {
@@ -33,7 +33,7 @@ export class UserService {
     return `This action removes a #${id} user`;
   }
 
-  async findOneByEmail(email: string): Promise<User | undefined> {
+  async findOneByEmail(email: string): Promise<User | null> {
     return this.userRepository.findOne({
       where: { email },
       // Nếu bạn muốn lấy cả password để phục vụ việc Login (vì Entity có thể đã ẩn nó)
