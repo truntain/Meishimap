@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Search redirect: goes to pages/search-results.html -->
+  <title>MESHIMAP — Tinh hoa ẩm thực Nhật Bản tại Việt Nam</title>
+  <meta name="description" content="Nền tảng đặt chỗ và khám phá ẩm thực hàng đầu, kết nối tinh hoa ẩm thực Việt Nam và Nhật Bản." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- Header inject -->
+  <div id="header-slot"></div>
+
+  <main>
+    <!-- ══ HERO ══════════════════════════════════════════ -->
+    <section class="hero" id="hero-section">
+      <img src="assets/images/hero-bg-35c07e.png" alt="Ẩm thực Nhật Bản tại Việt Nam" class="hero__bg" />
+      <div class="hero__overlay"></div>
+      <div class="hero__content">
+        <h1 class="hero__heading fade-in-up">
+          Tinh hoa ẩm thực Nhật Bản tại Việt Nam
+        </h1>
+        <p class="hero__subtitle fade-in-up delay-1">
+          Khám phá những nhà hàng chuẩn vị, hỗ trợ ngôn ngữ và dịch vụ tận tâm nhất dành cho cộng đồng người Việt - Nhật
+        </p>
+
+        <!-- Search bar -->
+        <div class="search-bar fade-in-up delay-2">
+          <span class="search-bar__icon">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M8.167 14.333A6.167 6.167 0 1 0 8.167 2a6.167 6.167 0 0 0 0 12.333ZM16 16l-2.792-2.792" stroke="#877369" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <input type="text" id="hero-search-input" class="search-bar__input" placeholder="Nhập tên nhà hàng, món ăn, địa chỉ..." data-action="search-input" />
+          <div class="search-bar__divider"></div>
+          <button class="btn btn--primary" data-action="search-submit" data-target="pages/search-results.html" id="btn-search-hero">Tìm kiếm</button>
+        </div>
+
+        <!-- Chips -->
+        <div class="hero__chips fade-in-up delay-3">
+          <button class="chip" data-action="chip-filter" data-value="nearby">📍 Tìm quanh đây</button>
+          <button class="chip" data-action="chip-filter" data-value="japanese-support">🇯🇵 Hỗ trợ tiếng Nhật</button>
+          <button class="chip" data-action="chip-filter" data-value="clean">✨ Đảm bảo vệ sinh</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ FEATURED ════════════════════════════════════════ -->
+    <section class="section" id="featured-section">
+      <div class="section__header">
+        <div>
+          <h2 class="section__title">Nhà hàng nổi bật</h2>
+          <p class="section__subtitle">Lựa chọn hàng đầu cho trải nghiệm ẩm thực tinh tế</p>
+        </div>
+        <a href="pages/search-results.html" class="btn btn--outline" id="btn-see-all">
+          Xem tất cả
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.333 8h9.334M8.667 5l3 3-3 3" stroke="#6C2F00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+
+      <div class="section__grid" id="featured-grid">
+
+        <!-- Card 1 -->
+        <article class="card" id="card-miyabi">
+          <div class="card__image-wrap">
+            <img src="assets/images/restaurant-card-13d489.png" alt="Miyabi Japanese Dining" class="card__image" />
+            <div class="card__rating">
+              <svg width="12" height="11" viewBox="0 0 12 11" fill="#EAB308"><path d="M6 .5 7.545 4.185 11.5 4.635 8.75 7.27l.795 3.925L6 9.125 2.455 11.195l.795-3.925L.5 4.635l3.955-.45Z"/></svg>
+              4.9
+            </div>
+          </div>
+          <div class="card__body">
+            <div class="card__title-row">
+              <div>
+                <h3 class="card__title">Miyabi Japanese Dining</h3>
+                <p class="card__title-jp">みやび 日本料理</p>
+              </div>
+              <svg width="20" height="19" viewBox="0 0 20 19" fill="none"><path d="M15.833 16.833 10 13.167 4.167 16.833V3.5A1.667 1.667 0 0 1 5.833 1.833h8.334A1.667 1.667 0 0 1 15.833 3.5v13.333Z" stroke="#877369" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="card__tags">
+              <span class="badge">SUSHI &amp; GRILL</span>
+              <span class="badge badge--sm">Hỗ trợ tiếng nhật</span>
+            </div>
+            <div class="card__footer">
+              <span class="card__location">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.167A3.5 3.5 0 0 1 10.5 4.667C10.5 7.292 7 12.833 7 12.833S3.5 7.292 3.5 4.667A3.5 3.5 0 0 1 7 1.167Z" stroke="#8A8A8A" stroke-width="1.2"/><circle cx="7" cy="4.667" r="1.167" stroke="#8A8A8A" stroke-width="1.2"/></svg>
+                Quận 1, HCM
+              </span>
+              <a href="pages/restaurant-detail.html?id=1" class="btn btn--dark" id="btn-book-1">
+                Đặt bàn
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6.5 3l3 3-3 3" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 2 -->
+        <article class="card" id="card-sakura">
+          <div class="card__image-wrap">
+            <img src="assets/images/restaurant-card-13d489.png" alt="Sakura Kaiseki" class="card__image" />
+            <div class="card__rating">
+              <svg width="12" height="11" viewBox="0 0 12 11" fill="#EAB308"><path d="M6 .5 7.545 4.185 11.5 4.635 8.75 7.27l.795 3.925L6 9.125 2.455 11.195l.795-3.925L.5 4.635l3.955-.45Z"/></svg>
+              4.8
+            </div>
+          </div>
+          <div class="card__body">
+            <div class="card__title-row">
+              <div>
+                <h3 class="card__title">Sakura Kaiseki</h3>
+                <p class="card__title-jp">さくら 懐石料理</p>
+              </div>
+              <svg width="20" height="19" viewBox="0 0 20 19" fill="none"><path d="M15.833 16.833 10 13.167 4.167 16.833V3.5A1.667 1.667 0 0 1 5.833 1.833h8.334A1.667 1.667 0 0 1 15.833 3.5v13.333Z" stroke="#877369" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="card__tags">
+              <span class="badge">KAISEKI</span>
+              <span class="badge badge--sm">Hỗ trợ tiếng nhật</span>
+            </div>
+            <div class="card__footer">
+              <span class="card__location">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.167A3.5 3.5 0 0 1 10.5 4.667C10.5 7.292 7 12.833 7 12.833S3.5 7.292 3.5 4.667A3.5 3.5 0 0 1 7 1.167Z" stroke="#8A8A8A" stroke-width="1.2"/><circle cx="7" cy="4.667" r="1.167" stroke="#8A8A8A" stroke-width="1.2"/></svg>
+                Quận 3, HCM
+              </span>
+              <a href="pages/restaurant-detail.html?id=2" class="btn btn--dark" id="btn-book-2">
+                Đặt bàn
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6.5 3l3 3-3 3" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 3 -->
+        <article class="card" id="card-hanami">
+          <div class="card__image-wrap">
+            <img src="assets/images/restaurant-card-13d489.png" alt="Hanami Ramen" class="card__image" />
+            <div class="card__rating">
+              <svg width="12" height="11" viewBox="0 0 12 11" fill="#EAB308"><path d="M6 .5 7.545 4.185 11.5 4.635 8.75 7.27l.795 3.925L6 9.125 2.455 11.195l.795-3.925L.5 4.635l3.955-.45Z"/></svg>
+              4.7
+            </div>
+          </div>
+          <div class="card__body">
+            <div class="card__title-row">
+              <div>
+                <h3 class="card__title">Hanami Ramen House</h3>
+                <p class="card__title-jp">はなみ ラーメン</p>
+              </div>
+              <svg width="20" height="19" viewBox="0 0 20 19" fill="none"><path d="M15.833 16.833 10 13.167 4.167 16.833V3.5A1.667 1.667 0 0 1 5.833 1.833h8.334A1.667 1.667 0 0 1 15.833 3.5v13.333Z" stroke="#877369" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="card__tags">
+              <span class="badge">RAMEN</span>
+              <span class="badge badge--sm">Phong cách Nhật</span>
+            </div>
+            <div class="card__footer">
+              <span class="card__location">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.167A3.5 3.5 0 0 1 10.5 4.667C10.5 7.292 7 12.833 7 12.833S3.5 7.292 3.5 4.667A3.5 3.5 0 0 1 7 1.167Z" stroke="#8A8A8A" stroke-width="1.2"/><circle cx="7" cy="4.667" r="1.167" stroke="#8A8A8A" stroke-width="1.2"/></svg>
+                Bình Thạnh, HCM
+              </span>
+              <a href="pages/restaurant-detail.html?id=3" class="btn btn--dark" id="btn-book-3">
+                Đặt bàn
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6.5 3l3 3-3 3" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ══ CTA BENTO ══════════════════════════════════════ -->
+    <section class="cta" id="cta-section">
+      <div class="cta__grid">
+        <!-- Support card -->
+        <div class="cta__card cta__card--support" id="cta-support">
+          <div class="cta__icon-row">
+            <span style="font-size:2rem">🕐</span>
+            <h2 class="cta__heading">Hỗ trợ 24/7</h2>
+          </div>
+          <p class="cta__text">Đội ngũ của chúng tôi luôn sẵn sàng hỗ trợ mọi lúc.</p>
+          <a href="#" class="btn btn--primary btn--primary-lg" id="btn-contact" data-action="open-contact">Liên hệ ngay</a>
+        </div>
+
+        <!-- Partner card -->
+        <div class="cta__card cta__card--partner" id="cta-partner">
+          <img src="assets/images/cta-bg.png" alt="Kết nối văn hóa" class="cta__card-bg" />
+          <div class="cta__card-overlay"></div>
+          <div class="cta__card-content">
+            <h2 class="cta__heading cta__heading--light">Kết nối văn hóa qua từng bữa ăn</h2>
+            <p class="cta__text cta__text--light">Trở thành đối tác của Meshimap để tiếp cận cộng đồng thực khách tinh tế từ cả Việt Nam và Nhật Bản.</p>
+            <a href="#" class="btn btn--primary btn--primary-lg" id="btn-register" data-action="open-register">Đăng ký nhà hàng</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer inject -->
+  <div id="footer-slot"></div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
