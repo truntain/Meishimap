@@ -26,6 +26,7 @@ import { UserModule } from './user/user.module';
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
         synchronize: true,
+        autoLoadEntities: true,
       }),
     }),
 
@@ -36,4 +37,4 @@ import { UserModule } from './user/user.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
