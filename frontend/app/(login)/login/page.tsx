@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -38,9 +39,9 @@ export default function LoginPage() {
         throw new Error(data.message || 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.');
       }
 
-      // Lưu token vào localStorage
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      // Lưu token vào Cookies thay vì localStorage (hết hạn sau 7 ngày)
+      Cookies.set('access_token', data.access_token, { expires: 7 });
+      Cookies.set('user', JSON.stringify(data.user), { expires: 7 });
 
       // Chuyển hướng dựa theo Role
       if (data.user.role === 'khách hàng') {
@@ -63,7 +64,6 @@ export default function LoginPage() {
   };
 
   return (
-    <>
       <section className="auth-hero" id="login-hero">
         {/* Left: Branding text */}
         <div className="auth-hero__text">
@@ -154,6 +154,5 @@ export default function LoginPage() {
           </p>
         </div>
       </section>
-    </>
   );
 }
