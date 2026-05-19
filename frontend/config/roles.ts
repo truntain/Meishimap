@@ -9,8 +9,7 @@ export const roleConfig: Record<string, string[]> = {
   
   // Các trang dành cho bất kỳ ai đã đăng nhập
   '/profile': ['khách hàng', 'quản lý', 'chủ nhà hàng'],
-  '/booking': ['khách hàng', 'quản lý', 'chủ nhà hàng'], 
 };
 
 // Các trang công khai (ai cũng vào được)
-export const publicRoutes = ['/login', '/register', '/'];
+export const publicRoutes = ['/login', '/register', '/', '/search', '/restaurant', '/booking'];

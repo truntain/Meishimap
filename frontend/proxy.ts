@@ -27,7 +27,12 @@ export default function proxy(request: NextRequest) {
   }
 
   // Nếu trang là public route (/, /login, /register, ...)
-  if (publicRoutes.includes(pathname)) {
+  // Dùng startsWith để hỗ trợ cả dynamic routes (ví dụ: /restaurant/1, /search?q=...)
+  const isPublic = publicRoutes.some(route =>
+    route === '/' ? pathname === '/' : pathname.startsWith(route)
+  );
+
+  if (isPublic) {
     // Nếu đã đăng nhập rồi mà cố vào /login hoặc /register -> đá về trang chủ
     if ((pathname === '/login' || pathname === '/register') && user) {
       return NextResponse.redirect(new URL('/', request.url));

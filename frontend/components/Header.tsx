@@ -1,15 +1,19 @@
 "use client";
 
 import Link from 'next/link';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
+import { useRouter } from 'next/navigation'; // Import useRouter của Next.js
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<{ name?: string, email: string, role: string } | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
-  // Chỉ chạy trên Client (trình duyệt) - đọc từ Cookie thay vì localStorage
+  const router = useRouter(); // Sử dụng router để chuyển trang
+  const userMenuRef = useRef<HTMLDivElement>(null); // Ref để theo dõi click ra ngoài menu
+
+  // Đọc dữ liệu user từ cookie
   useEffect(() => {
     const userData = Cookies.get('user');
     if (userData) {
@@ -21,11 +25,28 @@ export default function Header() {
     }
   }, []);
 
+  // Xử lý click ra ngoài để đóng menu user
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const handleLogout = () => {
     if (window.confirm('Bạn có chắc chắn muốn đăng xuất?')) {
       Cookies.remove('user');
       Cookies.remove('access_token');
-      window.location.href = '/login';
+      setUser(null); // Xóa state user để cập nhật UI ngay lập tức
+      setIsUserMenuOpen(false);
+      setIsMobileMenuOpen(false);
+      router.push('/login'); // Chuyển trang không cần reload
     }
   };
 
@@ -40,18 +61,23 @@ export default function Header() {
       <nav className="header__nav" id="desktop-nav">
         <Link href="/" className="header__nav-link" data-page="home">Trang chủ</Link>
         <Link href="/search" className="header__nav-link" data-page="search">Tìm kiếm</Link>
-        <Link href="/booking" className="header__nav-link" data-page="booking">Đặt bàn</Link>
+        {/* Đặt bàn → tới trang chi tiết nhà hàng (có modal đặt bàn) */}
+        <Link href="/restaurant/1" className="header__nav-link" data-page="booking">Đặt bàn</Link>
       </nav>
 
       <div className="header__actions">
         <button className="header__lang btn" aria-label="Chuyển ngôn ngữ">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7.5" stroke="#6C2F00" strokeWidth="1.2" /><path d="M9 1.5C9 1.5 6 4.5 6 9s3 7.5 3 7.5M9 1.5C9 1.5 12 4.5 12 9s-3 7.5-3 7.5M1.5 9h15" stroke="#6C2F00" strokeWidth="1.2" strokeLinecap="round" /></svg>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <circle cx="9" cy="9" r="7.5" stroke="#6C2F00" strokeWidth="1.2" />
+            <path d="M9 1.5C9 1.5 6 4.5 6 9s3 7.5 3 7.5M9 1.5C9 1.5 12 4.5 12 9s-3 7.5-3 7.5M1.5 9h15" stroke="#6C2F00" strokeWidth="1.2" strokeLinecap="round" />
+          </svg>
           <span>VN / JP</span>
         </button>
         <div className="header__divider"></div>
 
         {user ? (
-          <div style={{ position: 'relative' }}>
+          // Thêm ref vào div bọc ngoài cùng
+          <div style={{ position: 'relative' }} ref={userMenuRef}>
             <button
               title={displayName}
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
@@ -117,14 +143,16 @@ export default function Header() {
       </button>
 
       <div className={`header__mobile-menu ${isMobileMenuOpen ? 'is-open' : ''}`} id="mobile-menu">
-        <Link href="/" className="header__nav-link">Trang chủ</Link>
-        <Link href="/search" className="header__nav-link">Tìm kiếm</Link>
-        <Link href="/booking" className="header__nav-link">Đặt bàn</Link>
+        {/* Thêm onClick để tự đóng menu khi chọn trang */}
+        <Link href="/" className="header__nav-link" onClick={() => setIsMobileMenuOpen(false)}>Trang chủ</Link>
+        <Link href="/search" className="header__nav-link" onClick={() => setIsMobileMenuOpen(false)}>Tìm kiếm</Link>
+        {/* Đặt bàn → tới trang chi tiết nhà hàng */}
+        <Link href="/restaurant/1" className="header__nav-link" onClick={() => setIsMobileMenuOpen(false)}>Đặt bàn</Link>
 
         {user ? (
           <button className="btn btn--login" style={{ marginTop: '8px' }} onClick={handleLogout}>Đăng xuất</button>
         ) : (
-          <Link href="/login" className="btn btn--login" style={{ marginTop: '8px' }}>Đăng nhập</Link>
+          <Link href="/login" className="btn btn--login" style={{ marginTop: '8px' }} onClick={() => setIsMobileMenuOpen(false)}>Đăng nhập</Link>
         )}
       </div>
     </header>
