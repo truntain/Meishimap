@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chỉnh sửa hồ sơ — MESHIMAP</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <div id="header-slot"></div>
+
+  <main class="profile-container" role="main">
+    <div class="profile-heading">
+      <h1 class="profile-title">Chỉnh sửa hồ sơ</h1>
+      <p class="profile-subtitle">プロフィール編集</p>
+    </div>
+
+    <div class="profile-main">
+      <!-- Left Column: Avatar -->
+      <aside class="profile-left">
+        <div class="profile-card">
+          <div class="profile-avatar-wrap">
+            <img
+              id="avatar-preview"
+              src="../assets/images/user-profile-avatar.png"
+              alt="Avatar của Yuki Nguyen"
+              class="profile-avatar"
+            />
+          </div>
+          <button
+            type="button"
+            class="btn btn--primary"
+            data-action="trigger-avatar-upload"
+            id="btn-change-avatar"
+          >
+            Thay đổi ảnh
+          </button>
+          <input
+            type="file"
+            id="avatar-upload"
+            accept="image/png, image/jpeg, image/gif"
+            style="display: none"
+          />
+          <span class="profile-avatar-hint">JPG, PNG hoặc GIF.</span>
+        </div>
+      </aside>
+
+      <!-- Right Column: Form -->
+      <div class="profile-right">
+        <div class="profile-form-card">
+          <div class="success-banner" id="profile-success" role="alert">
+            ✅ Đã lưu thay đổi hồ sơ cá nhân thành công!
+          </div>
+
+          <form id="profile-form" class="profile-form" data-action="submit-profile" novalidate>
+            <!-- Nickname -->
+            <div class="profile-field">
+              <label class="profile-label" for="profile-nickname">
+                Biệt danh <span class="profile-label-jp">/ ニックネーム</span>
+              </label>
+              <input
+                type="text"
+                id="profile-nickname"
+                class="profile-input"
+                value="Yuki Nguyen"
+                required
+              />
+            </div>
+
+            <!-- Birth Date -->
+            <div class="profile-field">
+              <label class="profile-label">
+                Ngày sinh <span class="profile-label-jp">/ 誕生日</span>
+              </label>
+              <div class="profile-row">
+                <select id="profile-birth-month" class="profile-select" aria-label="Tháng sinh">
+                  <option value="1">Tháng 1</option>
+                  <option value="2">Tháng 2</option>
+                  <option value="3">Tháng 3</option>
+                  <option value="4">Tháng 4</option>
+                  <option value="5">Tháng 5</option>
+                  <option value="6">Tháng 6</option>
+                  <option value="7">Tháng 7</option>
+                  <option value="8">Tháng 8</option>
+                  <option value="9">Tháng 9</option>
+                  <option value="10">Tháng 10</option>
+                  <option value="11">Tháng 11</option>
+                  <option value="12">Tháng 12</option>
+                </select>
+
+                <select id="profile-birth-day" class="profile-select" aria-label="Ngày sinh">
+                  <!-- Will be dynamically filled from 1 to 31, default 15 -->
+                  <script>
+                    for (let d = 1; d <= 31; d++) {
+                      document.write(`<option value="${d}" ${d === 15 ? 'selected' : ''}>${d}</option>`);
+                    }
+                  </script>
+                </select>
+
+                <select id="profile-birth-year" class="profile-select" aria-label="Năm sinh">
+                  <!-- Will be dynamically filled from 1960 to 2026, default 1995 -->
+                  <script>
+                    const currYear = new Date().getFullYear();
+                    for (let y = currYear; y >= 1960; y--) {
+                      document.write(`<option value="${y}" ${y === 1995 ? 'selected' : ''}>${y}</option>`);
+                    }
+                  </script>
+                </select>
+              </div>
+            </div>
+
+            <!-- Hometown -->
+            <div class="profile-field">
+              <label class="profile-label" for="profile-hometown">
+                Quê quán <span class="profile-label-jp">/ 出身地</span>
+              </label>
+              <input
+                type="text"
+                id="profile-hometown"
+                class="profile-input"
+                value="Hà Nội, Việt Nam"
+                required
+              />
+            </div>
+
+            <!-- Bio -->
+            <div class="profile-field">
+              <label class="profile-label" for="profile-bio">
+                Giới thiệu <span class="profile-label-jp">/ 自己紹介</span>
+              </label>
+              <textarea id="profile-bio" class="profile-textarea" required>Chào mọi người, mình là Yuki. Mình rất yêu thích ẩm thực Nhật Bản và Việt Nam! 🇯🇵🇻🇳</textarea>
+            </div>
+
+            <!-- Actions -->
+            <div class="profile-actions">
+              <button
+                type="button"
+                class="profile-btn-cancel"
+                data-action="profile-cancel"
+                id="btn-cancel-profile"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="submit"
+                class="profile-btn-save"
+                id="btn-save-profile"
+              >
+                Lưu thay đổi
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-slot"></div>
+
+  <script src="../js/script.js"></script>
+</body>
+</html>

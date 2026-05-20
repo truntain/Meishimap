@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 //import { User } from './users/user.entity'; // Đảm bảo đường dẫn này đúng với file entity bạn tạo
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
+import { RestaurantModule } from './restaurant/restaurant.module';
 
 @Module({
   imports: [
@@ -33,6 +34,8 @@ import { UserModule } from './user/user.module';
     AuthModule,
 
     UserModule,
+
+    RestaurantModule,
   ],
   controllers: [AppController],
   providers: [AppService],
