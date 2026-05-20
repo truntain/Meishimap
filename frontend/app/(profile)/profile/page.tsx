@@ -45,6 +45,8 @@ export default function ProfilePage() {
   const [bio, setBio] = useState('');
   const [avatar, setAvatar] = useState('');
   
+  const [errors, setErrors] = useState<{ nickname?: string; hometown?: string; bio?: string }>({});
+  
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -113,11 +115,29 @@ export default function ProfilePage() {
   // Submit profile details
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const newErrors: { nickname?: string; hometown?: string; bio?: string } = {};
+
     if (!nickname.trim()) {
-      alert('Vui lòng nhập Biệt danh.');
+      newErrors.nickname = 'Vui lòng nhập biệt danh của bạn.';
+    }
+    if (!hometown.trim()) {
+      newErrors.hometown = 'Vui lòng nhập quê quán của bạn.';
+    }
+    if (!bio.trim()) {
+      newErrors.bio = 'Vui lòng nhập vài dòng giới thiệu về bản thân.';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      // Smoothly scroll and focus on the first input with error
+      const firstErrorField = document.getElementById(`profile-${Object.keys(newErrors)[0]}`);
+      firstErrorField?.focus();
+      firstErrorField?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
+    setErrors({});
     setIsLoading(true);
 
     // Sync updated info with local Cookies so the entire Next.js app (Header, etc.) updates instantly
@@ -206,8 +226,8 @@ export default function ProfilePage() {
               type="button"
               className="btn btn--primary"
               id="btn-change-avatar"
+              data-action="trigger-avatar-upload"
               onClick={handleAvatarClick}
-              style={{ padding: '10px 20px', fontSize: '14px' }}
             >
               Thay đổi ảnh
             </button>
@@ -220,7 +240,7 @@ export default function ProfilePage() {
               onChange={handleAvatarChange}
             />
             <span className="profile-avatar-hint">
-              Hỗ trợ định dạng JPG, PNG hoặc GIF.
+              JPG, PNG hoặc GIF.
             </span>
             <div style={{ width: '100%', height: '1px', backgroundColor: 'var(--clr-border)', margin: '8px 0' }} />
             <div style={{ width: '100%', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', fontFamily: 'var(--font-body)' }}>
@@ -256,11 +276,18 @@ export default function ProfilePage() {
               className={`success-banner ${isSaved ? 'is-visible' : ''}`} 
               id="profile-success" 
               role="alert"
+              style={isSaved ? { display: 'flex' } : {}}
             >
               <span>✅ Đã lưu thay đổi hồ sơ cá nhân thành công!</span>
             </div>
 
-            <form id="profile-form" className="profile-form" onSubmit={handleSubmit} noValidate>
+            <form 
+              id="profile-form" 
+              className="profile-form" 
+              onSubmit={handleSubmit} 
+              noValidate 
+              data-action="submit-profile"
+            >
               {/* Nickname input */}
               <div className="profile-field">
                 <label className="profile-label" htmlFor="profile-nickname">
@@ -269,12 +296,21 @@ export default function ProfilePage() {
                 <input
                   type="text"
                   id="profile-nickname"
-                  className="profile-input"
+                  className={`profile-input ${errors.nickname ? 'is-error' : ''}`}
                   value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
+                  onChange={(e) => {
+                    setNickname(e.target.value);
+                    if (errors.nickname) {
+                      setErrors(prev => ({ ...prev, nickname: undefined }));
+                    }
+                  }}
                   placeholder="Nhập biệt danh của bạn"
                   required
+                  style={errors.nickname ? { borderColor: '#e53e3e', boxShadow: '0 0 0 3px rgba(229, 62, 94, 0.08)' } : {}}
                 />
+                <div className={`field-error ${errors.nickname ? 'is-visible' : ''}`} role="alert">
+                  {errors.nickname}
+                </div>
               </div>
 
               {/* Birth Date selects */}
@@ -338,12 +374,21 @@ export default function ProfilePage() {
                 <input
                   type="text"
                   id="profile-hometown"
-                  className="profile-input"
+                  className={`profile-input ${errors.hometown ? 'is-error' : ''}`}
                   value={hometown}
-                  onChange={(e) => setHometown(e.target.value)}
+                  onChange={(e) => {
+                    setHometown(e.target.value);
+                    if (errors.hometown) {
+                      setErrors(prev => ({ ...prev, hometown: undefined }));
+                    }
+                  }}
                   placeholder="Hà Nội, Việt Nam"
                   required
+                  style={errors.hometown ? { borderColor: '#e53e3e', boxShadow: '0 0 0 3px rgba(229, 62, 94, 0.08)' } : {}}
                 />
+                <div className={`field-error ${errors.hometown ? 'is-visible' : ''}`} role="alert">
+                  {errors.hometown}
+                </div>
               </div>
 
               {/* Bio textarea */}
@@ -353,12 +398,21 @@ export default function ProfilePage() {
                 </label>
                 <textarea
                   id="profile-bio"
-                  className="profile-textarea"
+                  className={`profile-textarea ${errors.bio ? 'is-error' : ''}`}
                   value={bio}
-                  onChange={(e) => setBio(e.target.value)}
+                  onChange={(e) => {
+                    setBio(e.target.value);
+                    if (errors.bio) {
+                      setErrors(prev => ({ ...prev, bio: undefined }));
+                    }
+                  }}
                   placeholder="Hãy viết vài dòng giới thiệu về bản thân bạn..."
                   required
+                  style={errors.bio ? { borderColor: '#e53e3e', boxShadow: '0 0 0 3px rgba(229, 62, 94, 0.08)' } : {}}
                 />
+                <div className={`field-error ${errors.bio ? 'is-visible' : ''}`} role="alert">
+                  {errors.bio}
+                </div>
               </div>
 
               {/* Action buttons */}
@@ -367,6 +421,7 @@ export default function ProfilePage() {
                   type="button"
                   className="profile-btn-cancel"
                   id="btn-cancel-profile"
+                  data-action="profile-cancel"
                   onClick={handleCancel}
                   disabled={isLoading}
                 >
