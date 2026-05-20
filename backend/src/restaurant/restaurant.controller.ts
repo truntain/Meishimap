@@ -1,34 +1,22 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
+import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { RestaurantService } from './restaurant.service';
-import { CreateRestaurantDto } from './dto/create-restaurant.dto';
-import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
 
-@Controller('restaurant')
+@ApiTags('Restaurants')
+@Controller('restaurants')
 export class RestaurantController {
-  constructor(private readonly restaurantService: RestaurantService) {}
+  constructor(private readonly restaurantService: RestaurantService) { }
 
-  @Post()
-  create(@Body() createRestaurantDto: CreateRestaurantDto) {
-    return this.restaurantService.create(createRestaurantDto);
-  }
-
+  @ApiOperation({ summary: 'Lấy danh sách nhà hàng cho màn tìm kiếm' })
+  @ApiQuery({ name: 'q', required: false })
+  @ApiQuery({ name: 'category', required: false })
+  @ApiQuery({ name: 'sort', required: false, enum: ['rating', 'name'] })
   @Get()
-  findAll() {
-    return this.restaurantService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.restaurantService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateRestaurantDto: UpdateRestaurantDto) {
-    return this.restaurantService.update(+id, updateRestaurantDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.restaurantService.remove(+id);
+  findAll(
+    @Query('q') q?: string,
+    @Query('category') category?: string,
+    @Query('sort') sort?: 'rating' | 'name',
+  ) {
+    return this.restaurantService.findAll({ q, category, sort });
   }
 }

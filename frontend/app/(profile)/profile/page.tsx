@@ -222,6 +222,29 @@ export default function ProfilePage() {
             <span className="profile-avatar-hint">
               Hỗ trợ định dạng JPG, PNG hoặc GIF.
             </span>
+            <div style={{ width: '100%', height: '1px', backgroundColor: 'var(--clr-border)', margin: '8px 0' }} />
+            <div style={{ width: '100%', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', fontFamily: 'var(--font-body)' }}>
+              <div>
+                <span style={{ fontWeight: 600, color: 'var(--clr-muted)', display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email</span>
+                <span style={{ color: 'var(--clr-dark)', wordBreak: 'break-all', fontWeight: 500 }} id="profile-info-email">{user.email}</span>
+              </div>
+              <div>
+                <span style={{ fontWeight: 600, color: 'var(--clr-muted)', display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Vai trò / ロール</span>
+                <span style={{ 
+                  display: 'inline-block', 
+                  marginTop: '4px',
+                  padding: '2px 8px', 
+                  borderRadius: '4px', 
+                  fontSize: '12px', 
+                  fontWeight: 600, 
+                  textTransform: 'capitalize',
+                  backgroundColor: user.role === 'quản lý' ? '#FEE2E2' : user.role === 'chủ nhà hàng' ? '#FEF3C7' : '#E0F2FE',
+                  color: user.role === 'quản lý' ? '#991B1B' : user.role === 'chủ nhà hàng' ? '#92400E' : '#075985'
+                }} id="profile-info-role">
+                  {user.role}
+                </span>
+              </div>
+            </div>
           </div>
         </aside>
 
