@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CHANGELOG - Plan A MapLibre + OpenFreeMap</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #24140c;
+      background: #fff8f4;
+    }
+    main {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 32px 20px 56px;
+    }
+    h1, h2, h3 {
+      color: #6c2f00;
+      line-height: 1.25;
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 32px;
+    }
+    h2 {
+      margin-top: 32px;
+      border-bottom: 1px solid #e8d8cf;
+      padding-bottom: 8px;
+    }
+    code, pre {
+      background: #f4e8df;
+      border-radius: 6px;
+    }
+    code {
+      padding: 2px 5px;
+    }
+    pre {
+      padding: 12px;
+      overflow: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      margin: 12px 0 20px;
+    }
+    th, td {
+      border: 1px solid #eadbd2;
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f7ebe4;
+    }
+    .note {
+      background: #fff;
+      border-left: 4px solid #fd8a3e;
+      padding: 12px 14px;
+      margin: 16px 0;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>CHANGELOG - Plan A: MapLibre + OpenFreeMap cho màn Search</h1>
+    <p>
+      File này ghi lại toàn bộ thay đổi khi triển khai bản đồ cho màn
+      <code>/search</code>. Mục tiêu là để nhóm dễ đối chiếu: file nào được thêm/sửa,
+      tên biến/API nào mới, dữ liệu đi qua những bước nào, và phần nào chưa đụng tới.
+    </p>
+
+    <div class="note">
+      <strong>Phạm vi:</strong> chỉ làm màn Search. Không làm Google Places, không routing/chỉ đường,
+      không import dữ liệu thật từ bên ngoài, không sửa các màn booking/review/detail nếu không cần.
+    </div>
+
+    <h2>1. Trạng thái trước khi sửa</h2>
+    <ul>
+      <li>Frontend <code>/search</code> đang dùng dữ liệu mock trong <code>SearchClient.tsx</code>.</li>
+      <li>Khu vực bản đồ bên phải là placeholder tự dựng, chưa có bản đồ thật.</li>
+      <li>Database đã có bảng <code>restaurants</code> với các cột tọa độ <code>latitude</code>, <code>longitude</code>.</li>
+      <li>Backend chưa có module/API cho <code>restaurants</code>.</li>
+    </ul>
+
+    <h2>2. Kế hoạch thay đổi</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Hạng mục</th>
+          <th>Dự kiến thay đổi</th>
+          <th>Lý do</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Backend</td>
+          <td>Thêm entity/service/controller/module cho <code>restaurants</code> và API <code>GET /restaurants</code>.</td>
+          <td>Lấy dữ liệu thật từ PostgreSQL thay cho mock frontend.</td>
+        </tr>
+        <tr>
+          <td>Frontend dependency</td>
+          <td>Thêm <code>maplibre-gl</code>.</td>
+          <td>Render bản đồ vector bằng MapLibre GL JS.</td>
+        </tr>
+        <tr>
+          <td>Frontend Search</td>
+          <td>Đổi <code>SearchClient.tsx</code> sang fetch API backend, render MapLibre/OpenFreeMap, marker, popup, flyTo.</td>
+          <td>Biến khu vực map placeholder thành bản đồ thật có tương tác.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>3. File thêm mới</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Mục đích</th>
+          <th>Trạng thái</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>CHANGELOG_MAP_PLAN_A.html</code></td>
+          <td>Ghi lại toàn bộ thay đổi Plan A.</td>
+          <td>Đã tạo.</td>
+        </tr>
+        <tr>
+          <td><code>backend/src/restaurant/entities/restaurant.entity.ts</code></td>
+          <td>Khai báo entity TypeORM ánh xạ bảng <code>restaurants</code>.</td>
+          <td>Đã tạo.</td>
+        </tr>
+        <tr>
+          <td><code>backend/src/restaurant/restaurant.service.ts</code></td>
+          <td>Đọc danh sách nhà hàng từ PostgreSQL, hỗ trợ filter theo <code>q</code>, <code>category</code>, <code>sort</code>.</td>
+          <td>Đã tạo.</td>
+        </tr>
+        <tr>
+          <td><code>backend/src/restaurant/restaurant.controller.ts</code></td>
+          <td>Tạo endpoint <code>GET /restaurants</code> cho màn Search.</td>
+          <td>Đã tạo.</td>
+        </tr>
+        <tr>
+          <td><code>backend/src/restaurant/restaurant.module.ts</code></td>
+          <td>Đăng ký entity/service/controller restaurants trong NestJS.</td>
+          <td>Đã tạo.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>4. File sửa đổi</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Thay đổi</th>
+          <th>Lý do</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>backend/src/app.module.ts</code></td>
+          <td>Import và thêm <code>RestaurantModule</code> vào danh sách module.</td>
+          <td>Để NestJS nhận endpoint <code>/restaurants</code> và repository TypeORM.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/package.json</code></td>
+          <td>Thêm dependency <code>maplibre-gl</code>.</td>
+          <td>Dùng MapLibre GL JS để render bản đồ vector.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/package-lock.json</code></td>
+          <td>Npm cập nhật lockfile sau khi cài <code>maplibre-gl</code>.</td>
+          <td>Khóa phiên bản dependency để môi trường khác cài lại giống nhau.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/app/layout.tsx</code></td>
+          <td>Import CSS global của MapLibre: <code>maplibre-gl/dist/maplibre-gl.css</code>.</td>
+          <td>Để control, popup và canvas map hiển thị đúng style.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/app/(search)/search/SearchClient.tsx</code></td>
+          <td>Thay mock-only search bằng fetch API, MapLibre map, marker cluster, popup và click card để zoom tới vị trí.</td>
+          <td>Triển khai bản đồ thật cho màn Search.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/app/globals.css</code></td>
+          <td>Thêm CSS cho map canvas, floating count, detail panel, loading overlay và popup.</td>
+          <td>Làm UI bản đồ chuyên nghiệp hơn và đồng bộ màu MESHIMAP.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>5. API và biến mới</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Tên</th>
+          <th>Loại</th>
+          <th>Ý nghĩa</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>GET /restaurants</code></td>
+          <td>Backend API</td>
+          <td>Trả danh sách nhà hàng từ bảng <code>restaurants</code>.</td>
+        </tr>
+        <tr>
+          <td><code>q</code></td>
+          <td>Query param</td>
+          <td>Từ khóa tìm kiếm theo tên, tên Nhật, địa chỉ, quận, thành phố, category.</td>
+        </tr>
+        <tr>
+          <td><code>category</code></td>
+          <td>Query param</td>
+          <td>Lọc nhà hàng theo danh mục, ví dụ <code>sushi</code>, <code>ramen</code>.</td>
+        </tr>
+        <tr>
+          <td><code>sort</code></td>
+          <td>Query param</td>
+          <td>Sắp xếp theo <code>rating</code> hoặc <code>name</code>.</td>
+        </tr>
+        <tr>
+          <td><code>RestaurantResponse</code></td>
+          <td>TypeScript type</td>
+          <td>Response camelCase cho frontend: <code>nameJp</code>, <code>imageUrl</code>, <code>hasJapaneseSupport</code>.</td>
+        </tr>
+        <tr>
+          <td><code>maplibre-gl</code></td>
+          <td>Frontend dependency</td>
+          <td>Thư viện WebGL để hiển thị bản đồ MapLibre/OpenFreeMap.</td>
+        </tr>
+        <tr>
+          <td><code>API_BASE_URL</code></td>
+          <td>Frontend constant</td>
+          <td>Lấy từ <code>NEXT_PUBLIC_API_BASE_URL</code>, mặc định <code>http://localhost:3001</code>.</td>
+        </tr>
+        <tr>
+          <td><code>MAP_STYLE_URL</code></td>
+          <td>Frontend constant</td>
+          <td>Style OpenFreeMap: <code>https://tiles.openfreemap.org/styles/liberty</code>.</td>
+        </tr>
+        <tr>
+          <td><code>Restaurant</code></td>
+          <td>Frontend type</td>
+          <td>Kiểu dữ liệu nhà hàng dùng trong màn Search.</td>
+        </tr>
+        <tr>
+          <td><code>featureCollection</code></td>
+          <td>Frontend computed data</td>
+          <td>Chuyển danh sách nhà hàng thành GeoJSON để MapLibre render marker/cluster.</td>
+        </tr>
+        <tr>
+          <td><code>focusRestaurant()</code></td>
+          <td>Frontend function</td>
+          <td>Khi click card/marker, gọi <code>map.flyTo()</code>, set active restaurant và mở popup.</td>
+        </tr>
+        <tr>
+          <td><code>FALLBACK_RESTAURANTS</code></td>
+          <td>Frontend fallback data</td>
+          <td>Dữ liệu demo dùng khi backend API tạm thời không tải được, giúp màn Search vẫn demo được.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>6. Kiểm thử</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Lệnh / kiểm tra</th>
+          <th>Kết quả</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>cd backend && npm.cmd run build</code></td>
+          <td>Pass.</td>
+          <td>Nest build thành công.</td>
+        </tr>
+        <tr>
+          <td><code>cd frontend && npm.cmd run build</code></td>
+          <td>Pass.</td>
+          <td>Lần đầu bị chặn Google Fonts do sandbox/network; chạy lại với quyền mạng thì build Next.js pass.</td>
+        </tr>
+        <tr>
+          <td><code>cd frontend && npm.cmd run lint</code></td>
+          <td>Fail do lỗi cũ ngoài phần map.</td>
+          <td><code>SearchClient.tsx</code> không còn lỗi lint; lỗi còn lại nằm ở login/register/profile/Header và warning UIUX/home.</td>
+        </tr>
+        <tr>
+          <td><code>cd frontend && npm.cmd run dev</code></td>
+          <td>Ready.</td>
+          <td>Next dev server báo <code>http://localhost:3000</code>. Lệnh timeout khi chạy qua Codex vì đây là server lâu dài.</td>
+        </tr>
+        <tr>
+          <td><code>cd backend && npm.cmd run start:dev</code></td>
+          <td>Ready.</td>
+          <td>Nest map route <code>GET /restaurants</code> và báo <code>http://localhost:3001</code>. Lệnh timeout khi chạy qua Codex vì đây là server lâu dài.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>7. Version 2 - Làm bản đồ sát Google Maps hơn</h2>
+    <div class="note">
+      <strong>Mục tiêu V2:</strong> nâng cảm giác bản đồ chuyên nghiệp hơn mà vẫn giữ Plan A:
+      MapLibre + OpenFreeMap, không cần API key. V2 tập trung vào UI/UX bản đồ:
+      marker dạng pin, hover/click sync, popup card giàu thông tin, dữ liệu demo dày hơn.
+    </div>
+    <h3>7.1. Kế hoạch V2</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Hạng mục</th>
+          <th>Dự kiến thay đổi</th>
+          <th>Lý do</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Dữ liệu demo fallback</td>
+          <td>Tăng số nhà hàng demo quanh TP.HCM.</td>
+          <td>Map có nhiều marker/cluster hơn, nhìn giống trải nghiệm Google Maps hơn khi API backend chưa có đủ dữ liệu.</td>
+        </tr>
+        <tr>
+          <td>Marker</td>
+          <td>Chuyển marker điểm đơn từ circle layer sang symbol marker dạng pin SVG.</td>
+          <td>Marker dạng pin trực quan và gần Google Maps hơn.</td>
+        </tr>
+        <tr>
+          <td>Popup</td>
+          <td>Nâng popup thành mini card có tên, rating, địa chỉ, tag và nút đặt bàn.</td>
+          <td>Người dùng xem thông tin nhanh ngay trên map.</td>
+        </tr>
+        <tr>
+          <td>Tương tác</td>
+          <td>Hover card highlight marker, click marker scroll tới card, click card flyTo marker.</td>
+          <td>Tăng cảm giác đồng bộ list-map như Google Maps.</td>
+        </tr>
+        <tr>
+          <td>CSS</td>
+          <td>Thêm style pin, marker active, popup, hover state và floating panel.</td>
+          <td>Làm giao diện sắc nét hơn, giảm cảm giác placeholder.</td>
+        </tr>
+      </tbody>
+    </table>
+    <h3>7.2. File sửa đổi V2</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Thay đổi V2</th>
+          <th>Ghi chú so với V1</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>frontend/app/(search)/search/SearchClient.tsx</code></td>
+          <td>
+            Đổi nền map mặc định sang <code>CARTO Voyager</code>, tăng fallback demo lên nhiều nhà hàng,
+            thêm marker pin SVG, marker active màu xanh, hover card đồng bộ marker, popup giàu thông tin hơn.
+          </td>
+          <td>
+            V1 dùng OpenFreeMap Liberty và marker circle/symbol đơn giản hơn. V2 nhìn giống Google Maps hơn:
+            sáng, nhiều nhãn đường/POI hơn, marker dạng pin đỏ và active xanh.
+          </td>
+        </tr>
+        <tr>
+          <td><code>frontend/app/globals.css</code></td>
+          <td>
+            Polish map control, floating count, selected card, popup card, popup image/tag/button.
+          </td>
+          <td>
+            V1 đủ dùng để demo map; V2 ưu tiên cảm giác chuyên nghiệp và giống sản phẩm thật hơn.
+          </td>
+        </tr>
+        <tr>
+          <td><code>CHANGELOG_MAP_PLAN_A.html</code></td>
+          <td>
+            Thêm section Version 2, danh sách file sửa, biến/hàm mới, và kết quả kiểm thử.
+          </td>
+          <td>
+            File này dùng để theo dõi rõ V1/V2, tránh lẫn các thay đổi.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>7.3. Biến, hàm, class mới/cập nhật trong V2</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Tên</th>
+          <th>Loại</th>
+          <th>Ý nghĩa</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>MAP_STYLE_URL</code></td>
+          <td>Frontend constant</td>
+          <td>
+            Đổi default sang <code>https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json</code>.
+            Vẫn có thể override bằng <code>NEXT_PUBLIC_MAP_STYLE_URL</code>.
+          </td>
+        </tr>
+        <tr>
+          <td><code>MIN_DEMO_RESTAURANTS</code></td>
+          <td>Frontend constant</td>
+          <td>
+            Số lượng tối thiểu để màn Search có nhiều marker khi database local mới có ít nhà hàng.
+          </td>
+        </tr>
+        <tr>
+          <td><code>withDemoRestaurants()</code></td>
+          <td>Frontend helper</td>
+          <td>
+            Nếu API trả về ít dữ liệu, tự ghép thêm nhà hàng demo quanh TP.HCM để bản đồ nhìn dày hơn.
+          </td>
+        </tr>
+        <tr>
+          <td><code>createPinSvg()</code>, <code>svgToDataUrl()</code>, <code>loadMapImage()</code></td>
+          <td>Frontend map helpers</td>
+          <td>
+            Tạo icon pin SVG và nạp vào MapLibre. <code>loadMapImage()</code> dùng Promise API đúng với version MapLibre hiện tại.
+          </td>
+        </tr>
+        <tr>
+          <td><code>hoveredRestaurantId</code>, <code>selectedMarkerId</code></td>
+          <td>React state/computed state</td>
+          <td>
+            Đồng bộ hover card/marker và active marker. Marker được hover hoặc đang chọn sẽ chuyển sang pin xanh.
+          </td>
+        </tr>
+        <tr>
+          <td><code>onHover</code></td>
+          <td>Prop của <code>RestaurantCard</code></td>
+          <td>
+            Khi rê chuột/focus vào card, map biết card nào đang được trỏ tới để highlight marker tương ứng.
+          </td>
+        </tr>
+        <tr>
+          <td><code>restaurant-pin</code>, <code>restaurant-pin-active</code></td>
+          <td>MapLibre image id</td>
+          <td>
+            Hai icon marker: pin đỏ mặc định và pin xanh khi active/hover.
+          </td>
+        </tr>
+        <tr>
+          <td><code>.map-popup-image</code>, <code>.map-popup-address</code>, <code>.map-popup-tags</code>, <code>.map-popup-link</code></td>
+          <td>CSS class</td>
+          <td>
+            Các style mới cho popup mini card trên bản đồ.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>7.4. Kiểm thử V2</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Lệnh / kiểm tra</th>
+          <th>Kết quả</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>cd frontend && npm.cmd run build</code></td>
+          <td>Pass.</td>
+          <td>Next build, TypeScript, static generation đều thành công sau V2.</td>
+        </tr>
+        <tr>
+          <td><code>cd frontend && npm.cmd run lint</code></td>
+          <td>Fail do lỗi cũ ngoài phần map.</td>
+          <td>
+            Không thấy lỗi mới từ <code>SearchClient.tsx</code>. Lỗi còn lại nằm ở login/register/profile/Header
+            và một số warning cũ trong UIUX/home.
+          </td>
+        </tr>
+        <tr>
+          <td><code>GET http://localhost:3000/search</code></td>
+          <td>Pass - HTTP 200.</td>
+          <td>Frontend dev server đang phục vụ màn Search ở local.</td>
+        </tr>
+        <tr>
+          <td><code>GET http://localhost:3001/restaurants</code></td>
+          <td>Pass - HTTP 200.</td>
+          <td>Backend restaurants API trả response thành công ở local.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>7.5. Lưu ý V2</h3>
+    <div class="note">
+      V2 không chỉnh backend và không chỉnh database. Nếu database local chỉ có vài nhà hàng,
+      frontend sẽ tự bổ sung dữ liệu demo trên màn Search để bản đồ nhìn dày marker hơn.
+      Đây là dữ liệu phục vụ demo giao diện, không phải dữ liệu thật trong PostgreSQL.
+    </div>
+
+    <h2>8. Version 3 - Tăng màu sắc và độ sống động cho bản đồ</h2>
+    <div class="note">
+      <strong>Mục tiêu V3:</strong> chỉ nâng UI/UX của màn Search Map, không chỉnh backend,
+      không chỉnh database, không động tới auth/booking/profile/header. V3 làm bản đồ có nhiều màu
+      và cảm giác gần Google Maps hơn bằng marker theo loại nhà hàng, halo màu, legend nổi và accent màu trên card.
+    </div>
+
+    <h3>8.1. File sửa đổi V3</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Thay đổi V3</th>
+          <th>Ghi chú phạm vi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>frontend/app/(search)/search/SearchClient.tsx</code></td>
+          <td>
+            Thêm màu riêng cho từng category, marker pin có chữ viết tắt, layer halo quanh marker,
+            legend category nổi trên map, filter chip có chấm màu, card nhà hàng có accent màu.
+          </td>
+          <td>Chỉ thuộc màn Search Map.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/app/globals.css</code></td>
+          <td>
+            Thêm style cho <code>.map-category-legend</code>, <code>.map-category-pill</code>,
+            <code>.map-color-wash</code>, accent card, category tag, popup category color.
+          </td>
+          <td>Chỉ thêm/override CSS phục vụ map/search.</td>
+        </tr>
+        <tr>
+          <td><code>CHANGELOG_MAP_PLAN_A.html</code></td>
+          <td>Ghi section Version 3 và kết quả kiểm thử.</td>
+          <td>File tài liệu theo dõi thay đổi.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>8.2. Biến, hàm, layer mới/cập nhật trong V3</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Tên</th>
+          <th>Loại</th>
+          <th>Ý nghĩa</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>CATEGORY_STYLES</code>, <code>DEFAULT_CATEGORY_STYLE</code></td>
+          <td>Frontend constants</td>
+          <td>Màu, viền, nền chấm và chữ viết tắt cho từng loại nhà hàng.</td>
+        </tr>
+        <tr>
+          <td><code>getCategoryStyle()</code></td>
+          <td>Frontend helper</td>
+          <td>Lấy style màu theo category để dùng cho marker, card, popup và legend.</td>
+        </tr>
+        <tr>
+          <td><code>getCategoryColorExpression()</code></td>
+          <td>MapLibre expression helper</td>
+          <td>Đổi màu layer MapLibre theo <code>category</code>.</td>
+        </tr>
+        <tr>
+          <td><code>getCategoryPinExpression()</code></td>
+          <td>MapLibre expression helper</td>
+          <td>Chọn icon marker theo <code>category</code>, riêng marker đang hover/active dùng pin xanh.</td>
+        </tr>
+        <tr>
+          <td><code>restaurant-halo</code></td>
+          <td>MapLibre circle layer</td>
+          <td>Lớp glow/halo màu nằm dưới marker để map nhìn nổi và sinh động hơn.</td>
+        </tr>
+        <tr>
+          <td><code>categoryLegend</code></td>
+          <td>React computed data</td>
+          <td>Tạo danh sách category đang có kết quả để render legend nổi trên map.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>8.3. Kiểm thử V3</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Lệnh / kiểm tra</th>
+          <th>Kết quả</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>cd frontend && npm.cmd run build</code></td>
+          <td>Pass.</td>
+          <td>Next build và TypeScript pass sau khi thêm category marker/halo/legend.</td>
+        </tr>
+        <tr>
+          <td><code>cd frontend && npm.cmd run lint</code></td>
+          <td>Fail do lỗi cũ ngoài phần map.</td>
+          <td>
+            Không thấy lỗi mới từ <code>SearchClient.tsx</code>. Lỗi còn lại vẫn ở login/register/profile/Header,
+            UIUX và home như các lần trước.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>8.4. Lưu ý V3</h3>
+    <div class="note">
+      V3 không thêm package mới, không chỉnh API backend, không chỉnh SQL. Nếu merge nhóm,
+      phần cần chú ý vẫn chỉ là <code>SearchClient.tsx</code>, <code>globals.css</code> và file changelog này.
+    </div>
+
+    <h3>8.5. Hotfix V3.1 - Sửa expression MapLibre halo</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Vấn đề</th>
+          <th>Cách sửa</th>
+          <th>Kiểm thử</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            MapLibre báo lỗi runtime ở <code>restaurant-halo</code> vì <code>['zoom']</code>
+            bị đặt lồng trong <code>['case']</code> cho <code>circle-radius</code> và <code>circle-opacity</code>.
+          </td>
+          <td>
+            Đổi expression thành dạng <code>['interpolate', ['linear'], ['zoom'], ...]</code> ở tầng đầu,
+            còn <code>['case']</code> chọn marker active nằm trong từng mốc zoom.
+          </td>
+          <td><code>cd frontend && npm.cmd run build</code>: Pass.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>9. Version 4 - Toggle bản đồ / vệ tinh ít rủi ro chi phí</h2>
+    <div class="note">
+      <strong>Mục tiêu V4:</strong> thêm chế độ vệ tinh cho màn Search mà không dùng Google billing,
+      không thêm package mới, không đổi backend, không đổi database. Cách làm là giữ MapLibre hiện tại,
+      thêm raster layer ảnh vệ tinh Esri và bật/tắt layer này bằng UI.
+    </div>
+
+    <h3>9.1. File sửa đổi V4</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Thay đổi V4</th>
+          <th>Lý do chọn cách này</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>frontend/app/(search)/search/SearchClient.tsx</code></td>
+          <td>
+            Thêm <code>MapViewMode</code>, <code>MAP_VIEW_OPTIONS</code>,
+            <code>SATELLITE_SOURCE_ID</code>, <code>SATELLITE_LAYER_ID</code>,
+            <code>addSatelliteLayer()</code>, <code>applyMapViewMode()</code>,
+            state <code>mapViewMode</code> và UI toggle <code>Bản đồ / Vệ tinh</code>.
+          </td>
+          <td>
+            Không dùng <code>map.setStyle()</code> để tránh mất marker/source/layer hiện có.
+            Chỉ bật/tắt raster layer nên ít rủi ro runtime hơn.
+          </td>
+        </tr>
+        <tr>
+          <td><code>frontend/app/globals.css</code></td>
+          <td>
+            Thêm CSS cho <code>.map-view-toggle</code>, <code>.map-view-toggle__btn</code>,
+            trạng thái <code>.map-section--satellite</code> và chỉnh responsive bottom panel.
+          </td>
+          <td>Toggle nằm trong màn Search Map, không ảnh hưởng các page khác.</td>
+        </tr>
+        <tr>
+          <td><code>CHANGELOG_MAP_PLAN_A.html</code></td>
+          <td>Ghi section Version 4 và kết quả kiểm thử.</td>
+          <td>Tiếp tục phân tách thay đổi theo version để dễ merge/review.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>9.2. Nguồn tile vệ tinh</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Nguồn</th>
+          <th>URL</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Esri World Imagery</td>
+          <td><code>https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}</code></td>
+          <td>
+            Dùng như raster tile layer trong MapLibre. Có attribution trong source:
+            <code>Tiles © Esri, Maxar, Earthstar Geographics, and the GIS User Community</code>.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>9.3. Kiểm thử V4</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Lệnh / kiểm tra</th>
+          <th>Kết quả</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>cd frontend && npm.cmd run build</code></td>
+          <td>Pass.</td>
+          <td>Next build và TypeScript pass sau khi thêm satellite raster layer/toggle.</td>
+        </tr>
+        <tr>
+          <td><code>GET http://localhost:3000/search</code></td>
+          <td>Pass - HTTP 200.</td>
+          <td>Smoke test màn Search sau V4 trả về thành công.</td>
+        </tr>
+        <tr>
+          <td><code>cd frontend && npm.cmd run lint</code></td>
+          <td>Fail do lỗi cũ ngoài phần map.</td>
+          <td>
+            Không thấy lỗi mới từ <code>SearchClient.tsx</code>. Lỗi vẫn nằm ở login/register/profile/Header,
+            UIUX và home như các version trước.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>
