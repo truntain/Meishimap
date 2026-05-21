@@ -1,21 +1,15 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
-// ── Mock restaurant data (thay bằng API sau) ──
-const MOCK_RESTAURANT = {
-  id: '1',
-  name: 'Miyabi Japanese Dining',
-  address: '123 Lê Lợi, Quận 1, TP. Hồ Chí Minh',
-  rating: 4.9,
-  reviewCount: 240,
-  phone: '+84 28 3823 4567',
-  hours: '10:00 - 22:00 (Hàng ngày)',
-  languages: 'Tiếng Việt, Tiếng Nhật, English',
-  amenities: ['📶 Free Wifi', '🅿️ Free Parking', '💳 Cards Accepted', '♿ Accessibility'],
-};
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+
+function buildRestaurantDetailUrl(id: string) {
+  const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;
+  return new URL(`restaurants/${id}`, baseUrl).toString();
+}
 
 const VISIT_TYPES = ['Đi cùng gia đình', 'Đi cùng bạn bè', 'Đi cùng đối tác', 'Đi một mình'];
 
@@ -44,7 +38,68 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
 export default function WriteReviewClient() {
   const params = useParams();
   const router = useRouter();
-  const restaurantId = params?.id as string;
+  
+  const restaurantIdParam = params?.id;
+  const restaurantId = Array.isArray(restaurantIdParam)
+    ? restaurantIdParam[0]
+    : restaurantIdParam || '1';
+
+  // ── Restaurant state ──
+  const [restaurant, setRestaurant] = useState<any>({
+    id: restaurantId,
+    name: 'Miyabi Japanese Dining',
+    address: '123 Lê Lợi, Quận 1, TP. Hồ Chí Minh',
+    rating: 4.9,
+    reviewCount: 240,
+    phone: '+84 28 3823 4567',
+    hours: '10:00 - 22:00 (Hàng ngày)',
+    languages: 'Tiếng Việt, Tiếng Nhật, English',
+    amenities: ['📶 Free Wifi', '🅿️ Free Parking', '💳 Cards Accepted', '♿ Accessibility'],
+    imageUrl: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80',
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadRestaurant() {
+      if (!restaurantId) return;
+      try {
+        const response = await fetch(buildRestaurantDetailUrl(restaurantId), {
+          cache: 'no-store',
+        });
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}`);
+        }
+        const data = await response.json();
+        if (isMounted) {
+          const rawImageUrl = data.imageUrl || data.image_url;
+          const imageUrl = (rawImageUrl && rawImageUrl !== 'null' && rawImageUrl !== 'undefined')
+            ? rawImageUrl
+            : 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80';
+          
+          setRestaurant({
+            id: data.id,
+            name: data.name,
+            address: data.address || 'Chưa cập nhật địa chỉ',
+            rating: Number(data.rating ?? 4.9),
+            reviewCount: 240,
+            phone: data.phone || 'Chưa cập nhật',
+            hours: '10:00 - 22:00 (Hàng ngày)',
+            languages: (data.hasJapaneseSupport || data.has_japanese_support)
+              ? 'Tiếng Việt, Tiếng Nhật, English'
+              : 'Tiếng Việt, English',
+            amenities: ['📶 Free Wifi', '🅿️ Free Parking', '💳 Cards Accepted', '♿ Accessibility'],
+            imageUrl,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load restaurant in WriteReview:', error);
+      }
+    }
+    loadRestaurant();
+    return () => {
+      isMounted = false;
+    };
+  }, [restaurantId]);
 
   // ── Form state ──
   const [rating, setRating]         = useState(0);
@@ -95,8 +150,8 @@ export default function WriteReviewClient() {
 
     // Save to localStorage (sẽ thay bằng API call)
     const review = {
-      restaurantId,
-      restaurantName: MOCK_RESTAURANT.name,
+      restaurantId: String(restaurantId),
+      restaurantName: restaurant.name,
       rating,
       title: title.trim(),
       content: content.trim(),
@@ -114,16 +169,21 @@ export default function WriteReviewClient() {
       setShowSuccess(true);
       // Auto-redirect sau 2.5s
       setTimeout(() => {
-        router.push(`/restaurant/${restaurantId}`);
+        window.location.href = `/restaurant/${restaurantId}`;
       }, 2500);
     }, 700);
-  }, [rating, title, content, visitDate, visitType, restaurantId, router]);
+  }, [rating, title, content, visitDate, visitType, restaurantId, restaurant.name]);
 
   return (
     <>
       {/* ── Hero ── */}
       <section className="review-hero" aria-label="Ảnh nhà hàng">
-        <div className="review-hero__img" />
+        <div
+          className="review-hero__img"
+          style={{
+            background: `url('${restaurant.imageUrl}') center/cover no-repeat`,
+          }}
+        />
         <div className="review-hero__overlay" />
       </section>
 
@@ -135,16 +195,16 @@ export default function WriteReviewClient() {
               <span className="detail-tag">Japanese Speaking</span>
               <span className="detail-tag detail-tag--green">Hygiene Certified</span>
             </div>
-            <h1 style={{ fontWeight: 700, fontSize: '20px', color: 'var(--clr-dark)', marginBottom: '4px' }}>{MOCK_RESTAURANT.name}</h1>
+            <h1 style={{ fontWeight: 700, fontSize: '20px', color: 'var(--clr-dark)', marginBottom: '4px' }}>{restaurant.name}</h1>
             <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', color: 'var(--clr-muted)' }}>
                 <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
                   <path d="M7 1.167A3.5 3.5 0 0 1 10.5 4.667C10.5 7.292 7 12.833 7 12.833S3.5 7.292 3.5 4.667A3.5 3.5 0 0 1 7 1.167Z" stroke="#8A8A8A" strokeWidth="1.2" />
                 </svg>
-                {MOCK_RESTAURANT.address}
+                {restaurant.address}
               </span>
               <span style={{ fontSize: '13px', color: 'var(--clr-yellow)' }}>
-                ★★★★★ <span style={{ color: 'var(--clr-muted)' }}>({MOCK_RESTAURANT.rating}/5 • {MOCK_RESTAURANT.reviewCount} reviews)</span>
+                ★★★★★ <span style={{ color: 'var(--clr-muted)' }}>({restaurant.rating.toFixed(1)}/5 • {restaurant.reviewCount} reviews)</span>
               </span>
             </div>
           </div>
@@ -170,20 +230,20 @@ export default function WriteReviewClient() {
           <div className="info-card">
             <h3 className="info-card__title">Thông tin liên hệ</h3>
             <div className="info-card__row">
-              <div><div className="info-card__label">Giờ mở cửa</div><div className="info-card__value">{MOCK_RESTAURANT.hours}</div></div>
+              <div><div className="info-card__label">Giờ mở cửa</div><div className="info-card__value">{restaurant.hours}</div></div>
             </div>
             <div className="info-card__row">
-              <div><div className="info-card__label">Điện thoại</div><div className="info-card__value">{MOCK_RESTAURANT.phone}</div></div>
+              <div><div className="info-card__label">Điện thoại</div><div className="info-card__value">{restaurant.phone}</div></div>
             </div>
             <div className="info-card__row">
-              <div><div className="info-card__label">Ngôn ngữ hỗ trợ</div><div className="info-card__value">{MOCK_RESTAURANT.languages}</div></div>
+              <div><div className="info-card__label">Ngôn ngữ hỗ trợ</div><div className="info-card__value">{restaurant.languages}</div></div>
             </div>
             <div style={{ height: '110px', background: 'linear-gradient(135deg,#e0d3cc,#d5c4ba)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', marginTop: '14px' }}>
               <span style={{ fontSize: '28px', opacity: 0.4 }}>🗺</span>
               <button
                 style={{ position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)', background: 'var(--clr-dark)', color: '#fff', padding: '5px 14px', borderRadius: '9999px', fontSize: '12px', fontWeight: 500, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
                 id="btn-map"
-                onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(MOCK_RESTAURANT.address)}`, '_blank')}
+                onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(restaurant.address)}`, '_blank')}
               >
                 Xem bản đồ
               </button>
@@ -193,7 +253,7 @@ export default function WriteReviewClient() {
           <div className="info-card">
             <h3 className="info-card__title">Tiện ích</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              {MOCK_RESTAURANT.amenities.map(a => (
+              {restaurant.amenities.map((a: string) => (
                 <div key={a} style={{ fontSize: '12px', color: 'var(--clr-muted)' }}>{a}</div>
               ))}
             </div>

@@ -72,7 +72,23 @@ function getSafeRating(rating: number) {
   return Math.max(0, Math.min(5, Math.round(rating)));
 }
 
-function normalizeRestaurantDetail(raw: Partial<ApiRestaurant>, fallbackId: string): RestaurantDetail | null {
+const MENU_ITEM_IMAGES: Record<string, string> = {
+  'Premium Sashimi Set': 'https://images.unsplash.com/photo-1534482421-64566f976cfa?auto=format&fit=crop&w=600&q=80',
+  'Sashimi Deluxe': 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=600&q=80',
+  'Tempura Set': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80',
+  'Tonkotsu Ramen': 'https://images.unsplash.com/photo-1557872943-16a5ac26437e?auto=format&fit=crop&w=600&q=80',
+  'Shoyu Ramen': 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80',
+  'Matcha Ice Cream': 'https://images.unsplash.com/photo-1506084868230-bb9d95c24759?auto=format&fit=crop&w=600&q=80',
+};
+
+const MENU_ITEM_EMOJIS: Record<string, string> = {
+  'sashimi': '🐟',
+  'tempura': '🍤',
+  'ramen': '🍜',
+  'dessert': '🍡',
+};
+
+function normalizeRestaurantDetail(raw: Partial<ApiRestaurant> & { menuItems?: any[] }, fallbackId: string): RestaurantDetail | null {
   const id = Number(raw.id ?? fallbackId);
   const latitude = Number(raw.latitude);
   const longitude = Number(raw.longitude);
@@ -84,6 +100,37 @@ function normalizeRestaurantDetail(raw: Partial<ApiRestaurant>, fallbackId: stri
   const category = raw.category || 'other';
   const hasJapaneseSupport = Boolean(raw.hasJapaneseSupport);
   const categoryLabel = CATEGORY_LABELS.get(category) || category;
+
+  const rawMenuItems = raw.menuItems || [];
+  const menuItems = rawMenuItems.map((item: any) => {
+    const name = String(item.name).trim();
+    const rawItemImageUrl = item.imageUrl || item.image_url;
+    
+    // Case-insensitive lookup in MENU_ITEM_IMAGES
+    const fallbackImageKey = Object.keys(MENU_ITEM_IMAGES).find(
+      key => key.toLowerCase() === name.toLowerCase()
+    );
+    
+    const itemImageUrl = (rawItemImageUrl && rawItemImageUrl !== 'null' && rawItemImageUrl !== 'undefined')
+      ? rawItemImageUrl
+      : (fallbackImageKey ? MENU_ITEM_IMAGES[fallbackImageKey] : null);
+
+    return {
+      id: Number(item.id),
+      cat: item.category || 'other',
+      emoji: MENU_ITEM_EMOJIS[item.category] || '🍽️',
+      imageUrl: itemImageUrl,
+      name: name,
+      price: new Intl.NumberFormat('vi-VN').format(item.price || 0) + 'đ',
+      desc: item.description || '',
+      badge: item.badge || '',
+    };
+  });
+
+  const rawImageUrl = raw.imageUrl || raw.image_url;
+  const imageUrl = (rawImageUrl && rawImageUrl !== 'null' && rawImageUrl !== 'undefined')
+    ? rawImageUrl
+    : 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80';
 
   return {
     id,
@@ -98,7 +145,7 @@ function normalizeRestaurantDetail(raw: Partial<ApiRestaurant>, fallbackId: stri
     longitude: Number.isFinite(longitude) ? longitude : FALLBACK_RESTAURANT.longitude,
     description: raw.description ?? null,
     phone: raw.phone || 'Chưa cập nhật',
-    imageUrl: raw.imageUrl ?? null,
+    imageUrl,
     hasJapaneseSupport,
     reviewCount: FALLBACK_RESTAURANT.reviewCount,
     hours: FALLBACK_RESTAURANT.hours,
@@ -108,7 +155,8 @@ function normalizeRestaurantDetail(raw: Partial<ApiRestaurant>, fallbackId: stri
       hasJapaneseSupport ? 'Japanese Speaking' : 'Japanese Style',
     ],
     amenities: FALLBACK_RESTAURANT.amenities,
-  };
+    menuItems: menuItems.length > 0 ? menuItems : undefined,
+  } as any;
 }
 
 function getMapsQuery(restaurant: RestaurantDetail) {
@@ -120,12 +168,12 @@ function getMapsQuery(restaurant: RestaurantDetail) {
 }
 
 const MENU_ITEMS = [
-  { id: 1, cat: 'sashimi', emoji: '🐟', name: 'Premium Sashimi Set', price: '450.000đ', desc: 'A curated selection of seasonal fish including Otoro, Sake, and Hamachi.', badge: '✅ Fresh Daily' },
-  { id: 2, cat: 'sashimi', emoji: '🍱', name: 'Sashimi Deluxe',        price: '380.000đ', desc: 'Premium cut fish with authentic wasabi and soy sauce.',                badge: '✅ Fresh Daily' },
-  { id: 3, cat: 'tempura', emoji: '🍤', name: 'Tempura Set',           price: '280.000đ', desc: 'Crispy light-battered shrimp and vegetables with dipping sauce.',   badge: '✅ Fresh Daily' },
-  { id: 4, cat: 'ramen',   emoji: '🍜', name: 'Tonkotsu Ramen',        price: '195.000đ', desc: 'Rich pork bone broth simmered 18 hours, chashu pork, soft egg.',    badge: '✅ Signature Dish' },
-  { id: 5, cat: 'ramen',   emoji: '🍝', name: 'Shoyu Ramen',           price: '175.000đ', desc: 'Aromatic soy-based broth with tender chicken and bamboo shoots.',   badge: '✅ Popular' },
-  { id: 6, cat: 'dessert', emoji: '🍡', name: 'Matcha Ice Cream',      price: '65.000đ',  desc: 'Premium Uji matcha ice cream served with red bean paste.',           badge: '✅ Seasonal' },
+  { id: 1, cat: 'sashimi', emoji: '🐟', imageUrl: 'https://images.unsplash.com/photo-1534482421-64566f976cfa?auto=format&fit=crop&w=600&q=80', name: 'Premium Sashimi Set', price: '450.000đ', desc: 'A curated selection of seasonal fish including Otoro, Sake, and Hamachi.', badge: '✅ Fresh Daily' },
+  { id: 2, cat: 'sashimi', emoji: '🍱', imageUrl: 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=600&q=80', name: 'Sashimi Deluxe',        price: '380.000đ', desc: 'Premium cut fish with authentic wasabi and soy sauce.',                badge: '✅ Fresh Daily' },
+  { id: 3, cat: 'tempura', emoji: '🍤', imageUrl: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80', name: 'Tempura Set',           price: '280.000đ', desc: 'Crispy light-battered shrimp and vegetables with dipping sauce.',   badge: '✅ Fresh Daily' },
+  { id: 4, cat: 'ramen',   emoji: '🍜', imageUrl: 'https://images.unsplash.com/photo-1557872943-16a5ac26437e?auto=format&fit=crop&w=600&q=80', name: 'Tonkotsu Ramen',        price: '195.000đ', desc: 'Rich pork bone broth simmered 18 hours, chashu pork, soft egg.',    badge: '✅ Signature Dish' },
+  { id: 5, cat: 'ramen',   emoji: '🍝', imageUrl: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80', name: 'Shoyu Ramen',           price: '175.000đ', desc: 'Aromatic soy-based broth with tender chicken and bamboo shoots.',   badge: '✅ Popular' },
+  { id: 6, cat: 'dessert', emoji: '🍡', imageUrl: 'https://images.unsplash.com/photo-1506084868230-bb9d95c24759?auto=format&fit=crop&w=600&q=80', name: 'Matcha Ice Cream',      price: '65.000đ',  desc: 'Premium Uji matcha ice cream served with red bean paste.',           badge: '✅ Seasonal' },
 ];
 
 const MENU_CATS = [
@@ -173,6 +221,35 @@ export default function RestaurantDetailClient() {
   });
   const [restaurantLoading, setRestaurantLoading] = useState(true);
   const [restaurantError, setRestaurantError] = useState('');
+
+  // ── Reviews state ──
+  const [reviews, setReviews] = useState<any[]>([]);
+
+  useEffect(() => {
+    try {
+      const localReviewsRaw = localStorage.getItem('meshimap_reviews');
+      const localReviews = localReviewsRaw ? JSON.parse(localReviewsRaw) : [];
+      const filtered = localReviews
+        .filter((r: any) => String(r.restaurantId) === String(restaurantId))
+        .map((r: any, idx: number) => {
+          const dateObj = new Date(r.createdAt || r.visitDate || Date.now());
+          const monthStr = dateObj.getMonth() + 1;
+          const yearStr = dateObj.getFullYear();
+          return {
+            id: `local-${idx}-${r.createdAt}`,
+            author: r.author || 'Bạn',
+            initial: (r.author || 'Bạn').charAt(0).toUpperCase(),
+            date: `Tháng ${monthStr}, ${yearStr}`,
+            stars: Number(r.rating || 5),
+            text: r.title ? `${r.title} — ${r.content}` : r.content,
+          };
+        });
+      setReviews([...filtered, ...MOCK_REVIEWS]);
+    } catch (e) {
+      console.error(e);
+      setReviews(MOCK_REVIEWS);
+    }
+  }, [restaurantId]);
 
   // ── Menu state ──
   const [activeCat, setActiveCat]         = useState('all');
@@ -262,13 +339,14 @@ export default function RestaurantDetailClient() {
 
   // ── Menu filter logic ──
   const filteredMenu = useCallback(() => {
-    return MENU_ITEMS.filter(item => {
+    const itemsSource = (restaurant as any).menuItems || MENU_ITEMS;
+    return itemsSource.filter((item: any) => {
       const matchCat = activeCat === 'all' || item.cat === activeCat;
       const q = menuSearch.toLowerCase();
       const matchSearch = !q || item.name.toLowerCase().includes(q) || item.desc.toLowerCase().includes(q);
       return matchCat && matchSearch;
     });
-  }, [activeCat, menuSearch]);
+  }, [restaurant, activeCat, menuSearch]);
 
   // ── Booking submit ──
   const handleBookingSubmit = (e: React.FormEvent) => {
@@ -318,7 +396,12 @@ export default function RestaurantDetailClient() {
 
   const today = new Date().toISOString().split('T')[0];
   const menuItems = filteredMenu();
-  const starCount = getSafeRating(restaurant.rating);
+  const localReviewsCount = reviews.filter(r => String(r.id).startsWith('local-')).length;
+  const displayReviewCount = restaurant.reviewCount + localReviewsCount;
+  const displayRating = localReviewsCount > 0
+    ? (restaurant.rating * restaurant.reviewCount + reviews.filter(r => String(r.id).startsWith('local-')).reduce((sum, r) => sum + r.stars, 0)) / displayReviewCount
+    : restaurant.rating;
+  const starCount = getSafeRating(displayRating);
 
   return (
     <>
@@ -326,11 +409,9 @@ export default function RestaurantDetailClient() {
       <section className="detail-hero" aria-label={copy.heroLabel} id="detail-hero">
         <div
           className="detail-hero__img"
-          style={restaurant.imageUrl ? {
-            backgroundImage: `url("${restaurant.imageUrl}")`,
-            backgroundPosition: 'center',
-            backgroundSize: 'cover',
-          } : undefined}
+          style={{
+            background: `url('${restaurant.imageUrl}') center/cover no-repeat`,
+          }}
         />
         <div className="detail-hero__overlay" />
       </section>
@@ -363,7 +444,7 @@ export default function RestaurantDetailClient() {
               </span>
               <span className="detail-meta__item">
                 <StarsFull count={starCount} />
-                ({restaurant.rating.toFixed(1)}/5 • {restaurant.reviewCount} reviews)
+                ({displayRating.toFixed(1)}/5 • {displayReviewCount} reviews)
               </span>
             </div>
             {restaurant.description && (
@@ -440,7 +521,14 @@ export default function RestaurantDetailClient() {
             ) : (
               menuItems.map(item => (
                 <div key={item.id} className="menu-item" data-cat={item.cat}>
-                  <div className="menu-item__img">{item.emoji}</div>
+                  <div className="menu-item__img">
+                    {item.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.imageUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      item.emoji || '🍽️'
+                    )}
+                  </div>
                   <div className="menu-item__body">
                     <div className="menu-item__name">{item.name}</div>
                     <div className="menu-item__price">{item.price}</div>
@@ -454,7 +542,7 @@ export default function RestaurantDetailClient() {
 
           {/* Reviews */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }} id="reviews-section">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifycontent: 'space-between' }}>
               <h2 style={{ fontWeight: 700, fontSize: '20px', color: 'var(--clr-dark)' }}>{copy.reviews}</h2>
               <Link
                 href={`/restaurant/${restaurantId}/review`}
@@ -468,7 +556,7 @@ export default function RestaurantDetailClient() {
               </Link>
             </div>
 
-            {MOCK_REVIEWS.map(review => (
+            {reviews.map(review => (
               <div key={review.id} className="review-card">
                 <div className="review__header">
                   <div className="review__avatar">{review.initial}</div>
