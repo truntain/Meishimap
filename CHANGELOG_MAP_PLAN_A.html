@@ -1,0 +1,1368 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CHANGELOG - Plan A MapLibre + OpenFreeMap</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #24140c;
+      background: #fff8f4;
+    }
+    main {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 32px 20px 56px;
+    }
+    h1, h2, h3 {
+      color: #6c2f00;
+      line-height: 1.25;
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 32px;
+    }
+    h2 {
+      margin-top: 32px;
+      border-bottom: 1px solid #e8d8cf;
+      padding-bottom: 8px;
+    }
+    code, pre {
+      background: #f4e8df;
+      border-radius: 6px;
+    }
+    code {
+      padding: 2px 5px;
+    }
+    pre {
+      padding: 12px;
+      overflow: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      margin: 12px 0 20px;
+    }
+    th, td {
+      border: 1px solid #eadbd2;
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f7ebe4;
+    }
+    .note {
+      background: #fff;
+      border-left: 4px solid #fd8a3e;
+      padding: 12px 14px;
+      margin: 16px 0;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>CHANGELOG - Plan A: MapLibre + OpenFreeMap cho màn Search</h1>
+    <p>
+      File này ghi lại toàn bộ thay đổi khi triển khai bản đồ cho màn
+      <code>/search</code>. Mục tiêu là để nhóm dễ đối chiếu: file nào được thêm/sửa,
+      tên biến/API nào mới, dữ liệu đi qua những bước nào, và phần nào chưa đụng tới.
+    </p>
+
+    <div class="note">
+      <strong>Phạm vi:</strong> chỉ làm màn Search. Không làm Google Places, không routing/chỉ đường,
+      không import dữ liệu thật từ bên ngoài, không sửa các màn booking/review/detail nếu không cần.
+    </div>
+
+    <h2>1. Trạng thái trước khi sửa</h2>
+    <ul>
+      <li>Frontend <code>/search</code> đang dùng dữ liệu mock trong <code>SearchClient.tsx</code>.</li>
+      <li>Khu vực bản đồ bên phải là placeholder tự dựng, chưa có bản đồ thật.</li>
+      <li>Database đã có bảng <code>restaurants</code> với các cột tọa độ <code>latitude</code>, <code>longitude</code>.</li>
+      <li>Backend chưa có module/API cho <code>restaurants</code>.</li>
+    </ul>
+
+    <h2>2. Kế hoạch thay đổi</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Hạng mục</th>
+          <th>Dự kiến thay đổi</th>
+          <th>Lý do</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Backend</td>
+          <td>Thêm entity/service/controller/module cho <code>restaurants</code> và API <code>GET /restaurants</code>.</td>
+          <td>Lấy dữ liệu thật từ PostgreSQL thay cho mock frontend.</td>
+        </tr>
+        <tr>
+          <td>Frontend dependency</td>
+          <td>Thêm <code>maplibre-gl</code>.</td>
+          <td>Render bản đồ vector bằng MapLibre GL JS.</td>
+        </tr>
+        <tr>
+          <td>Frontend Search</td>
+          <td>Đổi <code>SearchClient.tsx</code> sang fetch API backend, render MapLibre/OpenFreeMap, marker, popup, flyTo.</td>
+          <td>Biến khu vực map placeholder thành bản đồ thật có tương tác.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>3. File thêm mới</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Mục đích</th>
+          <th>Trạng thái</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>CHANGELOG_MAP_PLAN_A.html</code></td>
+          <td>Ghi lại toàn bộ thay đổi Plan A.</td>
+          <td>Đã tạo.</td>
+        </tr>
+        <tr>
+          <td><code>backend/src/restaurant/entities/restaurant.entity.ts</code></td>
+          <td>Khai báo entity TypeORM ánh xạ bảng <code>restaurants</code>.</td>
+          <td>Đã tạo.</td>
+        </tr>
+        <tr>
+          <td><code>backend/src/restaurant/restaurant.service.ts</code></td>
+          <td>Đọc danh sách nhà hàng từ PostgreSQL, hỗ trợ filter theo <code>q</code>, <code>category</code>, <code>sort</code>.</td>
+          <td>Đã tạo.</td>
+        </tr>
+        <tr>
+          <td><code>backend/src/restaurant/restaurant.controller.ts</code></td>
+          <td>Tạo endpoint <code>GET /restaurants</code> cho màn Search.</td>
+          <td>Đã tạo.</td>
+        </tr>
+        <tr>
+          <td><code>backend/src/restaurant/restaurant.module.ts</code></td>
+          <td>Đăng ký entity/service/controller restaurants trong NestJS.</td>
+          <td>Đã tạo.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>4. File sửa đổi</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Thay đổi</th>
+          <th>Lý do</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>backend/src/app.module.ts</code></td>
+          <td>Import và thêm <code>RestaurantModule</code> vào danh sách module.</td>
+          <td>Để NestJS nhận endpoint <code>/restaurants</code> và repository TypeORM.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/package.json</code></td>
+          <td>Thêm dependency <code>maplibre-gl</code>.</td>
+          <td>Dùng MapLibre GL JS để render bản đồ vector.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/package-lock.json</code></td>
+          <td>Npm cập nhật lockfile sau khi cài <code>maplibre-gl</code>.</td>
+          <td>Khóa phiên bản dependency để môi trường khác cài lại giống nhau.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/app/layout.tsx</code></td>
+          <td>Import CSS global của MapLibre: <code>maplibre-gl/dist/maplibre-gl.css</code>.</td>
+          <td>Để control, popup và canvas map hiển thị đúng style.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/app/(search)/search/SearchClient.tsx</code></td>
+          <td>Thay mock-only search bằng fetch API, MapLibre map, marker cluster, popup và click card để zoom tới vị trí.</td>
+          <td>Triển khai bản đồ thật cho màn Search.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/app/globals.css</code></td>
+          <td>Thêm CSS cho map canvas, floating count, detail panel, loading overlay và popup.</td>
+          <td>Làm UI bản đồ chuyên nghiệp hơn và đồng bộ màu MESHIMAP.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>5. API và biến mới</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Tên</th>
+          <th>Loại</th>
+          <th>Ý nghĩa</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>GET /restaurants</code></td>
+          <td>Backend API</td>
+          <td>Trả danh sách nhà hàng từ bảng <code>restaurants</code>.</td>
+        </tr>
+        <tr>
+          <td><code>q</code></td>
+          <td>Query param</td>
+          <td>Từ khóa tìm kiếm theo tên, tên Nhật, địa chỉ, quận, thành phố, category.</td>
+        </tr>
+        <tr>
+          <td><code>category</code></td>
+          <td>Query param</td>
+          <td>Lọc nhà hàng theo danh mục, ví dụ <code>sushi</code>, <code>ramen</code>.</td>
+        </tr>
+        <tr>
+          <td><code>sort</code></td>
+          <td>Query param</td>
+          <td>Sắp xếp theo <code>rating</code> hoặc <code>name</code>.</td>
+        </tr>
+        <tr>
+          <td><code>RestaurantResponse</code></td>
+          <td>TypeScript type</td>
+          <td>Response camelCase cho frontend: <code>nameJp</code>, <code>imageUrl</code>, <code>hasJapaneseSupport</code>.</td>
+        </tr>
+        <tr>
+          <td><code>maplibre-gl</code></td>
+          <td>Frontend dependency</td>
+          <td>Thư viện WebGL để hiển thị bản đồ MapLibre/OpenFreeMap.</td>
+        </tr>
+        <tr>
+          <td><code>API_BASE_URL</code></td>
+          <td>Frontend constant</td>
+          <td>Lấy từ <code>NEXT_PUBLIC_API_BASE_URL</code>, mặc định <code>http://localhost:3001</code>.</td>
+        </tr>
+        <tr>
+          <td><code>MAP_STYLE_URL</code></td>
+          <td>Frontend constant</td>
+          <td>Style OpenFreeMap: <code>https://tiles.openfreemap.org/styles/liberty</code>.</td>
+        </tr>
+        <tr>
+          <td><code>Restaurant</code></td>
+          <td>Frontend type</td>
+          <td>Kiểu dữ liệu nhà hàng dùng trong màn Search.</td>
+        </tr>
+        <tr>
+          <td><code>featureCollection</code></td>
+          <td>Frontend computed data</td>
+          <td>Chuyển danh sách nhà hàng thành GeoJSON để MapLibre render marker/cluster.</td>
+        </tr>
+        <tr>
+          <td><code>focusRestaurant()</code></td>
+          <td>Frontend function</td>
+          <td>Khi click card/marker, gọi <code>map.flyTo()</code>, set active restaurant và mở popup.</td>
+        </tr>
+        <tr>
+          <td><code>FALLBACK_RESTAURANTS</code></td>
+          <td>Frontend fallback data</td>
+          <td>Dữ liệu demo dùng khi backend API tạm thời không tải được, giúp màn Search vẫn demo được.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>6. Kiểm thử</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Lệnh / kiểm tra</th>
+          <th>Kết quả</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>cd backend && npm.cmd run build</code></td>
+          <td>Pass.</td>
+          <td>Nest build thành công.</td>
+        </tr>
+        <tr>
+          <td><code>cd frontend && npm.cmd run build</code></td>
+          <td>Pass.</td>
+          <td>Lần đầu bị chặn Google Fonts do sandbox/network; chạy lại với quyền mạng thì build Next.js pass.</td>
+        </tr>
+        <tr>
+          <td><code>cd frontend && npm.cmd run lint</code></td>
+          <td>Fail do lỗi cũ ngoài phần map.</td>
+          <td><code>SearchClient.tsx</code> không còn lỗi lint; lỗi còn lại nằm ở login/register/profile/Header và warning UIUX/home.</td>
+        </tr>
+        <tr>
+          <td><code>cd frontend && npm.cmd run dev</code></td>
+          <td>Ready.</td>
+          <td>Next dev server báo <code>http://localhost:3000</code>. Lệnh timeout khi chạy qua Codex vì đây là server lâu dài.</td>
+        </tr>
+        <tr>
+          <td><code>cd backend && npm.cmd run start:dev</code></td>
+          <td>Ready.</td>
+          <td>Nest map route <code>GET /restaurants</code> và báo <code>http://localhost:3001</code>. Lệnh timeout khi chạy qua Codex vì đây là server lâu dài.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>7. Version 2 - Làm bản đồ sát Google Maps hơn</h2>
+    <div class="note">
+      <strong>Mục tiêu V2:</strong> nâng cảm giác bản đồ chuyên nghiệp hơn mà vẫn giữ Plan A:
+      MapLibre + OpenFreeMap, không cần API key. V2 tập trung vào UI/UX bản đồ:
+      marker dạng pin, hover/click sync, popup card giàu thông tin, dữ liệu demo dày hơn.
+    </div>
+    <h3>7.1. Kế hoạch V2</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Hạng mục</th>
+          <th>Dự kiến thay đổi</th>
+          <th>Lý do</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Dữ liệu demo fallback</td>
+          <td>Tăng số nhà hàng demo quanh TP.HCM.</td>
+          <td>Map có nhiều marker/cluster hơn, nhìn giống trải nghiệm Google Maps hơn khi API backend chưa có đủ dữ liệu.</td>
+        </tr>
+        <tr>
+          <td>Marker</td>
+          <td>Chuyển marker điểm đơn từ circle layer sang symbol marker dạng pin SVG.</td>
+          <td>Marker dạng pin trực quan và gần Google Maps hơn.</td>
+        </tr>
+        <tr>
+          <td>Popup</td>
+          <td>Nâng popup thành mini card có tên, rating, địa chỉ, tag và nút đặt bàn.</td>
+          <td>Người dùng xem thông tin nhanh ngay trên map.</td>
+        </tr>
+        <tr>
+          <td>Tương tác</td>
+          <td>Hover card highlight marker, click marker scroll tới card, click card flyTo marker.</td>
+          <td>Tăng cảm giác đồng bộ list-map như Google Maps.</td>
+        </tr>
+        <tr>
+          <td>CSS</td>
+          <td>Thêm style pin, marker active, popup, hover state và floating panel.</td>
+          <td>Làm giao diện sắc nét hơn, giảm cảm giác placeholder.</td>
+        </tr>
+      </tbody>
+    </table>
+    <h3>7.2. File sửa đổi V2</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Thay đổi V2</th>
+          <th>Ghi chú so với V1</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>frontend/app/(search)/search/SearchClient.tsx</code></td>
+          <td>
+            Đổi nền map mặc định sang <code>CARTO Voyager</code>, tăng fallback demo lên nhiều nhà hàng,
+            thêm marker pin SVG, marker active màu xanh, hover card đồng bộ marker, popup giàu thông tin hơn.
+          </td>
+          <td>
+            V1 dùng OpenFreeMap Liberty và marker circle/symbol đơn giản hơn. V2 nhìn giống Google Maps hơn:
+            sáng, nhiều nhãn đường/POI hơn, marker dạng pin đỏ và active xanh.
+          </td>
+        </tr>
+        <tr>
+          <td><code>frontend/app/globals.css</code></td>
+          <td>
+            Polish map control, floating count, selected card, popup card, popup image/tag/button.
+          </td>
+          <td>
+            V1 đủ dùng để demo map; V2 ưu tiên cảm giác chuyên nghiệp và giống sản phẩm thật hơn.
+          </td>
+        </tr>
+        <tr>
+          <td><code>CHANGELOG_MAP_PLAN_A.html</code></td>
+          <td>
+            Thêm section Version 2, danh sách file sửa, biến/hàm mới, và kết quả kiểm thử.
+          </td>
+          <td>
+            File này dùng để theo dõi rõ V1/V2, tránh lẫn các thay đổi.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>7.3. Biến, hàm, class mới/cập nhật trong V2</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Tên</th>
+          <th>Loại</th>
+          <th>Ý nghĩa</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>MAP_STYLE_URL</code></td>
+          <td>Frontend constant</td>
+          <td>
+            Đổi default sang <code>https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json</code>.
+            Vẫn có thể override bằng <code>NEXT_PUBLIC_MAP_STYLE_URL</code>.
+          </td>
+        </tr>
+        <tr>
+          <td><code>MIN_DEMO_RESTAURANTS</code></td>
+          <td>Frontend constant</td>
+          <td>
+            Số lượng tối thiểu để màn Search có nhiều marker khi database local mới có ít nhà hàng.
+          </td>
+        </tr>
+        <tr>
+          <td><code>withDemoRestaurants()</code></td>
+          <td>Frontend helper</td>
+          <td>
+            Nếu API trả về ít dữ liệu, tự ghép thêm nhà hàng demo quanh TP.HCM để bản đồ nhìn dày hơn.
+          </td>
+        </tr>
+        <tr>
+          <td><code>createPinSvg()</code>, <code>svgToDataUrl()</code>, <code>loadMapImage()</code></td>
+          <td>Frontend map helpers</td>
+          <td>
+            Tạo icon pin SVG và nạp vào MapLibre. <code>loadMapImage()</code> dùng Promise API đúng với version MapLibre hiện tại.
+          </td>
+        </tr>
+        <tr>
+          <td><code>hoveredRestaurantId</code>, <code>selectedMarkerId</code></td>
+          <td>React state/computed state</td>
+          <td>
+            Đồng bộ hover card/marker và active marker. Marker được hover hoặc đang chọn sẽ chuyển sang pin xanh.
+          </td>
+        </tr>
+        <tr>
+          <td><code>onHover</code></td>
+          <td>Prop của <code>RestaurantCard</code></td>
+          <td>
+            Khi rê chuột/focus vào card, map biết card nào đang được trỏ tới để highlight marker tương ứng.
+          </td>
+        </tr>
+        <tr>
+          <td><code>restaurant-pin</code>, <code>restaurant-pin-active</code></td>
+          <td>MapLibre image id</td>
+          <td>
+            Hai icon marker: pin đỏ mặc định và pin xanh khi active/hover.
+          </td>
+        </tr>
+        <tr>
+          <td><code>.map-popup-image</code>, <code>.map-popup-address</code>, <code>.map-popup-tags</code>, <code>.map-popup-link</code></td>
+          <td>CSS class</td>
+          <td>
+            Các style mới cho popup mini card trên bản đồ.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>7.4. Kiểm thử V2</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Lệnh / kiểm tra</th>
+          <th>Kết quả</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>cd frontend && npm.cmd run build</code></td>
+          <td>Pass.</td>
+          <td>Next build, TypeScript, static generation đều thành công sau V2.</td>
+        </tr>
+        <tr>
+          <td><code>cd frontend && npm.cmd run lint</code></td>
+          <td>Fail do lỗi cũ ngoài phần map.</td>
+          <td>
+            Không thấy lỗi mới từ <code>SearchClient.tsx</code>. Lỗi còn lại nằm ở login/register/profile/Header
+            và một số warning cũ trong UIUX/home.
+          </td>
+        </tr>
+        <tr>
+          <td><code>GET http://localhost:3000/search</code></td>
+          <td>Pass - HTTP 200.</td>
+          <td>Frontend dev server đang phục vụ màn Search ở local.</td>
+        </tr>
+        <tr>
+          <td><code>GET http://localhost:3001/restaurants</code></td>
+          <td>Pass - HTTP 200.</td>
+          <td>Backend restaurants API trả response thành công ở local.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>7.5. Lưu ý V2</h3>
+    <div class="note">
+      V2 không chỉnh backend và không chỉnh database. Nếu database local chỉ có vài nhà hàng,
+      frontend sẽ tự bổ sung dữ liệu demo trên màn Search để bản đồ nhìn dày marker hơn.
+      Đây là dữ liệu phục vụ demo giao diện, không phải dữ liệu thật trong PostgreSQL.
+    </div>
+
+    <h2>8. Version 3 - Tăng màu sắc và độ sống động cho bản đồ</h2>
+    <div class="note">
+      <strong>Mục tiêu V3:</strong> chỉ nâng UI/UX của màn Search Map, không chỉnh backend,
+      không chỉnh database, không động tới auth/booking/profile/header. V3 làm bản đồ có nhiều màu
+      và cảm giác gần Google Maps hơn bằng marker theo loại nhà hàng, halo màu, legend nổi và accent màu trên card.
+    </div>
+
+    <h3>8.1. File sửa đổi V3</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Thay đổi V3</th>
+          <th>Ghi chú phạm vi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>frontend/app/(search)/search/SearchClient.tsx</code></td>
+          <td>
+            Thêm màu riêng cho từng category, marker pin có chữ viết tắt, layer halo quanh marker,
+            legend category nổi trên map, filter chip có chấm màu, card nhà hàng có accent màu.
+          </td>
+          <td>Chỉ thuộc màn Search Map.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/app/globals.css</code></td>
+          <td>
+            Thêm style cho <code>.map-category-legend</code>, <code>.map-category-pill</code>,
+            <code>.map-color-wash</code>, accent card, category tag, popup category color.
+          </td>
+          <td>Chỉ thêm/override CSS phục vụ map/search.</td>
+        </tr>
+        <tr>
+          <td><code>CHANGELOG_MAP_PLAN_A.html</code></td>
+          <td>Ghi section Version 3 và kết quả kiểm thử.</td>
+          <td>File tài liệu theo dõi thay đổi.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>8.2. Biến, hàm, layer mới/cập nhật trong V3</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Tên</th>
+          <th>Loại</th>
+          <th>Ý nghĩa</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>CATEGORY_STYLES</code>, <code>DEFAULT_CATEGORY_STYLE</code></td>
+          <td>Frontend constants</td>
+          <td>Màu, viền, nền chấm và chữ viết tắt cho từng loại nhà hàng.</td>
+        </tr>
+        <tr>
+          <td><code>getCategoryStyle()</code></td>
+          <td>Frontend helper</td>
+          <td>Lấy style màu theo category để dùng cho marker, card, popup và legend.</td>
+        </tr>
+        <tr>
+          <td><code>getCategoryColorExpression()</code></td>
+          <td>MapLibre expression helper</td>
+          <td>Đổi màu layer MapLibre theo <code>category</code>.</td>
+        </tr>
+        <tr>
+          <td><code>getCategoryPinExpression()</code></td>
+          <td>MapLibre expression helper</td>
+          <td>Chọn icon marker theo <code>category</code>, riêng marker đang hover/active dùng pin xanh.</td>
+        </tr>
+        <tr>
+          <td><code>restaurant-halo</code></td>
+          <td>MapLibre circle layer</td>
+          <td>Lớp glow/halo màu nằm dưới marker để map nhìn nổi và sinh động hơn.</td>
+        </tr>
+        <tr>
+          <td><code>categoryLegend</code></td>
+          <td>React computed data</td>
+          <td>Tạo danh sách category đang có kết quả để render legend nổi trên map.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>8.3. Kiểm thử V3</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Lệnh / kiểm tra</th>
+          <th>Kết quả</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>cd frontend && npm.cmd run build</code></td>
+          <td>Pass.</td>
+          <td>Next build và TypeScript pass sau khi thêm category marker/halo/legend.</td>
+        </tr>
+        <tr>
+          <td><code>cd frontend && npm.cmd run lint</code></td>
+          <td>Fail do lỗi cũ ngoài phần map.</td>
+          <td>
+            Không thấy lỗi mới từ <code>SearchClient.tsx</code>. Lỗi còn lại vẫn ở login/register/profile/Header,
+            UIUX và home như các lần trước.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>8.4. Lưu ý V3</h3>
+    <div class="note">
+      V3 không thêm package mới, không chỉnh API backend, không chỉnh SQL. Nếu merge nhóm,
+      phần cần chú ý vẫn chỉ là <code>SearchClient.tsx</code>, <code>globals.css</code> và file changelog này.
+    </div>
+
+    <h3>8.5. Hotfix V3.1 - Sửa expression MapLibre halo</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Vấn đề</th>
+          <th>Cách sửa</th>
+          <th>Kiểm thử</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            MapLibre báo lỗi runtime ở <code>restaurant-halo</code> vì <code>['zoom']</code>
+            bị đặt lồng trong <code>['case']</code> cho <code>circle-radius</code> và <code>circle-opacity</code>.
+          </td>
+          <td>
+            Đổi expression thành dạng <code>['interpolate', ['linear'], ['zoom'], ...]</code> ở tầng đầu,
+            còn <code>['case']</code> chọn marker active nằm trong từng mốc zoom.
+          </td>
+          <td><code>cd frontend && npm.cmd run build</code>: Pass.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>9. Version 4 - Toggle bản đồ / vệ tinh ít rủi ro chi phí</h2>
+    <div class="note">
+      <strong>Mục tiêu V4:</strong> thêm chế độ vệ tinh cho màn Search mà không dùng Google billing,
+      không thêm package mới, không đổi backend, không đổi database. Cách làm là giữ MapLibre hiện tại,
+      thêm raster layer ảnh vệ tinh Esri và bật/tắt layer này bằng UI.
+    </div>
+
+    <h3>9.1. File sửa đổi V4</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Thay đổi V4</th>
+          <th>Lý do chọn cách này</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>frontend/app/(search)/search/SearchClient.tsx</code></td>
+          <td>
+            Thêm <code>MapViewMode</code>, <code>MAP_VIEW_OPTIONS</code>,
+            <code>SATELLITE_SOURCE_ID</code>, <code>SATELLITE_LAYER_ID</code>,
+            <code>addSatelliteLayer()</code>, <code>applyMapViewMode()</code>,
+            state <code>mapViewMode</code> và UI toggle <code>Bản đồ / Vệ tinh</code>.
+          </td>
+          <td>
+            Không dùng <code>map.setStyle()</code> để tránh mất marker/source/layer hiện có.
+            Chỉ bật/tắt raster layer nên ít rủi ro runtime hơn.
+          </td>
+        </tr>
+        <tr>
+          <td><code>frontend/app/globals.css</code></td>
+          <td>
+            Thêm CSS cho <code>.map-view-toggle</code>, <code>.map-view-toggle__btn</code>,
+            trạng thái <code>.map-section--satellite</code> và chỉnh responsive bottom panel.
+          </td>
+          <td>Toggle nằm trong màn Search Map, không ảnh hưởng các page khác.</td>
+        </tr>
+        <tr>
+          <td><code>CHANGELOG_MAP_PLAN_A.html</code></td>
+          <td>Ghi section Version 4 và kết quả kiểm thử.</td>
+          <td>Tiếp tục phân tách thay đổi theo version để dễ merge/review.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>9.2. Nguồn tile vệ tinh</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Nguồn</th>
+          <th>URL</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Esri World Imagery</td>
+          <td><code>https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}</code></td>
+          <td>
+            Dùng như raster tile layer trong MapLibre. Có attribution trong source:
+            <code>Tiles © Esri, Maxar, Earthstar Geographics, and the GIS User Community</code>.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>9.3. Kiểm thử V4</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Lệnh / kiểm tra</th>
+          <th>Kết quả</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>cd frontend && npm.cmd run build</code></td>
+          <td>Pass.</td>
+          <td>Next build và TypeScript pass sau khi thêm satellite raster layer/toggle.</td>
+        </tr>
+        <tr>
+          <td><code>GET http://localhost:3000/search</code></td>
+          <td>Pass - HTTP 200.</td>
+          <td>Smoke test màn Search sau V4 trả về thành công.</td>
+        </tr>
+        <tr>
+          <td><code>cd frontend && npm.cmd run lint</code></td>
+          <td>Fail do lỗi cũ ngoài phần map.</td>
+          <td>
+            Không thấy lỗi mới từ <code>SearchClient.tsx</code>. Lỗi vẫn nằm ở login/register/profile/Header,
+            UIUX và home như các version trước.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>10. Version 5 - Hoàn thiện cụm Search/API/Filter theo checklist #3 #4 #5 #6</h2>
+    <div class="note">
+      <strong>Mục tiêu V5:</strong> khóa lại cụm việc người phụ trách map/search cần làm trước:
+      API tìm kiếm theo từ khóa/vị trí, UI search gọi API đúng tham số, logic lọc kết quả rõ ràng,
+      và checklist UAT cho luồng search/map. V5 không sửa database, không thêm bảng, không đụng auth,
+      review, booking, profile hoặc restaurant detail.
+    </div>
+
+    <h3>10.1. Phạm vi checklist</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Checklist</th>
+          <th>Trạng thái sau V5</th>
+          <th>Ghi chú phạm vi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>#3</code> API tìm kiếm nhà hàng theo từ khóa/vị trí</td>
+          <td>Đã bổ sung cơ bản.</td>
+          <td><code>GET /restaurants</code> nhận thêm <code>location</code>, vẫn dùng schema <code>restaurants</code> hiện có.</td>
+        </tr>
+        <tr>
+          <td><code>#4</code> Kết nối UI thanh tìm kiếm với API Search</td>
+          <td>Đã làm rõ contract.</td>
+          <td>Frontend gọi API với <code>q</code>, <code>category</code>, <code>location</code>, <code>sort</code>.</td>
+        </tr>
+        <tr>
+          <td><code>#5</code> Xử lý logic lọc kết quả</td>
+          <td>Đã bổ sung lớp lọc an toàn ở frontend.</td>
+          <td>Frontend vẫn lọc lại theo category/location/q/sort để fallback demo không làm sai kết quả.</td>
+        </tr>
+        <tr>
+          <td><code>#6</code> UAT luồng tìm kiếm</td>
+          <td>Đã thêm checklist test tay.</td>
+          <td>Build đã pass; UAT tương tác cần chạy trên browser local của từng máy.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>10.2. File sửa đổi V5</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Thay đổi</th>
+          <th>Rủi ro merge</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>backend/src/restaurant/restaurant.service.ts</code></td>
+          <td>
+            Thêm option <code>location</code>, tìm trong <code>address</code>, <code>district</code>, <code>city</code>.
+            Category đổi sang so sánh <code>LOWER(...)</code> để bớt lệch chữ hoa/thường.
+          </td>
+          <td>Thấp - chỉ nằm trong module restaurant search, không sửa DB.</td>
+        </tr>
+        <tr>
+          <td><code>backend/src/restaurant/restaurant.controller.ts</code></td>
+          <td>
+            Thêm Swagger/query param <code>location</code> cho <code>GET /restaurants</code>.
+          </td>
+          <td>Thấp - không ảnh hưởng auth/user/review.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/app/(search)/search/SearchClient.tsx</code></td>
+          <td>
+            Thêm filter khu vực, URL builder cho search page, API URL builder cho backend,
+            sort theo URL, và input search dùng <code>ref</code> để tránh lỗi lint <code>set-state-in-effect</code>.
+          </td>
+          <td>Trung bình - đây là màn search/map chính nên cần UAT kỹ.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/app/globals.css</code></td>
+          <td>
+            Thêm style scoped cho <code>.location-filter</code>, <code>.location-filter__select</code>,
+            <code>.sidebar-sort</code>, <code>.sidebar__results-tools</code>.
+          </td>
+          <td>Thấp - class mới chỉ dùng trong search sidebar.</td>
+        </tr>
+        <tr>
+          <td><code>CHANGELOG_MAP_PLAN_A.html</code></td>
+          <td>Thêm Version 5 để tách rõ thay đổi checklist #3 #4 #5 #6.</td>
+          <td>Không ảnh hưởng runtime.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>10.3. API/biến/hàm mới hoặc cập nhật</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Tên</th>
+          <th>Loại</th>
+          <th>Ý nghĩa</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>GET /restaurants?location=...</code></td>
+          <td>Backend API param</td>
+          <td>Lọc theo vị trí bằng <code>address</code>, <code>district</code>, <code>city</code>.</td>
+        </tr>
+        <tr>
+          <td><code>SearchSort</code></td>
+          <td>Frontend type</td>
+          <td>Giới hạn sort chỉ còn <code>rating</code> hoặc <code>name</code>.</td>
+        </tr>
+        <tr>
+          <td><code>LOCATION_OPTIONS</code>, <code>LOCATION_LABELS</code></td>
+          <td>Frontend constants</td>
+          <td>Danh sách khu vực HCM để lọc nhanh trên sidebar.</td>
+        </tr>
+        <tr>
+          <td><code>SearchUrlOptions</code></td>
+          <td>Frontend type</td>
+          <td>Chuẩn hóa tham số dùng chung cho URL frontend và API backend.</td>
+        </tr>
+        <tr>
+          <td><code>getSearchSort()</code></td>
+          <td>Frontend helper</td>
+          <td>Chặn sort param lạ, mặc định về <code>rating</code>.</td>
+        </tr>
+        <tr>
+          <td><code>buildSearchUrl()</code></td>
+          <td>Frontend helper</td>
+          <td>Tạo URL <code>/search?q=&filter=&location=&sort=</code> cho router.</td>
+        </tr>
+        <tr>
+          <td><code>buildRestaurantsApiUrl()</code></td>
+          <td>Frontend helper</td>
+          <td>Tạo URL API <code>/restaurants?q=&category=&location=&sort=</code>.</td>
+        </tr>
+        <tr>
+          <td><code>inputRef</code></td>
+          <td>React ref</td>
+          <td>Đọc giá trị ô search khi bấm tìm kiếm, không cần sync state trong effect.</td>
+        </tr>
+        <tr>
+          <td><code>activeLocation</code>, <code>activeLocationLabel</code></td>
+          <td>Frontend state derived from URL</td>
+          <td>Đọc khu vực hiện tại từ URL và hiển thị ở phần số lượng kết quả.</td>
+        </tr>
+        <tr>
+          <td><code>handleLocationFilter()</code>, <code>handleSortChange()</code></td>
+          <td>Frontend handlers</td>
+          <td>Cập nhật URL, reset marker/popup đang chọn, rồi để API refetch theo tham số mới.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>10.4. Kiểm thử V5</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Lệnh / kiểm tra</th>
+          <th>Kết quả</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>cd backend && npm.cmd run build</code></td>
+          <td>Pass.</td>
+          <td>Nest build thành công sau khi thêm <code>location</code>.</td>
+        </tr>
+        <tr>
+          <td><code>cd frontend && npm.cmd run build</code></td>
+          <td>Pass.</td>
+          <td>Next build, TypeScript và static generation pass sau V5.</td>
+        </tr>
+        <tr>
+          <td><code>cd frontend && npm.cmd run lint</code></td>
+          <td>Fail do lỗi cũ ngoài Search.</td>
+          <td>
+            Không còn lỗi mới trong <code>SearchClient.tsx</code>. Lỗi còn lại nằm ở
+            <code>login/page.tsx</code>, <code>register/page.tsx</code>, <code>components/Header.tsx</code>
+            và một số warning ngoài scope.
+          </td>
+        </tr>
+        <tr>
+          <td><code>cd backend && npm.cmd run lint</code></td>
+          <td>Fail do lỗi cũ ngoài restaurant.</td>
+          <td>
+            Lỗi còn lại nằm ở spec/auth/user/main. Module restaurant không xuất hiện trong danh sách lỗi lint.
+            Lưu ý script backend hiện có <code>--fix</code>, nên khi chạy lint có thể format lại file.
+          </td>
+        </tr>
+        <tr>
+          <td><code>rg "setInputValue|location-filter|buildRestaurantsApiUrl"</code></td>
+          <td>Pass.</td>
+          <td>Xác nhận đã bỏ <code>setInputValue</code> và các hook mới chỉ nằm trong search/map.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>10.5. Checklist UAT tay cho V5</h3>
+    <ul>
+      <li>Mở <code>http://localhost:3000/search</code>, kiểm tra map render không blank.</li>
+      <li>Nhập <code>sushi</code> rồi bấm <strong>Tìm kiếm</strong>, URL có <code>?q=sushi</code>, danh sách/map chỉ còn kết quả liên quan.</li>
+      <li>Bấm chip <strong>Ramen</strong>, URL có <code>filter=ramen</code>, API gọi với <code>category=ramen</code>.</li>
+      <li>Đổi <strong>Khu vực</strong> sang <code>Quận 1</code>, URL có <code>location=Quận+1</code>, danh sách/map lọc theo địa chỉ/quận/thành phố.</li>
+      <li>Đổi sort sang <strong>Tên A-Z</strong>, URL có <code>sort=name</code>, danh sách sắp xếp theo tên.</li>
+      <li>Kết hợp <code>q=sushi</code> + category + location để kiểm tra không bị lẫn category/khu vực khác.</li>
+      <li>Click card nhà hàng: map <code>flyTo</code>, mở popup, marker active đổi trạng thái.</li>
+      <li>Click marker trên map: sidebar scroll tới card tương ứng.</li>
+      <li>Click cluster: map zoom vào cụm marker.</li>
+      <li>Bật/tắt <strong>Bản đồ / Vệ tinh</strong>: marker và popup vẫn còn, không reload mất layer.</li>
+      <li>Tắt backend tạm thời: frontend hiển thị warning và dùng dữ liệu demo fallback, search/filter vẫn hoạt động.</li>
+    </ul>
+
+    <h2>11. Version 6 - Cụm Restaurant Detail theo checklist #9 #8</h2>
+    <div class="note">
+      <strong>Mục tiêu V6:</strong> làm tiếp cụm detail sau search/map:
+      backend có API chi tiết nhà hàng, frontend màn <code>/restaurant/[id]</code> lấy dữ liệu thật từ API.
+      V6 không sửa database, không thêm bảng, không làm review API, không đổi booking API.
+      Menu/review/booking trong màn detail vẫn giữ dữ liệu local/mock để tránh kéo sang cụm khác.
+    </div>
+
+    <h3>11.1. Phạm vi checklist</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Checklist</th>
+          <th>Trạng thái sau V6</th>
+          <th>Ghi chú phạm vi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>#9</code> API lấy thông tin chi tiết nhà hàng</td>
+          <td>Đã bổ sung.</td>
+          <td><code>GET /restaurants/:id</code> đọc từ bảng <code>restaurants</code> hiện có, không đổi schema.</td>
+        </tr>
+        <tr>
+          <td><code>#8</code> UI chi tiết nhà hàng lấy API thật</td>
+          <td>Đã nối API cơ bản.</td>
+          <td>Màn detail dùng API cho tên, tên JP, rating, địa chỉ, mô tả, phone, ảnh, tọa độ và hỗ trợ tiếng Nhật.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>11.2. File sửa đổi V6</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Thay đổi</th>
+          <th>Rủi ro merge</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>backend/src/restaurant/restaurant.service.ts</code></td>
+          <td>
+            Thêm <code>findOne(id)</code>, dùng <code>restaurantRepository.findOne()</code>,
+            không thấy dữ liệu thì trả <code>NotFoundException</code>.
+          </td>
+          <td>Thấp - chỉ thêm method đọc dữ liệu, không sửa DB.</td>
+        </tr>
+        <tr>
+          <td><code>backend/src/restaurant/restaurant.controller.ts</code></td>
+          <td>
+            Thêm endpoint <code>GET /restaurants/:id</code>, dùng <code>ParseIntPipe</code> để id là số hợp lệ,
+            thêm Swagger <code>ApiParam</code>.
+          </td>
+          <td>Thấp - route list <code>GET /restaurants</code> vẫn giữ nguyên.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/app/(booking)/restaurant/[id]/RestaurantDetailClient.tsx</code></td>
+          <td>
+            Thêm <code>ApiRestaurant</code>, <code>RestaurantDetail</code>,
+            <code>buildRestaurantDetailUrl()</code>, <code>normalizeRestaurantDetail()</code>,
+            state loading/error, fetch API <code>/restaurants/:id</code>, và fallback demo khi API lỗi.
+          </td>
+          <td>Trung bình - màn detail có booking/menu/review local nên cần test tương tác.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/app/globals.css</code></td>
+          <td>
+            Thêm <code>.detail-api-status</code> và <code>.detail-api-status--warning</code> cho trạng thái loading/fallback API.
+          </td>
+          <td>Thấp - class mới chỉ dùng trong detail page.</td>
+        </tr>
+        <tr>
+          <td><code>CHANGELOG_MAP_PLAN_A.html</code></td>
+          <td>Thêm Version 6 để tách riêng cụm #9 #8.</td>
+          <td>Không ảnh hưởng runtime.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>11.3. API/biến/hàm mới hoặc cập nhật</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Tên</th>
+          <th>Loại</th>
+          <th>Ý nghĩa</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>GET /restaurants/:id</code></td>
+          <td>Backend API</td>
+          <td>Trả một nhà hàng theo id, response dùng cùng contract camelCase với list/search.</td>
+        </tr>
+        <tr>
+          <td><code>RestaurantService.findOne()</code></td>
+          <td>Backend method</td>
+          <td>Đọc restaurant theo id, nếu không tồn tại trả 404.</td>
+        </tr>
+        <tr>
+          <td><code>ApiRestaurant</code></td>
+          <td>Frontend type</td>
+          <td>Mô tả response thô từ backend.</td>
+        </tr>
+        <tr>
+          <td><code>RestaurantDetail</code></td>
+          <td>Frontend type</td>
+          <td>Mở rộng dữ liệu API với các field UI local như <code>hours</code>, <code>languages</code>, <code>tags</code>, <code>amenities</code>.</td>
+        </tr>
+        <tr>
+          <td><code>FALLBACK_RESTAURANT</code></td>
+          <td>Frontend fallback data</td>
+          <td>Dữ liệu demo dùng khi backend tắt, id không tồn tại, hoặc API lỗi.</td>
+        </tr>
+        <tr>
+          <td><code>buildRestaurantDetailUrl()</code></td>
+          <td>Frontend helper</td>
+          <td>Tạo URL <code>http://localhost:3001/restaurants/:id</code> hoặc theo <code>NEXT_PUBLIC_API_BASE_URL</code>.</td>
+        </tr>
+        <tr>
+          <td><code>normalizeRestaurantDetail()</code></td>
+          <td>Frontend helper</td>
+          <td>Chuẩn hóa dữ liệu API, thêm tag/language mặc định, bảo vệ thiếu tọa độ/phone/image.</td>
+        </tr>
+        <tr>
+          <td><code>getMapsQuery()</code></td>
+          <td>Frontend helper</td>
+          <td>Mở Google Maps theo tọa độ nếu có, fallback sang địa chỉ nếu thiếu tọa độ.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>11.4. Kiểm thử V6</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Lệnh / kiểm tra</th>
+          <th>Kết quả</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>cd backend && npm.cmd run build</code></td>
+          <td>Pass.</td>
+          <td>Nest build thành công sau khi thêm <code>GET /restaurants/:id</code>.</td>
+        </tr>
+        <tr>
+          <td><code>cd frontend && npm.cmd run build</code></td>
+          <td>Pass.</td>
+          <td>Next build, TypeScript và route <code>/restaurant/[id]</code> pass.</td>
+        </tr>
+        <tr>
+          <td><code>cd frontend && npm.cmd run lint</code></td>
+          <td>Fail do lỗi cũ ngoài Detail/Search.</td>
+          <td>
+            Không thấy lỗi mới trong <code>RestaurantDetailClient.tsx</code>.
+            Lỗi còn lại vẫn nằm ở <code>login/page.tsx</code>, <code>register/page.tsx</code>,
+            <code>components/Header.tsx</code> và warning ngoài scope.
+          </td>
+        </tr>
+        <tr>
+          <td><code>cd backend && npm.cmd run lint</code></td>
+          <td>Fail do lỗi cũ ngoài restaurant.</td>
+          <td>
+            Lỗi còn lại vẫn nằm ở spec/auth/user/main. Module restaurant không xuất hiện trong danh sách lỗi lint.
+          </td>
+        </tr>
+        <tr>
+          <td><code>rg "MOCK_RESTAURANT"</code> trong <code>RestaurantDetailClient.tsx</code></td>
+          <td>Pass.</td>
+          <td>Màn detail không còn đọc trực tiếp object mock cũ; dùng state <code>restaurant</code> từ API/fallback.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>11.5. Checklist UAT tay cho V6</h3>
+    <ul>
+      <li>Mở Swagger, kiểm tra có endpoint <code>GET /restaurants/{id}</code>.</li>
+      <li>Gọi <code>GET http://localhost:3001/restaurants/1</code>, nếu id tồn tại phải trả 200 và dữ liệu restaurant.</li>
+      <li>Gọi <code>GET http://localhost:3001/restaurants/999999</code>, phải trả 404.</li>
+      <li>Từ màn search, click nút đặt bàn/card vào detail, URL sang <code>/restaurant/&lt;id&gt;</code>.</li>
+      <li>Ở detail, tên, tên JP, rating, địa chỉ, mô tả, phone, ảnh hero phải lấy theo API nếu backend trả dữ liệu.</li>
+      <li>Tắt backend hoặc mở id không tồn tại: detail phải hiện warning và fallback demo, không trắng màn.</li>
+      <li>Bấm <strong>Xem bản đồ</strong>: mở Google Maps theo tọa độ/address của restaurant hiện tại.</li>
+      <li>Test menu search/category trong detail vẫn hoạt động như trước.</li>
+      <li>Test mở/đóng modal đặt bàn, submit đặt bàn, success modal vẫn hoạt động như trước.</li>
+    </ul>
+
+    <h2>12. Version 7 - Cụm User Update và Language Switch theo checklist #16 #17</h2>
+    <div class="note">
+      <strong>Mục tiêu V7:</strong> hoàn thiện hai checklist ít phụ thuộc DB schema:
+      API cập nhật thông tin người dùng và chức năng chuyển đổi ngôn ngữ cơ bản.
+      V7 không thêm bảng, không sửa cấu trúc DB, không làm Review/Rating. Checklist <code>#10</code> và <code>#11</code>
+      vẫn để cuối đúng theo quyết định hiện tại.
+    </div>
+
+    <h3>12.1. Phạm vi checklist</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Checklist</th>
+          <th>Trạng thái sau V7</th>
+          <th>Ghi chú phạm vi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>#16</code> API cập nhật thông tin người dùng</td>
+          <td>Đã bổ sung cơ bản.</td>
+          <td><code>PATCH /user/:id</code> cập nhật <code>name</code> và <code>email</code>, validate dữ liệu, không trả password.</td>
+        </tr>
+        <tr>
+          <td><code>#17</code> Function chuyển đổi ngôn ngữ</td>
+          <td>Đã bổ sung cơ bản.</td>
+          <td>Header, Search và Restaurant Detail dùng chung state ngôn ngữ <code>vi/ja</code> lưu trong <code>localStorage</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>12.2. File thêm/sửa V7</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Thay đổi</th>
+          <th>Rủi ro merge</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>backend/src/user/dto/update-user.dto.ts</code></td>
+          <td>Thêm DTO cho update user: <code>name?</code>, <code>email?</code>, validate email, độ dài và tên không rỗng.</td>
+          <td>Thấp - chỉ áp dụng cho endpoint update user.</td>
+        </tr>
+        <tr>
+          <td><code>backend/src/user/user.service.ts</code></td>
+          <td>Thêm <code>UserResponse</code>, <code>findOne()</code>, <code>update()</code>, <code>toResponse()</code>; chặn email trùng và name toàn khoảng trắng.</td>
+          <td>Trung bình thấp - ảnh hưởng module user, không chạm auth/register/login.</td>
+        </tr>
+        <tr>
+          <td><code>backend/src/user/user.controller.ts</code></td>
+          <td>Thêm Swagger tag/summary, dùng <code>ParseIntPipe</code>, thêm <code>PATCH /user/:id</code>.</td>
+          <td>Thấp - route mới, route cũ <code>GET /user</code> vẫn giữ.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/config/language.ts</code></td>
+          <td>Thêm store ngôn ngữ client-side và bộ copy cho Header/Search/Detail.</td>
+          <td>Thấp - file mới, không đổi routing hay DB/API.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/components/Header.tsx</code></td>
+          <td>Nút <code>VN / JP</code> chuyển ngôn ngữ thật, Header lấy text từ <code>headerCopy</code>.</td>
+          <td>Trung bình thấp - Header là component dùng toàn app nên cần test nhanh mọi màn.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/app/(search)/search/SearchClient.tsx</code></td>
+          <td>Nối Search UI với <code>searchCopy</code>: placeholder, button, kết quả, sort, map toggle, popup/card booking text.</td>
+          <td>Thấp - chỉ đổi text UI, logic search/map giữ nguyên.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/app/(booking)/restaurant/[id]/RestaurantDetailClient.tsx</code></td>
+          <td>Nối Detail UI với <code>detailCopy</code>: nút đặt bàn, menu search, review title, contact, promo, modal booking/success.</td>
+          <td>Thấp - chỉ đổi text UI, API detail và booking local giữ nguyên.</td>
+        </tr>
+        <tr>
+          <td><code>CHANGELOG_MAP_PLAN_A.html</code></td>
+          <td>Thêm Version 7 để tách riêng checklist <code>#16</code> và <code>#17</code>.</td>
+          <td>Không ảnh hưởng runtime.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>12.3. API/biến/hàm mới hoặc cập nhật</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Tên</th>
+          <th>Loại</th>
+          <th>Ý nghĩa</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>PATCH /user/:id</code></td>
+          <td>Backend API</td>
+          <td>Cập nhật <code>name</code> và/hoặc <code>email</code> của user hiện có.</td>
+        </tr>
+        <tr>
+          <td><code>UpdateUserDto</code></td>
+          <td>Backend DTO</td>
+          <td>Định nghĩa dữ liệu update user được phép nhận từ request body.</td>
+        </tr>
+        <tr>
+          <td><code>UserResponse</code></td>
+          <td>Backend type</td>
+          <td>Response user an toàn: có <code>id</code>, <code>email</code>, <code>name</code>, <code>role</code>, trạng thái và timestamp; không có <code>password</code>.</td>
+        </tr>
+        <tr>
+          <td><code>UserService.update()</code></td>
+          <td>Backend method</td>
+          <td>Kiểm tra user tồn tại, normalize email lowercase, chặn email trùng, trim name, rồi save.</td>
+        </tr>
+        <tr>
+          <td><code>AppLanguage</code></td>
+          <td>Frontend type</td>
+          <td>Giới hạn ngôn ngữ app ở <code>vi</code> hoặc <code>ja</code>.</td>
+        </tr>
+        <tr>
+          <td><code>LANGUAGE_STORAGE_KEY</code></td>
+          <td>Frontend constant</td>
+          <td>Key <code>localStorage</code> dùng để lưu lựa chọn ngôn ngữ: <code>meshimap_language</code>.</td>
+        </tr>
+        <tr>
+          <td><code>useAppLanguage()</code></td>
+          <td>Frontend hook</td>
+          <td>Dùng <code>useSyncExternalStore</code> để đồng bộ ngôn ngữ giữa Header/Search/Detail mà không cần global state library.</td>
+        </tr>
+        <tr>
+          <td><code>setAppLanguage()</code></td>
+          <td>Frontend function</td>
+          <td>Ghi ngôn ngữ vào <code>localStorage</code> và phát event nội bộ để component khác cập nhật ngay.</td>
+        </tr>
+        <tr>
+          <td><code>headerCopy</code>, <code>searchCopy</code>, <code>detailCopy</code></td>
+          <td>Frontend copy dictionary</td>
+          <td>Bộ text tiếng Việt/Nhật cho Header, Search và Detail.</td>
+        </tr>
+        <tr>
+          <td><code>createPopupNode(restaurant, copy)</code></td>
+          <td>Frontend helper cập nhật</td>
+          <td>Popup map dùng text theo ngôn ngữ hiện tại thay vì hard-code tiếng Việt.</td>
+        </tr>
+        <tr>
+          <td><code>RestaurantCard.copy</code></td>
+          <td>Frontend prop mới</td>
+          <td>Card kết quả Search nhận copy để đổi text hỗ trợ tiếng Nhật/phong cách Nhật/nút đặt bàn.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>12.4. Kiểm thử V7</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Lệnh / kiểm tra</th>
+          <th>Kết quả</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>cd backend && npm.cmd run build</code></td>
+          <td>Pass.</td>
+          <td>Nest build thành công sau khi thêm update user API.</td>
+        </tr>
+        <tr>
+          <td><code>cd frontend && npm.cmd run build</code></td>
+          <td>Pass.</td>
+          <td>Next build, TypeScript và các route <code>/search</code>, <code>/restaurant/[id]</code> đều pass.</td>
+        </tr>
+        <tr>
+          <td><code>cd backend && .\node_modules\.bin\eslint.cmd "src/user/**/*.ts"</code></td>
+          <td>Pass.</td>
+          <td>Riêng các file user vừa sửa không còn lỗi lint/prettier.</td>
+        </tr>
+        <tr>
+          <td><code>cd frontend && npm.cmd run lint</code></td>
+          <td>Fail do lỗi cũ ngoài V7.</td>
+          <td>
+            Lỗi còn lại ở <code>login/page.tsx</code> và <code>register/page.tsx</code> do <code>any</code>;
+            warning còn ở <code>WriteReviewClient.tsx</code> và <code>home/page.tsx</code>.
+            Không có lỗi mới trong Header/Search/Detail.
+          </td>
+        </tr>
+        <tr>
+          <td><code>cd backend && .\node_modules\.bin\eslint.cmd "{src,apps,libs,test}/**/*.ts"</code></td>
+          <td>Fail do lỗi cũ ngoài phần user vừa sửa.</td>
+          <td>
+            Lỗi còn lại ở <code>app.controller.spec.ts</code>, <code>auth/*</code>, <code>jwt.strategy.ts</code>, <code>main.ts</code>.
+            Không chạy script <code>npm run lint</code> của backend vì script đó có <code>--fix</code> và có thể tự sửa file ngoài phạm vi.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>12.5. Checklist UAT tay cho V7</h3>
+    <ul>
+      <li>Mở Header, bấm <strong>VN / JP</strong>, kiểm tra nav đổi giữa tiếng Việt và tiếng Nhật.</li>
+      <li>Mở <code>/search</code>, bấm đổi ngôn ngữ, kiểm tra placeholder, nút tìm kiếm, kết quả, sort, map toggle, popup và card đổi text.</li>
+      <li>Mở <code>/restaurant/1</code>, bấm đổi ngôn ngữ, kiểm tra nút đặt bàn, menu search, review title, contact, promo và modal booking đổi text.</li>
+      <li>Reload trang sau khi đổi ngôn ngữ, lựa chọn phải được giữ nhờ <code>localStorage</code>.</li>
+      <li>Swagger kiểm tra có endpoint <code>PATCH /user/{id}</code>.</li>
+      <li>Gọi <code>PATCH /user/1</code> với body <code>{"name":"Test User Updated"}</code>, nếu user tồn tại phải trả user không có password.</li>
+      <li>Gọi <code>PATCH /user/1</code> với email đã tồn tại, phải trả 409.</li>
+      <li>Gọi <code>PATCH /user/1</code> với <code>{"name":"   "}</code>, phải trả 400.</li>
+      <li>Gọi <code>PATCH /user/999999</code>, phải trả 404.</li>
+    </ul>
+
+    <h3>12.6. Việc cố ý chưa làm</h3>
+    <ul>
+      <li>Chưa làm checklist <code>#10</code> thiết kế bảng Reviews/Ratings vì cần thống nhất DB chung.</li>
+      <li>Chưa làm checklist <code>#11</code> API gửi đánh giá/bình luận vì phụ thuộc bảng review/rating.</li>
+      <li>Chưa nối màn Profile với <code>PATCH /user/:id</code>; V7 mới hoàn thiện API update user để giảm rủi ro merge UI profile.</li>
+      <li>Chưa dịch toàn bộ dữ liệu mock như menu item, review text, địa chỉ, tên quận; V7 chỉ dịch phần label/CTA/chức năng chính.</li>
+    </ul>
+  </main>
+</body>
+</html>
