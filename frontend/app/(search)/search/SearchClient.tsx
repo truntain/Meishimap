@@ -32,6 +32,14 @@ type Restaurant = {
   phone: string | null;
   imageUrl: string | null;
   hasJapaneseSupport: boolean;
+  menuItems?: Array<{
+    id: number;
+    name: string;
+    nameJp: string | null;
+    price: number | string;
+    description: string | null;
+    category: string;
+  }>;
 };
 
 type RestaurantFeatureProperties = {
@@ -92,7 +100,31 @@ const MAP_VIEW_OPTIONS: Array<{ key: MapViewMode; label: string }> = [
   { key: 'satellite', label: 'Vệ tinh' },
 ];
 
-const FALLBACK_RESTAURANTS: Restaurant[] = [
+const MOCK_ITEMS_BY_CAT: Record<string, Array<{ name: string; nameJp: string; category: string; price: string; description: string }>> = {
+  sushi: [
+    { name: 'Premium Sashimi Set', nameJp: 'プレミアム刺身セット', category: 'sashimi', price: '450.000đ', description: 'A curated selection of seasonal fish including Otoro, Sake, and Hamachi.' },
+    { name: 'Sashimi Deluxe', nameJp: 'デラックス刺身', category: 'sashimi', price: '380.000đ', description: 'Premium cut fish with authentic wasabi and soy sauce.' },
+    { name: 'Tempura Set', nameJp: '天ぷらセット', category: 'tempura', price: '280.000đ', description: 'Crispy light-battered shrimp and vegetables with dipping sauce.' },
+  ],
+  ramen: [
+    { name: 'Tonkotsu Ramen', nameJp: '豚骨ラーメン', category: 'ramen', price: '195.000đ', description: 'Rich pork bone broth simmered 18 hours, chashu pork, soft egg.' },
+    { name: 'Shoyu Ramen', nameJp: '醤油ラーメン', category: 'ramen', price: '175.000đ', description: 'Aromatic soy-based broth with tender chicken and bamboo shoots.' },
+  ],
+  kaiseki: [
+    { name: 'Kaiseki Course', nameJp: '懐石料理コース', category: 'kaiseki', price: '1.200.000đ', description: 'Traditional multi-course Japanese dinner.' },
+  ],
+  izakaya: [
+    { name: 'Yakitori Platter', nameJp: '焼き鳥盛り合わせ', category: 'izakaya', price: '180.000đ', description: 'Skewered grilled chicken with special tare sauce.' },
+  ],
+  bbq: [
+    { name: 'Kobe Beef Set', nameJp: '神戸牛セット', category: 'bbq', price: '850.000đ', description: 'Premium marbled Kobe beef for grilling.' },
+  ],
+  soba: [
+    { name: 'Tempura Soba', nameJp: '天ぷらそば', category: 'soba', price: '160.000đ', description: 'Buckwheat noodles with crispy tempura.' },
+  ],
+};
+
+const BASE_FALLBACK_RESTAURANTS = [
   { id: 1001, name: 'Miyabi Japanese Dining', nameJp: 'みやび 日本料理', category: 'sushi', rating: 4.9, address: '123 Lê Thánh Tôn, Quận 1, TP.HCM', district: 'Quận 1', city: 'Hồ Chí Minh', latitude: 10.7769, longitude: 106.7009, description: 'Sushi, sashimi và set nướng Nhật trong không gian yên tĩnh.', phone: '+84 28 3823 4567', imageUrl: '/restaurant-card-13d489.png', hasJapaneseSupport: true },
   { id: 1002, name: 'Sakura Kaiseki', nameJp: 'さくら 懐石料理', category: 'kaiseki', rating: 4.8, address: '45 Võ Văn Tần, Quận 3, TP.HCM', district: 'Quận 3', city: 'Hồ Chí Minh', latitude: 10.7828, longitude: 106.6922, description: 'Kaiseki theo mùa, đặt bàn trước cho phòng riêng.', phone: '+84 28 3910 8899', imageUrl: '/restaurant-card-13d489.png', hasJapaneseSupport: true },
   { id: 1003, name: 'Hanami Ramen House', nameJp: 'はなみ ラーメン', category: 'ramen', rating: 4.7, address: '88 Phan Xích Long, Phú Nhuận, TP.HCM', district: 'Phú Nhuận', city: 'Hồ Chí Minh', latitude: 10.8008, longitude: 106.6855, description: 'Ramen tonkotsu, shoyu và gyoza cho bữa tối nhanh.', phone: '+84 28 3990 1212', imageUrl: null, hasJapaneseSupport: false },
@@ -113,11 +145,28 @@ const FALLBACK_RESTAURANTS: Restaurant[] = [
   { id: 1018, name: 'Tsukiji Sushi Corner', nameJp: '築地 寿司', category: 'sushi', rating: 4.6, address: '26 Lê Văn Sỹ, Quận 3, TP.HCM', district: 'Quận 3', city: 'Hồ Chí Minh', latitude: 10.7891, longitude: 106.6781, description: 'Sushi casual, sashimi theo ngày và set lunch.', phone: '+84 28 3845 6622', imageUrl: null, hasJapaneseSupport: true },
   { id: 1019, name: 'Akari Yakiniku', nameJp: 'あかり 焼肉', category: 'bbq', rating: 4.4, address: '92 Hoàng Văn Thụ, Tân Bình, TP.HCM', district: 'Tân Bình', city: 'Hồ Chí Minh', latitude: 10.8015, longitude: 106.6637, description: 'Yakiniku gia đình, set thịt nướng và salad Nhật.', phone: '+84 28 3848 9933', imageUrl: null, hasJapaneseSupport: false },
   { id: 1020, name: 'Nara Soba & Udon', nameJp: '奈良 そば うどん', category: 'soba', rating: 4.2, address: '132 Nguyễn Tri Phương, Quận 10, TP.HCM', district: 'Quận 10', city: 'Hồ Chí Minh', latitude: 10.7639, longitude: 106.6687, description: 'Soba, udon và donburi cho bữa trưa nhanh.', phone: '+84 28 3835 2626', imageUrl: null, hasJapaneseSupport: false },
-  { id: 1021, name: 'Yokohama Curry', nameJp: '横浜 カレー', category: 'izakaya', rating: 4.3, address: '44 Phạm Viết Chánh, Bình Thạnh, TP.HCM', district: 'Bình Thạnh', city: 'Hồ Chí Minh', latitude: 10.7911, longitude: 106.7105, description: 'Cà ri Nhật, katsu và set cơm tối.', phone: '+84 28 3510 0101', imageUrl: null, hasJapaneseSupport: false },
+  { id: 1021, name: 'Yokohama Curry', nameJp: '横浜 カレー', category: 'izakaya', rating: 4.3, address: '44 Phậm Viết Chánh, Bình Thạnh, TP.HCM', district: 'Bình Thạnh', city: 'Hồ Chí Minh', latitude: 10.7911, longitude: 106.7105, description: 'Cà ri Nhật, katsu và set cơm tối.', phone: '+84 28 3510 0101', imageUrl: null, hasJapaneseSupport: false },
   { id: 1022, name: 'Kamakura Kaiseki', nameJp: '鎌倉 懐石', category: 'kaiseki', rating: 4.9, address: '3 Nguyễn Ư Dĩ, TP.Thủ Đức, TP.HCM', district: 'TP.Thủ Đức', city: 'Hồ Chí Minh', latitude: 10.8046, longitude: 106.7367, description: 'Kaiseki cao cấp, đặt phòng riêng theo yêu cầu.', phone: '+84 28 7300 8080', imageUrl: '/restaurant-card-13d489.png', hasJapaneseSupport: true },
   { id: 1023, name: 'Marukame Ramen', nameJp: '丸亀 ラーメン', category: 'ramen', rating: 4.4, address: '66 Bạch Đằng, Bình Thạnh, TP.HCM', district: 'Bình Thạnh', city: 'Hồ Chí Minh', latitude: 10.8052, longitude: 106.7136, description: 'Ramen bình dân, topping đa dạng và phục vụ nhanh.', phone: '+84 28 3512 6868', imageUrl: null, hasJapaneseSupport: false },
   { id: 1024, name: 'Daikoku Sushi Lounge', nameJp: '大黒 寿司', category: 'sushi', rating: 4.7, address: '10 Đồng Khởi, Quận 1, TP.HCM', district: 'Quận 1', city: 'Hồ Chí Minh', latitude: 10.7751, longitude: 106.7055, description: 'Sushi lounge gần phố đi bộ, view trung tâm.', phone: '+84 28 3829 2929', imageUrl: '/restaurant-card-13d489.png', hasJapaneseSupport: true },
 ];
+
+const FALLBACK_RESTAURANTS: Restaurant[] = BASE_FALLBACK_RESTAURANTS.map((r) => {
+  const categoryItems = MOCK_ITEMS_BY_CAT[r.category] || [
+    { name: 'Matcha Ice Cream', nameJp: '抹茶アイスクリーム', category: 'dessert', price: '65.000đ', description: 'Premium Uji matcha ice cream served with red bean paste.' }
+  ];
+  return {
+    ...r,
+    menuItems: categoryItems.map((item, itemIndex) => ({
+      id: r.id * 10 + itemIndex,
+      name: item.name,
+      nameJp: item.nameJp,
+      price: item.price,
+      description: item.description,
+      category: item.category,
+    })),
+  };
+});
 
 const CATEGORIES = [
   { key: 'all', label: 'Tất cả' },
@@ -307,6 +356,14 @@ function normalizeRestaurant(raw: Partial<Restaurant>): Restaurant | null {
     phone: raw.phone ?? null,
     imageUrl: raw.imageUrl ?? null,
     hasJapaneseSupport: Boolean(raw.hasJapaneseSupport),
+    menuItems: raw.menuItems ? raw.menuItems.map(item => ({
+      id: Number(item.id),
+      name: String(item.name),
+      nameJp: item.nameJp ?? null,
+      price: item.price,
+      description: item.description ?? null,
+      category: item.category || 'other',
+    })) : [],
   };
 }
 
@@ -598,7 +655,12 @@ export default function SearchClient() {
         restaurant.address.toLowerCase().includes(normalizedQuery) ||
         (restaurant.district || '').toLowerCase().includes(normalizedQuery) ||
         (restaurant.city || '').toLowerCase().includes(normalizedQuery) ||
-        restaurant.category.toLowerCase().includes(normalizedQuery)
+        restaurant.category.toLowerCase().includes(normalizedQuery) ||
+        (restaurant.menuItems || []).some((item) =>
+          item.name.toLowerCase().includes(normalizedQuery) ||
+          (item.nameJp || '').toLowerCase().includes(normalizedQuery) ||
+          (item.description || '').toLowerCase().includes(normalizedQuery)
+        )
       );
     }
 

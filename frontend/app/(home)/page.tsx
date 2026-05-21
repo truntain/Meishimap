@@ -2,10 +2,21 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function HomePage() {
+  const router = useRouter();
+
   const handleSearchSubmit = () => {
-    alert('Tính năng tìm kiếm sẽ được cập nhật!');
+    const input = document.getElementById('hero-search-input') as HTMLInputElement;
+    const query = input?.value.trim() || '';
+    router.push(`/search?q=${encodeURIComponent(query)}`);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      handleSearchSubmit();
+    }
   };
 
   return (
@@ -27,7 +38,13 @@ export default function HomePage() {
             <span className="search-bar__icon">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M8.167 14.333A6.167 6.167 0 1 0 8.167 2a6.167 6.167 0 0 0 0 12.333ZM16 16l-2.792-2.792" stroke="#877369" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </span>
-            <input type="text" id="hero-search-input" className="search-bar__input" placeholder="Nhập tên nhà hàng, món ăn, địa chỉ..." />
+            <input
+              type="text"
+              id="hero-search-input"
+              className="search-bar__input"
+              placeholder="Nhập tên nhà hàng, món ăn, địa chỉ..."
+              onKeyDown={handleKeyDown}
+            />
             <div className="search-bar__divider"></div>
             <button className="btn btn--primary" onClick={handleSearchSubmit} id="btn-search-hero">Tìm kiếm</button>
           </div>
