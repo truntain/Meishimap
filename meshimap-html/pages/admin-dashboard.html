@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Quản trị viên — MESHIMAP</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="dashboard-body">
+
+  <div class="db-container">
+    <!-- ══ SIDEBAR ════════════════════════════════════════ -->
+    <aside class="db-sidebar">
+      <div class="db-sidebar__brand">
+        <div class="db-sidebar__brand-logo">MESHI<span>MAP</span></div>
+        <div class="db-sidebar__role">Quản trị viên / Admin</div>
+      </div>
+      
+      <nav class="db-sidebar__nav">
+        <button class="db-sidebar__link is-active" data-tab="tab-stats">
+          <span class="db-sidebar__icon">📈</span>
+          <span>Thống kê & Báo cáo</span>
+        </button>
+        <button class="db-sidebar__link" data-tab="tab-approvals">
+          <span class="db-sidebar__icon">⚖️</span>
+          <span>Duyệt nhà hàng</span>
+        </button>
+        <button class="db-sidebar__link" data-tab="tab-reports">
+          <span class="db-sidebar__icon">🚨</span>
+          <span>Báo cáo vi phạm</span>
+        </button>
+      </nav>
+
+      <div class="db-sidebar__footer">
+        <button class="db-sidebar__link" onclick="window.location.href='../index.html'">
+          <span class="db-sidebar__icon">🏠</span>
+          <span>Về trang chủ</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ══ MAIN CONTENT ══════════════════════════════════ -->
+    <main class="db-main">
+      <!-- Header -->
+      <header class="db-header">
+        <h1 class="db-header__title" id="db-title-display">Thống kê & Tổng quan</h1>
+        <div class="db-header__meta">
+          <div class="db-header__user">
+            <span id="admin-name-display">Admin</span>
+            <div class="db-header__avatar" style="background:#FD8A3E; color:#fff">A</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content wrapper -->
+      <div class="db-content">
+        <div id="alert-container"></div>
+
+        <!-- ══ TAB 1: STATISTICS & REPORTS ════════════════ -->
+        <div class="db-tab-content is-active" id="tab-stats">
+          <!-- Stats Grid -->
+          <div class="db-stats-grid">
+            <!-- Card 1 -->
+            <div class="db-stat-card">
+              <div class="db-stat-card__info">
+                <span class="db-stat-card__label">Tổng số nhà hàng</span>
+                <span class="db-stat-card__value" id="stat-total-restaurants">12</span>
+                <span class="db-stat-card__trend db-stat-card__trend--up">▲ +12% tháng này</span>
+              </div>
+              <div class="db-stat-card__icon-box">🏢</div>
+            </div>
+            <!-- Card 2 -->
+            <div class="db-stat-card">
+              <div class="db-stat-card__info">
+                <span class="db-stat-card__label">Số lượng thành viên</span>
+                <span class="db-stat-card__value" id="stat-total-users">352</span>
+                <span class="db-stat-card__trend db-stat-card__trend--up">▲ +24% tháng này</span>
+              </div>
+              <div class="db-stat-card__icon-box">👥</div>
+            </div>
+            <!-- Card 3 -->
+            <div class="db-stat-card">
+              <div class="db-stat-card__info">
+                <span class="db-stat-card__label">Lượt đặt bàn thành công</span>
+                <span class="db-stat-card__value" id="stat-total-bookings">1,428</span>
+                <span class="db-stat-card__trend db-stat-card__trend--up">▲ +18% tháng này</span>
+              </div>
+              <div class="db-stat-card__icon-box">📅</div>
+            </div>
+            <!-- Card 4 -->
+            <div class="db-stat-card">
+              <div class="db-stat-card__info">
+                <span class="db-stat-card__label">Doanh thu hệ thống</span>
+                <span class="db-stat-card__value" id="stat-total-revenue">25,4M VNĐ</span>
+                <span class="db-stat-card__trend db-stat-card__trend--up">▲ +15% tháng này</span>
+              </div>
+              <div class="db-stat-card__icon-box">💰</div>
+            </div>
+          </div>
+
+          <!-- Charts Grid -->
+          <div class="db-charts-grid">
+            <!-- Chart 1: Revenue -->
+            <div class="db-card">
+              <h3 class="db-card__title" style="margin-bottom:20px;">Doanh thu hệ thống (Hàng tháng)</h3>
+              <div style="position:relative; height:300px; width:100%;">
+                <canvas id="chart-revenue"></canvas>
+              </div>
+            </div>
+            <!-- Chart 2: User Growth -->
+            <div class="db-card">
+              <h3 class="db-card__title" style="margin-bottom:20px;">Tăng trưởng người dùng mới</h3>
+              <div style="position:relative; height:300px; width:100%;">
+                <canvas id="chart-users"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ TAB 2: RESTAURANT APPROVALS ══════════════ -->
+        <div class="db-tab-content" id="tab-approvals">
+          <div class="db-card">
+            <h2 class="db-card__title">Yêu cầu đăng ký nhà hàng chờ phê duyệt</h2>
+            
+            <div class="db-table-responsive">
+              <table class="db-table">
+                <thead>
+                  <tr>
+                    <th>Tên nhà hàng</th>
+                    <th>Email liên hệ</th>
+                    <th>Địa chỉ</th>
+                    <th>Ngày gửi yêu cầu</th>
+                    <th>Trạng thái</th>
+                    <th>Chi tiết</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="db-approval-table-body">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ TAB 3: REPORTED REVIEWS ═══════════════════ -->
+        <div class="db-tab-content" id="tab-reports">
+          <div class="db-card">
+            <h2 class="db-card__title">Đánh giá bị báo cáo vi phạm</h2>
+            
+            <div class="db-table-responsive">
+              <table class="db-table">
+                <thead>
+                  <tr>
+                    <th>Nhà hàng</th>
+                    <th>Người đánh giá</th>
+                    <th>Nội dung đánh giá</th>
+                    <th>Sao</th>
+                    <th>Lý do báo cáo</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="db-reports-table-body">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ══ MODAL: RESTAURANT DETAIL FOR APPROVAL ══════════ -->
+  <div class="db-modal" id="modal-approval-detail">
+    <div class="db-modal__box" style="max-width: 500px;">
+      <h3 class="db-modal__title">Chi tiết hồ sơ đăng ký nhà hàng</h3>
+      
+      <div style="display:flex; flex-direction:column; gap:12px; font-size:14px;" id="approval-detail-content">
+        <!-- Dynamically filled -->
+      </div>
+      
+      <div class="db-modal__actions" style="margin-top:24px;">
+        <button type="button" class="modal__cancel" id="btn-close-approval-modal">Đóng</button>
+        <button type="button" class="btn btn--dark" style="background:#dc2626;" id="btn-modal-reject">Từ chối</button>
+        <button type="button" class="btn btn--primary" style="background:#059669;" id="btn-modal-approve">Phê duyệt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: REJECT APPROVAL REASON ══════════════════ -->
+  <div class="db-modal" id="modal-reject-reason">
+    <div class="db-modal__box">
+      <h3 class="db-modal__title">Lý do từ chối hồ sơ đăng ký</h3>
+      <form id="reject-reason-form">
+        <div class="db-form-field">
+          <label for="reject-reason-text">Lý do từ chối phê duyệt <span>/ 却下理由</span></label>
+          <textarea id="reject-reason-text" class="db-textarea" placeholder="Nhập lý do cụ thể gửi cho chủ nhà hàng (vd: Hồ sơ thiếu giấy chứng nhận an toàn vệ sinh thực phẩm...)" required></textarea>
+        </div>
+        <div class="db-modal__actions">
+          <button type="button" class="modal__cancel" id="btn-close-reject-reason-modal">Hủy</button>
+          <button type="submit" class="modal__submit" style="background:#dc2626">Từ chối phê duyệt</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/script.js"></script>
+  <script>
+    // 1. Mock DB structures
+    const defaultPendingRestaurants = [
+      { id: 1, name: 'Kyoto Ramen House', email: 'sato@kyoto.com', address: '45 Phan Xich Long, Phu Nhuan, HCM', phone: '0909887766', date: '2026-05-22', cuisine: 'RAMEN', status: 'pending', description: 'Mô hình ramen truyền thống của vùng Kyoto, nước dùng xương heo ninh nhừ 15 tiếng.' },
+      { id: 2, name: 'Nagoya Bento', email: 'nagoya@bento.com', address: '12 Nguyễn Thị Thập, Quận 7, HCM', phone: '0912334455', date: '2026-05-23', cuisine: 'BENTO', status: 'pending', description: 'Cơm hộp Bento chuẩn vị Nhật Bản tiện lợi, đầy đủ dinh dưỡng cho giới văn phòng.' },
+      { id: 3, name: 'Tokyo Sushi Bar', email: 'tokyo@sushi.com', address: '78 Lê Thánh Tôn, Quận 1, HCM', phone: '0988112233', date: '2026-05-23', cuisine: 'SUSHI', status: 'pending', description: 'Sushi quầy bar cao cấp do đầu bếp Nhật trực tiếp đứng quầy và làm món.' }
+    ];
+
+    let pendingRestaurants = [];
+    let allReviews = [];
+
+    // 2. Load Data
+    function loadData() {
+      const user = getUser();
+      if (user) {
+        document.getElementById('admin-name-display').textContent = user.name;
+      }
+
+      pendingRestaurants = JSON.parse(localStorage.getItem('meshimap_pending_restaurants'));
+      if (!pendingRestaurants) {
+        pendingRestaurants = defaultPendingRestaurants;
+        localStorage.setItem('meshimap_pending_restaurants', JSON.stringify(pendingRestaurants));
+      }
+
+      const restaurantData = JSON.parse(localStorage.getItem('meshimap_restaurant')) || {};
+      const restaurantReviews = restaurantData.reviews || [];
+      const userWrittenReviews = JSON.parse(localStorage.getItem('meshimap_reviews') || '[]');
+
+      let merged = [...restaurantReviews];
+      userWrittenReviews.forEach(ur => {
+        if (!merged.some(cr => cr.content === ur.content && cr.author === ur.author)) {
+          merged.push({
+            author: ur.author,
+            rating: parseInt(ur.rating) || 5,
+            date: ur.date || 'Tháng 5, 2026',
+            content: ur.content,
+            replies: ur.replies || [],
+            reported: ur.reported || false,
+            reportReason: ur.reportReason || '',
+            deleted: ur.deleted || false
+          });
+        }
+      });
+      allReviews = merged;
+    }
+
+    // 3. Tab switching logic
+    document.querySelectorAll('.db-sidebar__link').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetTab = btn.dataset.tab;
+        if (!targetTab) return;
+
+        document.querySelectorAll('.db-sidebar__link').forEach(b => b.classList.remove('is-active'));
+        btn.classList.add('is-active');
+
+        document.querySelectorAll('.db-tab-content').forEach(tab => tab.classList.remove('is-active'));
+        document.getElementById(targetTab).classList.add('is-active');
+
+        let title = '';
+        if (targetTab === 'tab-stats') title = 'Thống kê & Tổng quan';
+        else if (targetTab === 'tab-approvals') title = 'Kiểm duyệt nhà hàng';
+        else if (targetTab === 'tab-reports') title = 'Quản lý báo cáo vi phạm';
+        document.getElementById('db-title-display').textContent = title;
+
+        if (targetTab === 'tab-stats') renderCharts();
+        else if (targetTab === 'tab-approvals') renderApprovals();
+        else if (targetTab === 'tab-reports') renderReports();
+      });
+    });
+
+    // 4. Alert display Helper
+    function showAlert(message, type = 'success') {
+      const container = document.getElementById('alert-container');
+      container.innerHTML = `
+        <div class="db-alert db-alert--${type}">
+          <span>${type === 'success' ? '✅' : '⚠️'}</span>
+          <span>${message}</span>
+        </div>
+      `;
+      setTimeout(() => {
+        container.innerHTML = '';
+      }, 3500);
+    }
+
+    // 5. Render: Analytics Charts
+    let revChart = null;
+    let userChart = null;
+
+    function renderCharts() {
+      if (revChart) revChart.destroy();
+      if (userChart) userChart.destroy();
+
+      const ctxRev = document.getElementById('chart-revenue').getContext('2d');
+      revChart = new Chart(ctxRev, {
+        type: 'line',
+        data: {
+          labels: ['Tháng 12', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5'],
+          datasets: [{
+            label: 'Doanh thu hệ thống (triệu VNĐ)',
+            data: [12.4, 15.8, 14.2, 19.5, 22.1, 25.4],
+            borderColor: '#FD8A3E',
+            backgroundColor: 'rgba(253, 138, 62, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: '#6C2F00'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              grid: { color: 'rgba(218,194,182,0.15)' },
+              ticks: { color: '#54433A', font: { family: 'Be Vietnam Pro' } }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#54433A', font: { family: 'Be Vietnam Pro' } }
+            }
+          }
+        }
+      });
+
+      const ctxUser = document.getElementById('chart-users').getContext('2d');
+      userChart = new Chart(ctxUser, {
+        type: 'bar',
+        data: {
+          labels: ['Tháng 12', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5'],
+          datasets: [{
+            label: 'Đăng ký mới',
+            data: [42, 65, 58, 89, 72, 98],
+            backgroundColor: '#6C2F00',
+            hoverBackgroundColor: '#FD8A3E',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              grid: { color: 'rgba(218,194,182,0.15)' },
+              ticks: { color: '#54433A', font: { family: 'Be Vietnam Pro' } }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#54433A', font: { family: 'Be Vietnam Pro' } }
+            }
+          }
+        }
+      });
+    }
+
+    // 6. Render: Restaurant Approvals
+    function renderApprovals() {
+      const tbody = document.getElementById('db-approval-table-body');
+      tbody.innerHTML = '';
+
+      if (pendingRestaurants.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--clr-muted)">Không có yêu cầu phê duyệt nhà hàng nào.</td></tr>`;
+        return;
+      }
+
+      pendingRestaurants.forEach(res => {
+        const tr = document.createElement('tr');
+        
+        let statusBadge = '';
+        if (res.status === 'pending') statusBadge = '<span class="db-badge db-badge--pending">Chờ duyệt</span>';
+        else if (res.status === 'approved') statusBadge = '<span class="db-badge db-badge--approved">Đã duyệt</span>';
+        else if (res.status === 'rejected') statusBadge = '<span class="db-badge db-badge--rejected">Từ chối</span>';
+
+        let actions = '';
+        if (res.status === 'pending') {
+          actions = `
+            <button class="btn btn--dark" style="padding: 4px 10px; font-size:12px; background:#059669;" onclick="approveRestaurant(${res.id})">Duyệt</button>
+            <button class="btn btn--dark" style="padding: 4px 10px; font-size:12px; background:#dc2626;" onclick="openRejectReasonModal(${res.id})">Từ chối</button>
+          `;
+        } else {
+          actions = `<span style="font-size:12px; color:var(--clr-muted)">Hoàn tất</span>`;
+        }
+
+        tr.innerHTML = `
+          <td style="font-weight:600;">${res.name}</td>
+          <td>${res.email}</td>
+          <td style="max-width: 150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${res.address}</td>
+          <td>${res.date}</td>
+          <td>${statusBadge}</td>
+          <td><button class="db-icon-btn" onclick="viewRestaurantDetails(${res.id})">🔍 Xem</button></td>
+          <td><div style="display:flex; gap:6px;">${actions}</div></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    const approvalModal = document.getElementById('modal-approval-detail');
+    let selectedRestaurantIdForModal = null;
+
+    function viewRestaurantDetails(id) {
+      const res = pendingRestaurants.find(r => r.id === id);
+      if (!res) return;
+      selectedRestaurantIdForModal = id;
+
+      const detailContent = document.getElementById('approval-detail-content');
+      detailContent.innerHTML = `
+        <div><strong>Tên nhà hàng:</strong> ${res.name}</div>
+        <div><strong>Ẩm thực:</strong> <span class="badge badge--sm">${res.cuisine}</span></div>
+        <div><strong>Địa chỉ:</strong> ${res.address}</div>
+        <div><strong>Số điện thoại:</strong> ${res.phone}</div>
+        <div><strong>Email:</strong> ${res.email}</div>
+        <div><strong>Ngày gửi yêu cầu:</strong> ${res.date}</div>
+        <div><strong>Mô tả giới thiệu:</strong></div>
+        <p style="background:var(--clr-cream); padding:10px; border-radius:6px; font-style:italic; line-height:1.5; color:var(--clr-medium)">"${res.description}"</p>
+      `;
+
+      const btnApprove = document.getElementById('btn-modal-approve');
+      const btnReject = document.getElementById('btn-modal-reject');
+      
+      if (res.status === 'pending') {
+        btnApprove.style.display = 'inline-block';
+        btnReject.style.display = 'inline-block';
+      } else {
+        btnApprove.style.display = 'none';
+        btnReject.style.display = 'none';
+      }
+
+      approvalModal.style.display = 'flex';
+    }
+
+    document.getElementById('btn-close-approval-modal').addEventListener('click', () => {
+      approvalModal.style.display = 'none';
+    });
+
+    document.getElementById('btn-modal-approve').addEventListener('click', () => {
+      if (selectedRestaurantIdForModal) {
+        approveRestaurant(selectedRestaurantIdForModal);
+        approvalModal.style.display = 'none';
+      }
+    });
+
+    document.getElementById('btn-modal-reject').addEventListener('click', () => {
+      if (selectedRestaurantIdForModal) {
+        approvalModal.style.display = 'none';
+        openRejectReasonModal(selectedRestaurantIdForModal);
+      }
+    });
+
+    function approveRestaurant(id) {
+      const idx = pendingRestaurants.findIndex(r => r.id === id);
+      if (idx !== -1) {
+        pendingRestaurants[idx].status = 'approved';
+        localStorage.setItem('meshimap_pending_restaurants', JSON.stringify(pendingRestaurants));
+        
+        const currentCount = parseInt(document.getElementById('stat-total-restaurants').textContent);
+        document.getElementById('stat-total-restaurants').textContent = currentCount + 1;
+
+        renderApprovals();
+        showAlert(`Đã phê duyệt nhà hàng "${pendingRestaurants[idx].name}" thành công!`);
+      }
+    }
+
+    const rejectReasonModal = document.getElementById('modal-reject-reason');
+    let selectedRestaurantIdForRejection = null;
+
+    function openRejectReasonModal(id) {
+      selectedRestaurantIdForRejection = id;
+      document.getElementById('reject-reason-text').value = '';
+      rejectReasonModal.style.display = 'flex';
+    }
+
+    document.getElementById('btn-close-reject-reason-modal').addEventListener('click', () => {
+      rejectReasonModal.style.display = 'none';
+    });
+
+    document.getElementById('reject-reason-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const reason = document.getElementById('reject-reason-text').value;
+
+      const idx = pendingRestaurants.findIndex(r => r.id === selectedRestaurantIdForRejection);
+      if (idx !== -1) {
+        pendingRestaurants[idx].status = 'rejected';
+        pendingRestaurants[idx].rejectReason = reason;
+        localStorage.setItem('meshimap_pending_restaurants', JSON.stringify(pendingRestaurants));
+        
+        renderApprovals();
+        showAlert(`Đã từ chối đăng ký nhà hàng "${pendingRestaurants[idx].name}".`, 'warning');
+      }
+      rejectReasonModal.style.display = 'none';
+    });
+
+    // 7. Render: Reported Reviews Tab
+    function renderReports() {
+      const tbody = document.getElementById('db-reports-table-body');
+      tbody.innerHTML = '';
+
+      const reported = allReviews.filter(r => r.reported && !r.deleted);
+
+      if (reported.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--clr-muted)">Không có đánh giá nào bị báo cáo vi phạm.</td></tr>`;
+        return;
+      }
+
+      reported.forEach(rev => {
+        const tr = document.createElement('tr');
+        
+        let starsStr = '⭐'.repeat(rev.rating);
+
+        tr.innerHTML = `
+          <td style="font-weight:600;">Sakura Garden</td>
+          <td style="font-weight:600;">${rev.author}</td>
+          <td style="max-width:240px; font-style:italic; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${rev.content}">"${rev.content}"</td>
+          <td style="color:var(--clr-yellow);">${starsStr}</td>
+          <td style="color:#c53030; font-size:13px; font-weight:500;">${rev.reportReason || 'Báo cáo vi phạm'}</td>
+          <td>
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn--dark" style="padding: 4px 10px; font-size:12px; background:#dc2626;" onclick="hideReview('${rev.content}')">Ẩn đánh giá</button>
+              <button class="btn btn--dark" style="padding: 4px 10px; font-size:12px; background:var(--clr-muted);" onclick="dismissReport('${rev.content}')">Bỏ qua</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function hideReview(contentKey) {
+      if (confirm('Bạn có chắc chắn muốn ẨN/XÓA đánh giá này vĩnh viễn khỏi trang hiển thị của khách hàng? Tác giả đánh giá sẽ bị cảnh báo vi phạm.')) {
+        const idx = allReviews.findIndex(r => r.content === contentKey);
+        if (idx !== -1) {
+          allReviews[idx].deleted = true;
+          allReviews[idx].reported = false;
+        }
+
+        const restaurantData = JSON.parse(localStorage.getItem('meshimap_restaurant')) || {};
+        if (restaurantData.reviews) {
+          const rIdx = restaurantData.reviews.findIndex(r => r.content === contentKey);
+          if (rIdx !== -1) {
+            restaurantData.reviews[rIdx].deleted = true;
+            restaurantData.reviews[rIdx].reported = false;
+            localStorage.setItem('meshimap_restaurant', JSON.stringify(restaurantData));
+          }
+        }
+
+        const storedReviews = JSON.parse(localStorage.getItem('meshimap_reviews') || '[]');
+        const storedIdx = storedReviews.findIndex(r => r.content === contentKey);
+        if (storedIdx !== -1) {
+          storedReviews[storedIdx].deleted = true;
+          storedReviews[storedIdx].reported = false;
+          localStorage.setItem('meshimap_reviews', JSON.stringify(storedReviews));
+        }
+
+        showAlert('Đã ẩn đánh giá vi phạm và gửi thông báo cảnh cáo ảo đến người viết bài.');
+        renderReports();
+      }
+    }
+
+    function dismissReport(contentKey) {
+      if (confirm('Bỏ qua báo cáo vi phạm đối với đánh giá này? Đánh giá vẫn sẽ được hiển thị bình thường trên trang khách hàng.')) {
+        const idx = allReviews.findIndex(r => r.content === contentKey);
+        if (idx !== -1) {
+          allReviews[idx].reported = false;
+        }
+
+        const restaurantData = JSON.parse(localStorage.getItem('meshimap_restaurant')) || {};
+        if (restaurantData.reviews) {
+          const rIdx = restaurantData.reviews.findIndex(r => r.content === contentKey);
+          if (rIdx !== -1) {
+            restaurantData.reviews[rIdx].reported = false;
+            localStorage.setItem('meshimap_restaurant', JSON.stringify(restaurantData));
+          }
+        }
+
+        const storedReviews = JSON.parse(localStorage.getItem('meshimap_reviews') || '[]');
+        const storedIdx = storedReviews.findIndex(r => r.content === contentKey);
+        if (storedIdx !== -1) {
+          storedReviews[storedIdx].reported = false;
+          localStorage.setItem('meshimap_reviews', JSON.stringify(storedReviews));
+        }
+
+        showAlert('Đã bỏ qua báo cáo vi phạm.');
+        renderReports();
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadData();
+      renderCharts();
+      renderApprovals();
+    });
+  </script>
+</body>
+</html>

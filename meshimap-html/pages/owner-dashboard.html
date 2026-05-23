@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Chủ nhà hàng — MESHIMAP</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body class="dashboard-body">
+
+  <div class="db-container">
+    <!-- ══ SIDEBAR ════════════════════════════════════════ -->
+    <aside class="db-sidebar">
+      <div class="db-sidebar__brand">
+        <div class="db-sidebar__brand-logo">MESHI<span>MAP</span></div>
+        <div class="db-sidebar__role">Chủ nhà hàng / Owner</div>
+      </div>
+      
+      <nav class="db-sidebar__nav">
+        <button class="db-sidebar__link is-active" data-tab="tab-restaurant">
+          <span class="db-sidebar__icon">🏢</span>
+          <span>Quản lý nhà hàng</span>
+        </button>
+        <button class="db-sidebar__link" data-tab="tab-bookings">
+          <span class="db-sidebar__icon">📅</span>
+          <span>Quản lý đặt bàn</span>
+        </button>
+        <button class="db-sidebar__link" data-tab="tab-reviews">
+          <span class="db-sidebar__icon">⭐</span>
+          <span>Xem đánh giá</span>
+        </button>
+        <button class="db-sidebar__link" data-tab="tab-preview">
+          <span class="db-sidebar__icon">👁️</span>
+          <span>Xem trước (Preview)</span>
+        </button>
+      </nav>
+
+      <div class="db-sidebar__footer">
+        <button class="db-sidebar__link" onclick="window.location.href='../index.html'">
+          <span class="db-sidebar__icon">🏠</span>
+          <span>Về trang chủ</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ══ MAIN CONTENT ══════════════════════════════════ -->
+    <main class="db-main">
+      <!-- Header -->
+      <header class="db-header">
+        <h1 class="db-header__title" id="db-title-display">Quản lý thông tin nhà hàng</h1>
+        <div class="db-header__meta">
+          <div class="db-header__user">
+            <span id="owner-name-display">Owner</span>
+            <div class="db-header__avatar">O</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content wrapper -->
+      <div class="db-content">
+        <div id="alert-container"></div>
+
+        <!-- ══ TAB 1: RESTAURANT & MENU ═══════════════════ -->
+        <div class="db-tab-content is-active" id="tab-restaurant">
+          <!-- General Info Card -->
+          <div class="db-card">
+            <h2 class="db-card__title">Thông tin chung nhà hàng</h2>
+            <form id="restaurant-info-form">
+              <div class="db-form-row">
+                <div class="db-form-field">
+                  <label for="restaurant-name">Tên nhà hàng <span>/ 店名</span></label>
+                  <input type="text" id="restaurant-name" class="db-input" required />
+                </div>
+                <div class="db-form-field">
+                  <label for="restaurant-phone">Số điện thoại <span>/ 電話番号</span></label>
+                  <input type="text" id="restaurant-phone" class="db-input" required />
+                </div>
+              </div>
+
+              <div class="db-form-row">
+                <div class="db-form-field" style="grid-column: span 2;">
+                  <label for="restaurant-address">Địa chỉ nhà hàng <span>/ 住所</span></label>
+                  <input type="text" id="restaurant-address" class="db-input" required />
+                </div>
+              </div>
+
+              <div class="db-form-row">
+                <div class="db-form-field">
+                  <label for="restaurant-opentime">Giờ mở cửa <span>/ 開店時間</span></label>
+                  <input type="time" id="restaurant-opentime" class="db-input" required />
+                </div>
+                <div class="db-form-field">
+                  <label for="restaurant-closetime">Giờ đóng cửa <span>/ 閉店時間</span></label>
+                  <input type="time" id="restaurant-closetime" class="db-input" required />
+                </div>
+              </div>
+
+              <div class="db-form-row">
+                <div class="db-form-field" style="display: flex; flex-direction: row; align-items: center; gap: 8px; padding-top: 10px;">
+                  <input type="checkbox" id="restaurant-jpsupport" style="width: 18px; height: 18px; cursor: pointer;" />
+                  <label for="restaurant-jpsupport" style="cursor: pointer; font-weight: 700;">Hỗ trợ tiếng Nhật / 日本語対応あり</label>
+                </div>
+                <div class="db-form-field">
+                  <label for="restaurant-jpsupport-text">Thông tin hỗ trợ ngôn ngữ <span>/ 対応言語詳細</span></label>
+                  <input type="text" id="restaurant-jpsupport-text" class="db-input" placeholder="Ví dụ: Tiếng Việt, Tiếng Nhật, English" />
+                </div>
+              </div>
+
+              <div class="db-form-row" style="margin-top: 12px;">
+                <div class="db-form-field" style="grid-column: span 2;">
+                  <label for="restaurant-banner">Hình ảnh banner (URL) <span>/ カバー写真 (URL)</span></label>
+                  <input type="text" id="restaurant-banner" class="db-input" placeholder="Nhập link ảnh (để trống sẽ dùng ảnh mặc định)" />
+                </div>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+                <button type="submit" class="btn btn--primary" id="btn-save-restaurant-info">Lưu thông tin nhà hàng</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Menu Management Card -->
+          <div class="db-card">
+            <div class="db-card__title">
+              <span>Danh mục thực đơn (Menu Items)</span>
+              <button class="btn btn--primary" style="padding: 6px 14px; font-size: 13px;" id="btn-add-menu-modal">Thêm món ăn</button>
+            </div>
+            
+            <div class="db-menu-list" id="db-menu-list-container">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ TAB 2: BOOKINGS ═══════════════════════════ -->
+        <div class="db-tab-content" id="tab-bookings">
+          <div class="db-card">
+            <div class="db-card__title">
+              <span>Danh sách yêu cầu đặt bàn</span>
+              <!-- Filter Select -->
+              <div style="display:flex; gap:10px;">
+                <select id="booking-filter" class="db-select" style="padding:6px 12px; font-size:13px;">
+                  <option value="all">Tất cả trạng thái</option>
+                  <option value="pending">Chờ duyệt (Pending)</option>
+                  <option value="approved">Đã chấp nhận (Approved)</option>
+                  <option value="rejected">Đã từ chối (Rejected)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="db-table-responsive">
+              <table class="db-table">
+                <thead>
+                  <tr>
+                    <th>Khách hàng</th>
+                    <th>Số điện thoại</th>
+                    <th>Ngày đặt</th>
+                    <th>Thời gian</th>
+                    <th>Số người</th>
+                    <th>Ghi chú</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="db-booking-table-body">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ TAB 3: REVIEWS ════════════════════════════ -->
+        <div class="db-tab-content" id="tab-reviews">
+          <div class="db-card">
+            <div class="db-card__title">
+              <span>Đánh giá từ khách hàng</span>
+              <!-- Stars Filter -->
+              <select id="review-stars-filter" class="db-select" style="padding:6px 12px; font-size:13px;">
+                <option value="all">Tất cả số sao</option>
+                <option value="5">⭐⭐⭐⭐⭐ (5 sao)</option>
+                <option value="4">⭐⭐⭐⭐ (4 sao)</option>
+                <option value="3">⭐⭐⭐ (3 sao)</option>
+                <option value="2">⭐⭐ (2 sao)</option>
+                <option value="1">⭐ (1 sao)</option>
+              </select>
+            </div>
+
+            <div id="db-reviews-container">
+              <!-- Dynamically populated reviews -->
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ TAB 4: PREVIEW ════════════════════════════ -->
+        <div class="db-tab-content" id="tab-preview">
+          <div class="db-card db-preview-container">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <h2 style="font-weight:700; font-size:16px; color:var(--clr-dark)">Xem trước giao diện người dùng (Customer View)</h2>
+                <p style="font-size:12px; color:var(--clr-muted)">Bản xem trước cập nhật trực tiếp từ dữ liệu hiện tại của bạn.</p>
+              </div>
+              <button class="btn btn--outline" id="btn-refresh-preview" style="padding: 6px 14px; font-size:13px;">🔄 Làm mới Preview</button>
+            </div>
+            <div class="db-preview-frame-wrap">
+              <iframe id="preview-iframe" class="db-preview-frame" src="restaurant-detail.html"></iframe>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ══ MODAL: ADD/EDIT MENU ITEM ══════════════════════ -->
+  <div class="db-modal" id="modal-menu-item">
+    <div class="db-modal__box">
+      <h3 class="db-modal__title" id="menu-modal-title">Thêm món ăn mới</h3>
+      <form id="menu-item-form">
+        <input type="hidden" id="menu-edit-index" value="" />
+        <div class="db-form-field" style="margin-bottom: 12px;">
+          <label for="menu-item-name">Tên món ăn <span>/ 料理名</span></label>
+          <input type="text" id="menu-item-name" class="db-input" required />
+        </div>
+        <div class="db-form-field" style="margin-bottom: 12px;">
+          <label for="menu-item-price">Giá món ăn <span>/ 価格</span></label>
+          <input type="text" id="menu-item-price" class="db-input" placeholder="Ví dụ: 150.000đ" required />
+        </div>
+        <div class="db-form-field" style="margin-bottom: 12px;">
+          <label for="menu-item-category">Phân loại <span>/ カテゴリ</span></label>
+          <select id="menu-item-category" class="db-select">
+            <option value="sashimi">Sashimi</option>
+            <option value="tempura">Tempura</option>
+            <option value="ramen">Ramen</option>
+            <option value="dessert">Tráng miệng (Dessert)</option>
+          </select>
+        </div>
+        <div class="db-form-field" style="margin-bottom: 12px;">
+          <label for="menu-item-icon">Biểu tượng (Emoji) <span>/ 絵文字</span></label>
+          <input type="text" id="menu-item-icon" class="db-input" placeholder="Ví dụ: 🍣, 🍥, 🍜" required />
+        </div>
+        <div class="db-form-field" style="margin-bottom: 12px;">
+          <label for="menu-item-desc">Mô tả chi tiết <span>/ 説明</span></label>
+          <textarea id="menu-item-desc" class="db-textarea" required></textarea>
+        </div>
+        <div class="db-modal__actions">
+          <button type="button" class="modal__cancel" id="btn-close-menu-modal">Hủy</button>
+          <button type="submit" class="modal__submit" id="btn-save-menu-item">Xác nhận</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: REJECT BOOKING REASON ═══════════════════ -->
+  <div class="db-modal" id="modal-reject-booking">
+    <div class="db-modal__box">
+      <h3 class="db-modal__title">Từ chối yêu cầu đặt bàn</h3>
+      <form id="reject-booking-form">
+        <input type="hidden" id="reject-booking-id" value="" />
+        <div class="db-form-field">
+          <label for="reject-reason">Lý do từ chối <span>/ 却下の理由</span></label>
+          <textarea id="reject-reason" class="db-textarea" placeholder="Nhập lý do từ chối (vd: Hết bàn giờ này, nhà hàng đóng cửa bảo trì...)" required></textarea>
+        </div>
+        <div class="db-modal__actions">
+          <button type="button" class="modal__cancel" id="btn-close-reject-modal">Hủy</button>
+          <button type="submit" class="modal__submit" style="background:#dc2626">Từ chối đặt bàn</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/script.js"></script>
+  <script>
+    // 1. Initial configuration & variables
+    const defaultRestaurant = {
+      name: 'Sakura Garden',
+      address: '123 Le Loi Street, District 1, Ho Chi Minh City',
+      openTime: '10:00',
+      closeTime: '22:00',
+      jpSupport: true,
+      jpSupportText: 'Tiếng Việt, Tiếng Nhật, English',
+      phone: '+84 28 3823 4567',
+      banner: '',
+      menu: [
+        { name: 'Premium Sashimi Set', price: '450.000đ', cat: 'sashimi', icon: '🐟', desc: 'A curated selection of seasonal fish including Otoro, Sake, and Hamachi.' },
+        { name: 'Sashimi Deluxe', price: '380.000đ', cat: 'sashimi', icon: '🍱', desc: 'Premium cut fish with authentic wasabi and soy sauce.' },
+        { name: 'Tempura Set', price: '280.000đ', cat: 'tempura', icon: '🍤', desc: 'Crispy light-battered shrimp and vegetables with dipping sauce.' },
+        { name: 'Tonkotsu Ramen', price: '195.000đ', cat: 'ramen', icon: '🍜', desc: 'Rich pork bone broth simmered 18 hours, chashu pork, soft egg.' }
+      ],
+      reviews: [
+        { author: 'Anh Nguyen', rating: 5, date: 'Tháng 5, 2024', content: 'Nhà hàng tuyệt vời! Sashimi tươi ngon, nhân viên thân thiện và hỗ trợ tiếng Nhật rất tốt. Sẽ quay lại lần sau.', replies: [], reported: false },
+        { author: 'Minh Tran', rating: 4, date: 'Tháng 4, 2024', content: 'Không gian đẹp, món ăn chất lượng cao. Giá hơi cao nhưng xứng đáng với trải nghiệm đem lại.', replies: [], reported: false }
+      ]
+    };
+
+    const defaultBookings = [
+      { id: 1, name: 'Nguyễn Văn A', phone: '0901234567', date: '2026-05-24', time: '18:30', guests: '2 người', note: 'Chỗ ngồi gần cửa sổ', status: 'pending' },
+      { id: 2, name: 'Trần Thị B', phone: '0912345678', date: '2026-05-25', time: '19:00', guests: '4 người', note: 'Không ăn cay được', status: 'approved' },
+      { id: 3, name: 'Sato Kenji', phone: '0934567890', date: '2026-05-26', time: '12:00', guests: '3 người', note: 'Cần hỗ trợ tiếng Nhật', status: 'pending' }
+    ];
+
+    let currentRestaurant = null;
+    let currentBookings = [];
+
+    // 2. Load States
+    function loadData() {
+      const user = getUser();
+      if (user) {
+        document.getElementById('owner-name-display').textContent = user.name;
+      }
+
+      currentRestaurant = JSON.parse(localStorage.getItem('meshimap_restaurant'));
+      if (!currentRestaurant) {
+        currentRestaurant = defaultRestaurant;
+        localStorage.setItem('meshimap_restaurant', JSON.stringify(currentRestaurant));
+      }
+
+      currentBookings = JSON.parse(localStorage.getItem('meshimap_bookings_db'));
+      if (!currentBookings) {
+        currentBookings = defaultBookings;
+        localStorage.setItem('meshimap_bookings_db', JSON.stringify(currentBookings));
+      }
+      
+      const userWrittenBookings = JSON.parse(localStorage.getItem('meshimap_bookings') || '[]');
+      let updatedDb = [...currentBookings];
+      let hasChanges = false;
+      userWrittenBookings.forEach((ub, index) => {
+        if (!updatedDb.some(db => db.name === (ub.name || 'Khách vãng lai') && db.date === ub.date && db.time === ub.time)) {
+          updatedDb.push({
+            id: 'u-' + index,
+            name: ub.name || 'Khách vãng lai',
+            phone: ub.phone || '0987654321',
+            date: ub.date,
+            time: ub.time,
+            guests: ub.guests || '2 người',
+            note: ub.note || '',
+            status: 'pending'
+          });
+          hasChanges = true;
+        }
+      });
+      if (hasChanges) {
+        currentBookings = updatedDb;
+        localStorage.setItem('meshimap_bookings_db', JSON.stringify(currentBookings));
+      }
+    }
+
+    // 3. Tab switching logic
+    document.querySelectorAll('.db-sidebar__link').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetTab = btn.dataset.tab;
+        if (!targetTab) return;
+
+        document.querySelectorAll('.db-sidebar__link').forEach(b => b.classList.remove('is-active'));
+        btn.classList.add('is-active');
+
+        document.querySelectorAll('.db-tab-content').forEach(tab => tab.classList.remove('is-active'));
+        document.getElementById(targetTab).classList.add('is-active');
+
+        let title = '';
+        if (targetTab === 'tab-restaurant') title = 'Quản lý thông tin nhà hàng';
+        else if (targetTab === 'tab-bookings') title = 'Quản lý đặt bàn';
+        else if (targetTab === 'tab-reviews') title = 'Xem đánh giá khách hàng';
+        else if (targetTab === 'tab-preview') title = 'Xem trước giao diện người dùng';
+        document.getElementById('db-title-display').textContent = title;
+
+        if (targetTab === 'tab-restaurant') renderRestaurantAndMenu();
+        else if (targetTab === 'tab-bookings') renderBookings();
+        else if (targetTab === 'tab-reviews') renderReviews();
+        else if (targetTab === 'tab-preview') reloadPreview();
+      });
+    });
+
+    // 4. Alert display Helper
+    function showAlert(message, type = 'success') {
+      const container = document.getElementById('alert-container');
+      container.innerHTML = `
+        <div class="db-alert db-alert--${type}">
+          <span>${type === 'success' ? '✅' : '⚠️'}</span>
+          <span>${message}</span>
+        </div>
+      `;
+      setTimeout(() => {
+        container.innerHTML = '';
+      }, 3500);
+    }
+
+    // 5. Render: Restaurant Info & Menu Form
+    function renderRestaurantAndMenu() {
+      document.getElementById('restaurant-name').value = currentRestaurant.name;
+      document.getElementById('restaurant-phone').value = currentRestaurant.phone;
+      document.getElementById('restaurant-address').value = currentRestaurant.address;
+      document.getElementById('restaurant-opentime').value = currentRestaurant.openTime;
+      document.getElementById('restaurant-closetime').value = currentRestaurant.closeTime;
+      document.getElementById('restaurant-jpsupport').checked = currentRestaurant.jpSupport;
+      document.getElementById('restaurant-jpsupport-text').value = currentRestaurant.jpSupportText || '';
+      document.getElementById('restaurant-banner').value = currentRestaurant.banner || '';
+
+      const container = document.getElementById('db-menu-list-container');
+      container.innerHTML = '';
+      currentRestaurant.menu.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = 'db-menu-card';
+        card.innerHTML = `
+          <div class="db-menu-card__icon">${item.icon || '🍣'}</div>
+          <div class="db-menu-card__info">
+            <h4 class="db-menu-card__name">${item.name}</h4>
+            <div class="db-menu-card__price">${item.price}</div>
+            <p class="db-menu-card__desc">${item.desc || ''}</p>
+          </div>
+          <div class="db-menu-card__actions">
+            <button class="db-icon-btn" onclick="openEditMenuModal(${index})" title="Sửa món">✏️</button>
+            <button class="db-icon-btn db-icon-btn--danger" onclick="deleteMenuItem(${index})" title="Xóa món">🗑️</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // General Info submit
+    document.getElementById('restaurant-info-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      currentRestaurant.name = document.getElementById('restaurant-name').value;
+      currentRestaurant.phone = document.getElementById('restaurant-phone').value;
+      currentRestaurant.address = document.getElementById('restaurant-address').value;
+      currentRestaurant.openTime = document.getElementById('restaurant-opentime').value;
+      currentRestaurant.closeTime = document.getElementById('restaurant-closetime').value;
+      currentRestaurant.jpSupport = document.getElementById('restaurant-jpsupport').checked;
+      currentRestaurant.jpSupportText = document.getElementById('restaurant-jpsupport-text').value;
+      currentRestaurant.banner = document.getElementById('restaurant-banner').value;
+
+      localStorage.setItem('meshimap_restaurant', JSON.stringify(currentRestaurant));
+      showAlert('Lưu thông tin nhà hàng thành công!');
+    });
+
+    // 6. Menu Modals Operations
+    const menuModal = document.getElementById('modal-menu-item');
+    
+    document.getElementById('btn-add-menu-modal').addEventListener('click', () => {
+      document.getElementById('menu-modal-title').textContent = 'Thêm món ăn mới';
+      document.getElementById('menu-edit-index').value = '';
+      document.getElementById('menu-item-form').reset();
+      menuModal.style.display = 'flex';
+    });
+
+    document.getElementById('btn-close-menu-modal').addEventListener('click', () => {
+      menuModal.style.display = 'none';
+    });
+
+    function openEditMenuModal(index) {
+      const item = currentRestaurant.menu[index];
+      document.getElementById('menu-modal-title').textContent = 'Chỉnh sửa món ăn';
+      document.getElementById('menu-edit-index').value = index;
+      
+      document.getElementById('menu-item-name').value = item.name;
+      document.getElementById('menu-item-price').value = item.price;
+      document.getElementById('menu-item-category').value = item.cat || 'sashimi';
+      document.getElementById('menu-item-icon').value = item.icon || '🍣';
+      document.getElementById('menu-item-desc').value = item.desc || '';
+
+      menuModal.style.display = 'flex';
+    }
+
+    document.getElementById('menu-item-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const indexStr = document.getElementById('menu-edit-index').value;
+      
+      const newItem = {
+        name: document.getElementById('menu-item-name').value,
+        price: document.getElementById('menu-item-price').value,
+        cat: document.getElementById('menu-item-category').value,
+        icon: document.getElementById('menu-item-icon').value,
+        desc: document.getElementById('menu-item-desc').value
+      };
+
+      if (indexStr === '') {
+        currentRestaurant.menu.push(newItem);
+        showAlert('Đã thêm món ăn mới!');
+      } else {
+        const index = parseInt(indexStr);
+        currentRestaurant.menu[index] = newItem;
+        showAlert('Đã cập nhật món ăn!');
+      }
+
+      localStorage.setItem('meshimap_restaurant', JSON.stringify(currentRestaurant));
+      renderRestaurantAndMenu();
+      menuModal.style.display = 'none';
+    });
+
+    function deleteMenuItem(index) {
+      if (confirm('Bạn có chắc muốn xóa món ăn này khỏi thực đơn không?')) {
+        currentRestaurant.menu.splice(index, 1);
+        localStorage.setItem('meshimap_restaurant', JSON.stringify(currentRestaurant));
+        renderRestaurantAndMenu();
+        showAlert('Đã xóa món ăn khỏi thực đơn!', 'warning');
+      }
+    }
+
+    // 7. Render: Bookings Table
+    function renderBookings() {
+      const filter = document.getElementById('booking-filter').value;
+      const tbody = document.getElementById('db-booking-table-body');
+      tbody.innerHTML = '';
+
+      const filtered = currentBookings.filter(b => filter === 'all' || b.status === filter);
+      
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--clr-muted)">Không tìm thấy lượt đặt bàn nào.</td></tr>`;
+        return;
+      }
+
+      filtered.sort((a,b) => b.date.localeCompare(a.date));
+
+      filtered.forEach(b => {
+        const tr = document.createElement('tr');
+        
+        let statusBadge = '';
+        if (b.status === 'pending') statusBadge = '<span class="db-badge db-badge--pending">Chờ duyệt</span>';
+        else if (b.status === 'approved') statusBadge = '<span class="db-badge db-badge--approved">Đã nhận</span>';
+        else if (b.status === 'rejected') statusBadge = `<span class="db-badge db-badge--rejected" title="Lý do: ${b.rejectReason || ''}">Đã từ chối</span>`;
+
+        let actionButtons = '';
+        if (b.status === 'pending') {
+          actionButtons = `
+            <button class="btn btn--dark" style="padding: 4px 10px; font-size:12px; background:#059669;" onclick="approveBooking('${b.id}')">Duyệt</button>
+            <button class="btn btn--dark" style="padding: 4px 10px; font-size:12px; background:#dc2626;" onclick="openRejectBookingModal('${b.id}')">Từ chối</button>
+          `;
+        } else {
+          actionButtons = `<span style="font-size: 12px; color: var(--clr-muted)">Đã xử lý</span>`;
+        }
+
+        tr.innerHTML = `
+          <td style="font-weight: 600;">${b.name}</td>
+          <td>${b.phone}</td>
+          <td>${b.date}</td>
+          <td>${b.time}</td>
+          <td>${b.guests}</td>
+          <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${b.note || ''}">${b.note || '-'}</td>
+          <td>${statusBadge}</td>
+          <td><div style="display:flex; gap:6px;">${actionButtons}</div></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('booking-filter').addEventListener('change', renderBookings);
+
+    function approveBooking(id) {
+      const idx = currentBookings.findIndex(b => String(b.id) === String(id));
+      if (idx !== -1) {
+        currentBookings[idx].status = 'approved';
+        localStorage.setItem('meshimap_bookings_db', JSON.stringify(currentBookings));
+        renderBookings();
+        showAlert('Đã duyệt chấp nhận đặt bàn!');
+      }
+    }
+
+    const rejectModal = document.getElementById('modal-reject-booking');
+    
+    function openRejectBookingModal(id) {
+      document.getElementById('reject-booking-id').value = id;
+      document.getElementById('reject-booking-form').reset();
+      rejectModal.style.display = 'flex';
+    }
+
+    document.getElementById('btn-close-reject-modal').addEventListener('click', () => {
+      rejectModal.style.display = 'none';
+    });
+
+    document.getElementById('reject-booking-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const id = document.getElementById('reject-booking-id').value;
+      const reason = document.getElementById('reject-reason').value;
+
+      const idx = currentBookings.findIndex(b => String(b.id) === String(id));
+      if (idx !== -1) {
+        currentBookings[idx].status = 'rejected';
+        currentBookings[idx].rejectReason = reason;
+        localStorage.setItem('meshimap_bookings_db', JSON.stringify(currentBookings));
+        renderBookings();
+        showAlert('Đã từ chối đơn đặt bàn này.', 'warning');
+      }
+      rejectModal.style.display = 'none';
+    });
+
+    // 8. Render: Reviews Tab
+    function renderReviews() {
+      const storedReviews = JSON.parse(localStorage.getItem('meshimap_reviews') || '[]');
+      const combinedReviews = [...currentRestaurant.reviews];
+
+      storedReviews.forEach(ur => {
+        if (!combinedReviews.some(cr => cr.content === ur.content && cr.author === ur.author)) {
+          combinedReviews.push({
+            author: ur.author,
+            rating: parseInt(ur.rating) || 5,
+            date: ur.date || 'Tháng 5, 2026',
+            content: ur.content,
+            replies: ur.replies || [],
+            reported: ur.reported || false,
+            deleted: ur.deleted || false
+          });
+        }
+      });
+
+      currentRestaurant.reviews = combinedReviews;
+      localStorage.setItem('meshimap_restaurant', JSON.stringify(currentRestaurant));
+
+      const starsFilter = document.getElementById('review-stars-filter').value;
+      const container = document.getElementById('db-reviews-container');
+      container.innerHTML = '';
+
+      const activeReviews = combinedReviews.filter(r => !r.deleted);
+      const filtered = activeReviews.filter(r => starsFilter === 'all' || String(r.rating) === starsFilter);
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding: 32px; color:var(--clr-muted)">Không có đánh giá nào thỏa mãn bộ lọc.</div>`;
+        return;
+      }
+
+      filtered.forEach((rev, index) => {
+        const item = document.createElement('div');
+        item.className = 'db-review-item';
+        
+        let stars = '⭐'.repeat(rev.rating) + '☆'.repeat(5 - rev.rating);
+        
+        let repliesHTML = '';
+        if (rev.replies && rev.replies.length > 0) {
+          rev.replies.forEach(rep => {
+            repliesHTML += `
+              <div class="db-review-reply-box" style="margin-top: 8px;">
+                <strong>Bạn đã phản hồi:</strong>
+                <p style="margin-top: 4px; font-style: italic;">"${rep}"</p>
+              </div>
+            `;
+          });
+        }
+
+        let reportAction = '';
+        if (rev.reported) {
+          reportAction = `<span class="db-badge db-badge--reported" style="margin-left: 10px;">Đã báo cáo</span>`;
+        } else {
+          reportAction = `
+            <button class="btn btn--outline" style="padding: 2px 8px; font-size:11px; margin-left: 10px; border-color:#dc2626; color:#dc2626;" onclick="reportReview('${rev.content}')">
+              🚩 Báo cáo vi phạm
+            </button>
+          `;
+        }
+
+        item.innerHTML = `
+          <div class="db-review-header">
+            <div>
+              <span class="db-review-author">${rev.author}</span>
+              <span class="db-review-date" style="margin-left: 8px;">${rev.date}</span>
+              ${reportAction}
+            </div>
+            <div class="db-review-stars">${stars}</div>
+          </div>
+          <p class="db-review-content">"${rev.content}"</p>
+          
+          ${repliesHTML}
+
+          <div style="margin-top: 8px;">
+            <button class="db-review-reply-btn" onclick="toggleReplyForm(${index})">💬 Trả lời</button>
+            <div id="reply-form-${index}" style="display:none; margin-top: 8px;">
+              <textarea id="reply-text-${index}" class="db-textarea" style="width:100%; min-height:60px;" placeholder="Viết phản hồi cho khách hàng..."></textarea>
+              <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+                <button class="btn btn--outline" style="padding:4px 10px; font-size:12px;" onclick="toggleReplyForm(${index})">Hủy</button>
+                <button class="btn btn--primary" style="padding:4px 12px; font-size:12px;" onclick="submitReply('${rev.content}', ${index})">Gửi phản hồi</button>
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    document.getElementById('review-stars-filter').addEventListener('change', renderReviews);
+
+    function toggleReplyForm(index) {
+      const el = document.getElementById(`reply-form-${index}`);
+      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function submitReply(contentKey, index) {
+      const text = document.getElementById(`reply-text-${index}`).value.trim();
+      if (!text) return;
+
+      const idx = currentRestaurant.reviews.findIndex(r => r.content === contentKey);
+      if (idx !== -1) {
+        if (!currentRestaurant.reviews[idx].replies) currentRestaurant.reviews[idx].replies = [];
+        currentRestaurant.reviews[idx].replies.push(text);
+        
+        localStorage.setItem('meshimap_restaurant', JSON.stringify(currentRestaurant));
+
+        const storedReviews = JSON.parse(localStorage.getItem('meshimap_reviews') || '[]');
+        const storedIdx = storedReviews.findIndex(r => r.content === contentKey);
+        if (storedIdx !== -1) {
+          if (!storedReviews[storedIdx].replies) storedReviews[storedIdx].replies = [];
+          storedReviews[storedIdx].replies.push(text);
+          localStorage.setItem('meshimap_reviews', JSON.stringify(storedReviews));
+        }
+
+        showAlert('Đã gửi phản hồi đánh giá!');
+        renderReviews();
+      }
+    }
+
+    function reportReview(contentKey) {
+      if (confirm('Bạn có chắc chắn muốn báo cáo đánh giá này là vi phạm tiêu chuẩn cộng đồng không?')) {
+        const idx = currentRestaurant.reviews.findIndex(r => r.content === contentKey);
+        if (idx !== -1) {
+          currentRestaurant.reviews[idx].reported = true;
+          currentRestaurant.reviews[idx].reportReason = 'Owner reported: Nội dung không chính xác hoặc phỉ báng.';
+          localStorage.setItem('meshimap_restaurant', JSON.stringify(currentRestaurant));
+        }
+
+        const storedReviews = JSON.parse(localStorage.getItem('meshimap_reviews') || '[]');
+        const storedIdx = storedReviews.findIndex(r => r.content === contentKey);
+        if (storedIdx !== -1) {
+          storedReviews[storedIdx].reported = true;
+          storedReviews[storedIdx].reportReason = 'Owner reported: Nội dung không chính xác hoặc phỉ báng.';
+          localStorage.setItem('meshimap_reviews', JSON.stringify(storedReviews));
+        }
+
+        showAlert('Đã gửi báo cáo vi phạm. Đang chờ Admin xử lý!', 'warning');
+        renderReviews();
+      }
+    }
+
+    function reloadPreview() {
+      const iframe = document.getElementById('preview-iframe');
+      if (iframe) {
+        iframe.src = iframe.src;
+      }
+    }
+    
+    document.getElementById('btn-refresh-preview').addEventListener('click', reloadPreview);
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadData();
+      renderRestaurantAndMenu();
+    });
+  </script>
+</body>
+</html>

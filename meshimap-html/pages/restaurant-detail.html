@@ -243,6 +243,172 @@
   <div id="footer-slot"></div>
   <script src="../js/script.js"></script>
   <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Load data from localStorage
+      const defaultRestaurant = {
+        name: 'Sakura Garden',
+        address: '123 Le Loi Street, District 1, Ho Chi Minh City',
+        openTime: '10:00',
+        closeTime: '22:00',
+        jpSupport: true,
+        jpSupportText: 'Tiếng Việt, Tiếng Nhật, English',
+        phone: '+84 28 3823 4567',
+        banner: '',
+        menu: [
+          { name: 'Premium Sashimi Set', price: '450.000đ', cat: 'sashimi', icon: '🐟', desc: 'A curated selection of seasonal fish including Otoro, Sake, and Hamachi.' },
+          { name: 'Sashimi Deluxe', price: '380.000đ', cat: 'sashimi', icon: '🍱', desc: 'Premium cut fish with authentic wasabi and soy sauce.' },
+          { name: 'Tempura Set', price: '280.000đ', cat: 'tempura', icon: '🍤', desc: 'Crispy light-battered shrimp and vegetables with dipping sauce.' },
+          { name: 'Tonkotsu Ramen', price: '195.000đ', cat: 'ramen', icon: '🍜', desc: 'Rich pork bone broth simmered 18 hours, chashu pork, soft egg.' }
+        ],
+        reviews: [
+          { author: 'Anh Nguyen', rating: 5, date: 'Tháng 5, 2024', content: 'Nhà hàng tuyệt vời! Sashimi tươi ngon, nhân viên thân thiện và hỗ trợ tiếng Nhật rất tốt. Sẽ quay lại lần sau.', replies: [], reported: false },
+          { author: 'Minh Tran', rating: 4, date: 'Tháng 4, 2024', content: 'Không gian đẹp, món ăn chất lượng cao. Giá hơi cao nhưng xứng đáng với trải nghiệm đem lại.', replies: [], reported: false }
+        ]
+      };
+
+      let restaurant = JSON.parse(localStorage.getItem('meshimap_restaurant'));
+      if (!restaurant) {
+        restaurant = defaultRestaurant;
+        localStorage.setItem('meshimap_restaurant', JSON.stringify(restaurant));
+      }
+
+      // Merge user reviews written in review page (stored in meshimap_reviews)
+      const storedReviews = JSON.parse(localStorage.getItem('meshimap_reviews') || '[]');
+      const combinedReviews = [...restaurant.reviews];
+
+      storedReviews.forEach(ur => {
+        // If not already in combined list
+        if (!combinedReviews.some(cr => cr.content === ur.content && cr.author === ur.author)) {
+          combinedReviews.push({
+            author: ur.author,
+            rating: parseInt(ur.rating) || 5,
+            date: ur.date || 'Tháng 5, 2026',
+            content: ur.content,
+            replies: ur.replies || [],
+            reported: ur.reported || false,
+            deleted: ur.deleted || false
+          });
+        }
+      });
+
+      // Filter out reviews that have been deleted/hidden by Admin
+      const activeReviews = combinedReviews.filter(r => !r.deleted);
+
+      // Update in local variable so averages work
+      restaurant.reviews = combinedReviews;
+
+      // Calculate rating
+      let avgRating = 4.8;
+      if (activeReviews.length > 0) {
+        const sum = activeReviews.reduce((s, r) => s + Number(r.rating), 0);
+        avgRating = (sum / activeReviews.length).toFixed(1);
+      }
+
+      // Update DOM
+      document.querySelector('.detail-name').textContent = restaurant.name;
+      
+      const titleBookingModal = document.getElementById('modal-booking-title');
+      if (titleBookingModal) titleBookingModal.textContent = `Đặt bàn — ${restaurant.name}`;
+
+      // Address
+      const metaItems = document.querySelectorAll('.detail-meta__item');
+      if (metaItems[0]) {
+        metaItems[0].innerHTML = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.167A3.5 3.5 0 0 1 10.5 4.667C10.5 7.292 7 12.833 7 12.833S3.5 7.292 3.5 4.667A3.5 3.5 0 0 1 7 1.167Z" stroke="#8A8A8A" stroke-width="1.2"/><circle cx="7" cy="4.667" r="1.167" stroke="#8A8A8A" stroke-width="1.2"/></svg> ${restaurant.address}`;
+      }
+      
+      // Stars & Rating
+      if (metaItems[1]) {
+        let starStr = '★'.repeat(Math.round(avgRating)) + '☆'.repeat(5 - Math.round(avgRating));
+        metaItems[1].innerHTML = `<span class="detail-meta__stars">${starStr}</span> (${avgRating}/5 • ${activeReviews.length} reviews)`;
+      }
+
+      // Banner Image
+      if (restaurant.banner) {
+        const heroCover = document.getElementById('detail-hero');
+        if (heroCover) {
+          heroCover.style.background = `url('${restaurant.banner}') center/cover no-repeat`;
+        }
+      }
+
+      // Hours, Phone, Language Supported
+      const rows = document.querySelectorAll('.info-card__row');
+      rows.forEach(row => {
+        const label = row.querySelector('.info-card__label')?.textContent;
+        const valEl = row.querySelector('.info-card__value');
+        if (!valEl) return;
+        if (label === 'Giờ mở cửa') {
+          valEl.textContent = `${restaurant.openTime} - ${restaurant.closeTime} (Hàng ngày)`;
+        } else if (label === 'Điện thoại') {
+          valEl.textContent = restaurant.phone;
+        } else if (label === 'Ngôn ngữ hỗ trợ') {
+          valEl.textContent = restaurant.jpSupport ? restaurant.jpSupportText : 'Tiếng Việt, English';
+        }
+      });
+
+      // Menu
+      const menuGrid = document.getElementById('menu-grid');
+      if (menuGrid) {
+        menuGrid.innerHTML = '';
+        restaurant.menu.forEach(item => {
+          const mItem = document.createElement('div');
+          mItem.className = 'menu-item';
+          mItem.dataset.cat = item.cat;
+          mItem.innerHTML = `
+            <div class="menu-item__img">${item.icon || '🍣'}</div>
+            <div class="menu-item__body">
+              <div class="menu-item__name">${item.name}</div>
+              <div class="menu-item__price">${typeof item.price === 'number' ? item.price.toLocaleString('vi-VN') + 'đ' : item.price}</div>
+              <p style="font-size: 12px; color: var(--clr-muted); line-height: 1.5;">${item.desc}</p>
+            </div>
+          `;
+          menuGrid.appendChild(mItem);
+        });
+      }
+
+      // Reviews section
+      const reviewsSection = document.getElementById('reviews-section');
+      if (reviewsSection) {
+        const headerRow = reviewsSection.firstElementChild;
+        reviewsSection.innerHTML = '';
+        reviewsSection.appendChild(headerRow);
+
+        activeReviews.forEach(rev => {
+          const card = document.createElement('div');
+          card.className = 'review-card';
+          
+          let stars = '★'.repeat(Number(rev.rating)) + '☆'.repeat(5 - Number(rev.rating));
+          
+          let replyHTML = '';
+          if (rev.replies && rev.replies.length > 0) {
+            rev.replies.forEach(rep => {
+              replyHTML += `
+                <div style="margin-top: 12px; padding: 12px; background: var(--clr-cream); border-left: 3px solid var(--clr-primary); border-radius: 8px; font-size: 13px; text-align: left;">
+                  <strong style="color: var(--clr-dark);">Chủ nhà hàng phản hồi:</strong>
+                  <p style="margin-top: 4px; color: var(--clr-medium); font-style: italic;">"${rep}"</p>
+                </div>
+              `;
+            });
+          }
+
+          card.innerHTML = `
+            <div class="review__header" style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="display:flex; align-items:center;">
+                <div class="review__avatar" style="width:36px; height:36px; border-radius:50%; background:var(--clr-light); color:var(--clr-dark); font-weight:700; display:flex; align-items:center; justify-content:center;">${rev.author.charAt(0).toUpperCase()}</div>
+                <div class="review__body" style="padding-left:12px;">
+                  <div class="review__name" style="font-weight:700; font-size:14px; color:var(--clr-dark);">${rev.author}</div>
+                  <div class="review__date" style="font-size:11px; color:var(--clr-muted);">${rev.date}</div>
+                </div>
+              </div>
+              <div class="review__stars" style="color:var(--clr-yellow); font-size:14px;">${stars}</div>
+            </div>
+            <p class="review__text" style="font-size:13px; color:var(--clr-medium); margin-top:8px; line-height:1.6; text-align: left;">${rev.content}</p>
+            ${replyHTML}
+          `;
+          reviewsSection.appendChild(card);
+        });
+      }
+    });
+
     document.addEventListener('click', e => {
       // Menu category filter logic
       const catBtn = e.target.closest('[data-cat]');

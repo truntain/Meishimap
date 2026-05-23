@@ -290,15 +290,29 @@ function handleLogin(form) {
   }
   if (!valid) return;
 
-  // Simulate auth — any email/password accepted (demo)
-  const DEMO_USER = { email: email.value, name: email.value.split('@')[0] };
+  // Simulate auth — detect role from email
+  const emailVal = email.value.toLowerCase();
+  let role = 'user';
+  if (emailVal.includes('owner')) {
+    role = 'owner';
+  } else if (emailVal.includes('admin')) {
+    role = 'admin';
+  }
+
+  const DEMO_USER = { email: email.value, name: email.value.split('@')[0], role: role };
   setUser(DEMO_USER);
 
-  // Redirect to homepage
+  // Redirect based on role
   const btn = form.querySelector('[type="submit"]');
   if (btn) { btn.textContent = 'Đang đăng nhập...'; btn.disabled = true; }
   setTimeout(() => {
-    window.location.href = '../index.html';
+    if (role === 'owner') {
+      window.location.href = 'owner-dashboard.html';
+    } else if (role === 'admin') {
+      window.location.href = 'admin-dashboard.html';
+    } else {
+      window.location.href = '../index.html';
+    }
   }, 800);
 }
 
@@ -337,11 +351,27 @@ function handleRegister(form) {
   
   if (!valid) return;
 
-  setUser({ email: email.value, name: name.value.trim() });
+  const emailVal = email.value.toLowerCase();
+  let role = 'user';
+  if (emailVal.includes('owner')) {
+    role = 'owner';
+  } else if (emailVal.includes('admin')) {
+    role = 'admin';
+  }
+
+  setUser({ email: email.value, name: name.value.trim(), role: role });
 
   const btn = form.querySelector('[type="submit"]');
   if (btn) { btn.textContent = 'Đang tạo tài khoản...'; btn.disabled = true; }
-  setTimeout(() => { window.location.href = '../index.html'; }, 800);
+  setTimeout(() => {
+    if (role === 'owner') {
+      window.location.href = 'owner-dashboard.html';
+    } else if (role === 'admin') {
+      window.location.href = 'admin-dashboard.html';
+    } else {
+      window.location.href = '../index.html';
+    }
+  }, 800);
 }
 
 /* ─── 12. AUTH — LOGOUT ─────────────────────────────── */
@@ -357,11 +387,20 @@ function showUserMenu(btn) {
 
   menu = document.createElement('div');
   menu.id = 'user-dropdown';
-  menu.style.cssText = 'position:absolute;top:calc(100% + 8px);right:0;background:#fff;border:1px solid var(--clr-border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.1);min-width:160px;z-index:200;overflow:hidden;';
+  menu.style.cssText = 'position:absolute;top:calc(100% + 8px);right:0;background:#fff;border:1px solid var(--clr-border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.1);min-width:180px;z-index:200;overflow:hidden;';
 
   const user = getUser();
+  let roleDashboardLink = '';
+  if (user?.role === 'owner') {
+    roleDashboardLink = `<a href="${resolvePath('pages/owner-dashboard.html')}" style="display:block;padding:12px 16px;font-family:var(--font-body);font-size:14px;color:var(--clr-primary);font-weight:600;text-align:left;border-bottom:1px solid var(--clr-border)">Dashboard Chủ nhà</a>`;
+  } else if (user?.role === 'admin') {
+    roleDashboardLink = `<a href="${resolvePath('pages/admin-dashboard.html')}" style="display:block;padding:12px 16px;font-family:var(--font-body);font-size:14px;color:var(--clr-primary);font-weight:600;text-align:left;border-bottom:1px solid var(--clr-border)">Dashboard Admin</a>`;
+  }
+
   menu.innerHTML = `
-    <div style="padding:12px 16px;font-size:12px;color:var(--clr-muted);border-bottom:1px solid var(--clr-border)">${user?.email || ''}</div>
+    <div style="padding:12px 16px;font-size:12px;color:var(--clr-muted);border-bottom:1px solid var(--clr-border)">${user?.email || ''} (${user?.role || 'user'})</div>
+    ${roleDashboardLink}
+    <a href="${resolvePath('pages/profile.html')}" style="display:block;padding:12px 16px;font-family:var(--font-body);font-size:14px;color:var(--clr-dark);text-align:left;border-bottom:1px solid var(--clr-border)">Hồ sơ cá nhân</a>
     <button data-action="logout" style="display:block;width:100%;padding:12px 16px;text-align:left;background:none;border:none;font-family:var(--font-body);font-size:14px;color:var(--clr-dark);cursor:pointer;">Đăng xuất</button>
   `;
 
