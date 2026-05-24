@@ -3,15 +3,14 @@ import {
   PrimaryGeneratedColumn, 
   Column, 
   CreateDateColumn, 
-  UpdateDateColumn 
+  UpdateDateColumn,
+  OneToMany
 } from 'typeorm';
 
-// Định nghĩa Enum tương ứng với user_role trong Database
-export enum UserRole {
-  KHACH_HANG = 'khách hàng',
-  QUAN_LY = 'quản lý',
-  CHU_NHA_HANG = 'chủ nhà hàng',
-}
+import { Booking } from '../../booking/entities/booking.entity';
+import { Notification } from '../../notification/entities/notification.entity';
+import { Review } from '../../review/entities/review.entity';
+import { UserRole } from '../../common/enums';
 
 @Entity('users')
 export class User {
@@ -43,7 +42,7 @@ export class User {
   @Column({
     type: 'enum',
     enum: UserRole,
-    default: UserRole.KHACH_HANG,
+    default: UserRole.CUSTOMER,
     nullable: false
   })
   role!: UserRole;
@@ -66,4 +65,13 @@ export class User {
     onUpdate: 'CURRENT_TIMESTAMP' 
   })
   updated_at!: Date;
+
+  @OneToMany(() => Booking, booking => booking.user)
+  bookings!: Booking[];
+
+  @OneToMany(() => Notification, notification => notification.user)
+  notifications!: Notification[];
+
+  @OneToMany(() => Review, review => review.user)
+  reviews!: Review[];
 }

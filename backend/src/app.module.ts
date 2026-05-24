@@ -7,6 +7,9 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { RestaurantModule } from './restaurant/restaurant.module';
+import { BookingModule } from './booking/booking.module';
+import { NotificationModule } from './notification/notification.module';
+import { ReviewModule } from './review/review.module';
 
 @Module({
   imports: [
@@ -36,6 +39,12 @@ import { RestaurantModule } from './restaurant/restaurant.module';
     UserModule,
 
     RestaurantModule,
+    
+    BookingModule,
+    
+    NotificationModule,
+    
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -20,7 +20,7 @@ export default function proxy(request: NextRequest) {
 
   if (userCookie) {
     try {
-      user = JSON.parse(userCookie.value);
+      user = JSON.parse(decodeURIComponent(userCookie.value));
     } catch {
       // Cookie bị lỗi, coi như chưa đăng nhập
     }

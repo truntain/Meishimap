@@ -4,7 +4,11 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+
+import { Booking } from '../../booking/entities/booking.entity';
+import { Review } from '../../review/entities/review.entity';
 
 @Entity('restaurants')
 export class Restaurant {
@@ -32,10 +36,10 @@ export class Restaurant {
   @Column({ type: 'varchar', length: 100, nullable: true })
   city!: string | null;
 
-  @Column({ type: 'double precision', nullable: false })
+  @Column({ type: 'double precision', nullable: false, default: 0 })
   latitude!: number;
 
-  @Column({ type: 'double precision', nullable: false })
+  @Column({ type: 'double precision', nullable: false, default: 0 })
   longitude!: number;
 
   @Column({ type: 'text', nullable: true })
@@ -62,4 +66,10 @@ export class Restaurant {
     onUpdate: 'CURRENT_TIMESTAMP',
   })
   updated_at!: Date;
+
+  @OneToMany(() => Booking, booking => booking.restaurant)
+  bookings!: Booking[];
+
+  @OneToMany(() => Review, review => review.restaurant)
+  reviews!: Review[];
 }

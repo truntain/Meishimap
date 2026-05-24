@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Param, ParseIntPipe } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { RestaurantService } from './restaurant.service';
 
@@ -6,6 +6,12 @@ import { RestaurantService } from './restaurant.service';
 @Controller('restaurants')
 export class RestaurantController {
   constructor(private readonly restaurantService: RestaurantService) { }
+
+  @ApiOperation({ summary: 'Lấy danh sách nhà hàng nổi bật cho trang chủ' })
+  @Get('featured')
+  findFeatured() {
+    return this.restaurantService.findFeatured();
+  }
 
   @ApiOperation({ summary: 'Lấy danh sách nhà hàng cho màn tìm kiếm' })
   @ApiQuery({ name: 'q', required: false })
@@ -18,5 +24,11 @@ export class RestaurantController {
     @Query('sort') sort?: 'rating' | 'name',
   ) {
     return this.restaurantService.findAll({ q, category, sort });
+  }
+
+  @ApiOperation({ summary: 'Lấy chi tiết nhà hàng' })
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.restaurantService.findOne(id);
   }
 }

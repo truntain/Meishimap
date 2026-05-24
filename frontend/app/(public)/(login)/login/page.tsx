@@ -44,14 +44,12 @@ export default function LoginPage() {
       Cookies.set('user', JSON.stringify(data.user), { expires: 7 });
 
       // Chuyển hướng dựa theo Role
-      if (data.user.role === 'khách hàng') {
+      if (data.user.role === 'customer') {
         router.push('/');
-      } else if (data.user.role === 'quản lý') {
-        alert('Đăng nhập thành công với quyền Quản lý. (Trang Admin đang được phát triển)');
-        // router.push('/admin');
-      } else if (data.user.role === 'chủ nhà hàng') {
-        alert('Đăng nhập thành công với quyền Chủ nhà hàng. (Trang chủ nhà hàng đang được phát triển)');
-        // router.push('/manager');
+      } else if (data.user.role === 'admin') {
+        router.push('/admins');
+      } else if (data.user.role === 'restaurant_owner') {
+        router.push('/owners');
       } else {
         router.push('/');
       }

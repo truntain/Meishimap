@@ -4,6 +4,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import maplibregl from 'maplibre-gl';
+import type { ExpressionSpecification } from '@maplibre/maplibre-gl-style-spec';
+import { searchCopy, useAppLanguage, type AppLanguage } from '@/config/language';
 
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
@@ -13,6 +15,7 @@ const SATELLITE_SOURCE_ID = 'esri-world-imagery';
 const SATELLITE_LAYER_ID = 'esri-world-imagery-layer';
 
 type MapViewMode = 'map' | 'satellite';
+type SearchSort = 'rating' | 'name';
 
 type Restaurant = {
   id: number;
@@ -29,6 +32,14 @@ type Restaurant = {
   phone: string | null;
   imageUrl: string | null;
   hasJapaneseSupport: boolean;
+  menuItems?: Array<{
+    id: number;
+    name: string;
+    nameJp: string | null;
+    price: number | string;
+    description: string | null;
+    category: string;
+  }>;
 };
 
 type RestaurantFeatureProperties = {
@@ -89,32 +100,6 @@ const MAP_VIEW_OPTIONS: Array<{ key: MapViewMode; label: string }> = [
   { key: 'satellite', label: 'Vệ tinh' },
 ];
 
-const FALLBACK_RESTAURANTS: Restaurant[] = [
-  { id: 1001, name: 'Miyabi Japanese Dining', nameJp: 'みやび 日本料理', category: 'sushi', rating: 4.9, address: '123 Lê Thánh Tôn, Quận 1, TP.HCM', district: 'Quận 1', city: 'Hồ Chí Minh', latitude: 10.7769, longitude: 106.7009, description: 'Sushi, sashimi và set nướng Nhật trong không gian yên tĩnh.', phone: '+84 28 3823 4567', imageUrl: '/restaurant-card-13d489.png', hasJapaneseSupport: true },
-  { id: 1002, name: 'Sakura Kaiseki', nameJp: 'さくら 懐石料理', category: 'kaiseki', rating: 4.8, address: '45 Võ Văn Tần, Quận 3, TP.HCM', district: 'Quận 3', city: 'Hồ Chí Minh', latitude: 10.7828, longitude: 106.6922, description: 'Kaiseki theo mùa, đặt bàn trước cho phòng riêng.', phone: '+84 28 3910 8899', imageUrl: '/restaurant-card-13d489.png', hasJapaneseSupport: true },
-  { id: 1003, name: 'Hanami Ramen House', nameJp: 'はなみ ラーメン', category: 'ramen', rating: 4.7, address: '88 Phan Xích Long, Phú Nhuận, TP.HCM', district: 'Phú Nhuận', city: 'Hồ Chí Minh', latitude: 10.8008, longitude: 106.6855, description: 'Ramen tonkotsu, shoyu và gyoza cho bữa tối nhanh.', phone: '+84 28 3990 1212', imageUrl: null, hasJapaneseSupport: false },
-  { id: 1004, name: 'Tokyoto Izakaya', nameJp: '東京都 居酒屋', category: 'izakaya', rating: 4.6, address: '12 Nguyễn Thị Thập, Quận 7, TP.HCM', district: 'Quận 7', city: 'Hồ Chí Minh', latitude: 10.7392, longitude: 106.7043, description: 'Izakaya sau giờ làm với yakitori và món nhắm Nhật.', phone: '+84 28 5412 7788', imageUrl: null, hasJapaneseSupport: true },
-  { id: 1005, name: 'Kobe Yakiniku', nameJp: '神戸 焼肉', category: 'bbq', rating: 4.5, address: '22 Nguyễn Cơ Thạch, TP.Thủ Đức, TP.HCM', district: 'TP.Thủ Đức', city: 'Hồ Chí Minh', latitude: 10.7806, longitude: 106.7288, description: 'Yakiniku bàn than, set bò Nhật và rau nướng.', phone: '+84 28 6288 7788', imageUrl: null, hasJapaneseSupport: false },
-  { id: 1006, name: 'Fuji Soba House', nameJp: '富士 そば', category: 'soba', rating: 4.4, address: '64 Thành Thái, Quận 10, TP.HCM', district: 'Quận 10', city: 'Hồ Chí Minh', latitude: 10.7717, longitude: 106.6679, description: 'Soba lạnh, udon nóng và tempura giòn nhẹ.', phone: '+84 28 3868 5566', imageUrl: null, hasJapaneseSupport: false },
-  { id: 1007, name: 'Sushi Sakura', nameJp: 'さくら 寿司', category: 'sushi', rating: 4.8, address: '18 Mạc Đĩnh Chi, Quận 1, TP.HCM', district: 'Quận 1', city: 'Hồ Chí Minh', latitude: 10.7844, longitude: 106.7021, description: 'Quầy sushi nhỏ, chef phục vụ omakase theo ngày.', phone: '+84 28 3822 7788', imageUrl: '/restaurant-card-13d489.png', hasJapaneseSupport: true },
-  { id: 1008, name: 'Ramen Ichiban', nameJp: 'いちばん ラーメン', category: 'ramen', rating: 4.7, address: '31 Cao Thắng, Quận 3, TP.HCM', district: 'Quận 3', city: 'Hồ Chí Minh', latitude: 10.7704, longitude: 106.6824, description: 'Ramen đậm vị, mở cửa tới khuya.', phone: '+84 28 3930 9090', imageUrl: null, hasJapaneseSupport: true },
-  { id: 1009, name: 'Ueno Sushi Bar', nameJp: '上野 寿司', category: 'sushi', rating: 4.6, address: '74 Pasteur, Quận 1, TP.HCM', district: 'Quận 1', city: 'Hồ Chí Minh', latitude: 10.7796, longitude: 106.6992, description: 'Sushi bar trung tâm, hợp gặp khách và ăn trưa.', phone: '+84 28 3824 1122', imageUrl: null, hasJapaneseSupport: true },
-  { id: 1010, name: 'Nikko Bento', nameJp: '日光 弁当', category: 'soba', rating: 4.3, address: '15 Nguyễn Đình Chiểu, Quận 1, TP.HCM', district: 'Quận 1', city: 'Hồ Chí Minh', latitude: 10.7879, longitude: 106.6984, description: 'Bento trưa, cơm cá saba và set udon.', phone: '+84 28 3911 2020', imageUrl: null, hasJapaneseSupport: false },
-  { id: 1011, name: 'Osaka Okonomiyaki', nameJp: '大阪 お好み焼き', category: 'izakaya', rating: 4.5, address: '99 Nguyễn Trãi, Quận 5, TP.HCM', district: 'Quận 5', city: 'Hồ Chí Minh', latitude: 10.7557, longitude: 106.6691, description: 'Okonomiyaki áp chảo, takoyaki và đồ uống Nhật.', phone: '+84 28 3923 7788', imageUrl: null, hasJapaneseSupport: false },
-  { id: 1012, name: 'Hokkaido Grill', nameJp: '北海道 グリル', category: 'bbq', rating: 4.6, address: '182 Nguyễn Văn Trỗi, Phú Nhuận, TP.HCM', district: 'Phú Nhuận', city: 'Hồ Chí Minh', latitude: 10.7999, longitude: 106.6768, description: 'Grill hải sản và thịt nướng phong cách Hokkaido.', phone: '+84 28 3844 9191', imageUrl: null, hasJapaneseSupport: true },
-  { id: 1013, name: 'Kyoto Tea Dining', nameJp: '京都 茶寮', category: 'kaiseki', rating: 4.7, address: '21 Tú Xương, Quận 3, TP.HCM', district: 'Quận 3', city: 'Hồ Chí Minh', latitude: 10.7822, longitude: 106.6875, description: 'Món Nhật nhẹ, trà matcha và set ăn tối theo mùa.', phone: '+84 28 3932 1212', imageUrl: null, hasJapaneseSupport: true },
-  { id: 1014, name: 'Shibuya Ramen Lab', nameJp: '渋谷 ラーメン', category: 'ramen', rating: 4.4, address: '40 Lý Tự Trọng, Quận 1, TP.HCM', district: 'Quận 1', city: 'Hồ Chí Minh', latitude: 10.7787, longitude: 106.7039, description: 'Ramen vị hiện đại, topping trứng lòng đào.', phone: '+84 28 3821 4444', imageUrl: null, hasJapaneseSupport: false },
-  { id: 1015, name: 'Asakusa Tempura', nameJp: '浅草 天ぷら', category: 'soba', rating: 4.5, address: '7 Hoa Mai, Phú Nhuận, TP.HCM', district: 'Phú Nhuận', city: 'Hồ Chí Minh', latitude: 10.7972, longitude: 106.6895, description: 'Tempura tôm, rau củ và soba thủ công.', phone: '+84 28 3995 1717', imageUrl: null, hasJapaneseSupport: true },
-  { id: 1016, name: 'Ginzan Izakaya', nameJp: '銀山 居酒屋', category: 'izakaya', rating: 4.6, address: '58 Tôn Thất Thiệp, Quận 1, TP.HCM', district: 'Quận 1', city: 'Hồ Chí Minh', latitude: 10.7732, longitude: 106.7037, description: 'Không gian nhỏ, nhiều món nướng xiên và sake.', phone: '+84 28 3827 8899', imageUrl: null, hasJapaneseSupport: true },
-  { id: 1017, name: 'Nagoya Miso Ramen', nameJp: '名古屋 味噌ラーメン', category: 'ramen', rating: 4.3, address: '11 Trần Não, TP.Thủ Đức, TP.HCM', district: 'TP.Thủ Đức', city: 'Hồ Chí Minh', latitude: 10.7897, longitude: 106.7373, description: 'Miso ramen, karaage và cơm cà ri Nhật.', phone: '+84 28 3740 2323', imageUrl: null, hasJapaneseSupport: false },
-  { id: 1018, name: 'Tsukiji Sushi Corner', nameJp: '築地 寿司', category: 'sushi', rating: 4.6, address: '26 Lê Văn Sỹ, Quận 3, TP.HCM', district: 'Quận 3', city: 'Hồ Chí Minh', latitude: 10.7891, longitude: 106.6781, description: 'Sushi casual, sashimi theo ngày và set lunch.', phone: '+84 28 3845 6622', imageUrl: null, hasJapaneseSupport: true },
-  { id: 1019, name: 'Akari Yakiniku', nameJp: 'あかり 焼肉', category: 'bbq', rating: 4.4, address: '92 Hoàng Văn Thụ, Tân Bình, TP.HCM', district: 'Tân Bình', city: 'Hồ Chí Minh', latitude: 10.8015, longitude: 106.6637, description: 'Yakiniku gia đình, set thịt nướng và salad Nhật.', phone: '+84 28 3848 9933', imageUrl: null, hasJapaneseSupport: false },
-  { id: 1020, name: 'Nara Soba & Udon', nameJp: '奈良 そば うどん', category: 'soba', rating: 4.2, address: '132 Nguyễn Tri Phương, Quận 10, TP.HCM', district: 'Quận 10', city: 'Hồ Chí Minh', latitude: 10.7639, longitude: 106.6687, description: 'Soba, udon và donburi cho bữa trưa nhanh.', phone: '+84 28 3835 2626', imageUrl: null, hasJapaneseSupport: false },
-  { id: 1021, name: 'Yokohama Curry', nameJp: '横浜 カレー', category: 'izakaya', rating: 4.3, address: '44 Phạm Viết Chánh, Bình Thạnh, TP.HCM', district: 'Bình Thạnh', city: 'Hồ Chí Minh', latitude: 10.7911, longitude: 106.7105, description: 'Cà ri Nhật, katsu và set cơm tối.', phone: '+84 28 3510 0101', imageUrl: null, hasJapaneseSupport: false },
-  { id: 1022, name: 'Kamakura Kaiseki', nameJp: '鎌倉 懐石', category: 'kaiseki', rating: 4.9, address: '3 Nguyễn Ư Dĩ, TP.Thủ Đức, TP.HCM', district: 'TP.Thủ Đức', city: 'Hồ Chí Minh', latitude: 10.8046, longitude: 106.7367, description: 'Kaiseki cao cấp, đặt phòng riêng theo yêu cầu.', phone: '+84 28 7300 8080', imageUrl: '/restaurant-card-13d489.png', hasJapaneseSupport: true },
-  { id: 1023, name: 'Marukame Ramen', nameJp: '丸亀 ラーメン', category: 'ramen', rating: 4.4, address: '66 Bạch Đằng, Bình Thạnh, TP.HCM', district: 'Bình Thạnh', city: 'Hồ Chí Minh', latitude: 10.8052, longitude: 106.7136, description: 'Ramen bình dân, topping đa dạng và phục vụ nhanh.', phone: '+84 28 3512 6868', imageUrl: null, hasJapaneseSupport: false },
-  { id: 1024, name: 'Daikoku Sushi Lounge', nameJp: '大黒 寿司', category: 'sushi', rating: 4.7, address: '10 Đồng Khởi, Quận 1, TP.HCM', district: 'Quận 1', city: 'Hồ Chí Minh', latitude: 10.7751, longitude: 106.7055, description: 'Sushi lounge gần phố đi bộ, view trung tâm.', phone: '+84 28 3829 2929', imageUrl: '/restaurant-card-13d489.png', hasJapaneseSupport: true },
-];
 
 const CATEGORIES = [
   { key: 'all', label: 'Tất cả' },
@@ -126,14 +111,63 @@ const CATEGORIES = [
   { key: 'soba', label: 'Soba & Udon' },
 ];
 
+const LOCATION_OPTIONS = [
+  { key: 'all', label: 'Hà Nội' },
+  { key: 'Ba Đình', label: 'Quận Ba Đình' },
+  { key: 'Hoàn Kiếm', label: 'Quận Hoàn Kiếm' },
+  { key: 'Tây Hồ', label: 'Quận Tây Hồ' },
+  { key: 'Cầu Giấy', label: 'Quận Cầu Giấy' },
+  { key: 'Đống Đa', label: 'Quận Đống Đa' },
+  { key: 'Hai Bà Trưng', label: 'Quận Hai Bà Trưng' },
+  { key: 'Thanh Xuân', label: 'Quận Thanh Xuân' },
+  { key: 'Hoàng Mai', label: 'Quận Hoàng Mai' },
+  { key: 'Hà Đông', label: 'Quận Hà Đông' },
+];
 const CATEGORY_LABELS = new Map(CATEGORIES.map((category) => [category.key, category.label]));
-const MIN_DEMO_RESTAURANTS = 18;
+const LOCATION_LABELS = new Map(LOCATION_OPTIONS.map((location) => [location.key, location.label]));
+
+type SearchUrlOptions = {
+  q?: string;
+  category?: string;
+  location?: string;
+  sort?: SearchSort;
+};
+
+function getSearchSort(value: string | null): SearchSort {
+  return value === 'name' ? 'name' : 'rating';
+}
+
+function buildSearchUrl({ q, category, location, sort }: SearchUrlOptions) {
+  const params = new URLSearchParams();
+  const keyword = q?.trim();
+
+  if (keyword) params.set('q', keyword);
+  if (category && category !== 'all') params.set('filter', category);
+  if (location && location !== 'all') params.set('location', location);
+  if (sort && sort !== 'rating') params.set('sort', sort);
+
+  const queryString = params.toString();
+  return queryString ? `/search?${queryString}` : '/search';
+}
+
+function buildRestaurantsApiUrl({ q, category, location, sort }: SearchUrlOptions) {
+  const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;
+  const url = new URL('restaurants', baseUrl);
+  const keyword = q?.trim();
+
+  if (keyword) url.searchParams.set('q', keyword);
+  if (category && category !== 'all') url.searchParams.set('category', category);
+  if (location && location !== 'all') url.searchParams.set('location', location);
+  if (sort) url.searchParams.set('sort', sort);
+
+  return url.toString();
+}
 
 function getCategoryStyle(category: string) {
   return CATEGORY_STYLES[category] || DEFAULT_CATEGORY_STYLE;
 }
 
-function getCategoryColorExpression(defaultColor = DEFAULT_CATEGORY_STYLE.color): any {
+function getCategoryColorExpression(defaultColor = DEFAULT_CATEGORY_STYLE.color): ExpressionSpecification {
   return [
     'match',
     ['get', 'category'],
@@ -144,10 +178,10 @@ function getCategoryColorExpression(defaultColor = DEFAULT_CATEGORY_STYLE.color)
     'bbq', CATEGORY_STYLES.bbq.color,
     'soba', CATEGORY_STYLES.soba.color,
     defaultColor,
-  ] as any;
+  ] as ExpressionSpecification;
 }
 
-function getCategoryPinExpression(selectedId: number | null): any {
+function getCategoryPinExpression(selectedId: number | null): ExpressionSpecification {
   return [
     'case',
     ['==', ['get', 'id'], selectedId ?? -1],
@@ -163,7 +197,7 @@ function getCategoryPinExpression(selectedId: number | null): any {
       'soba', 'restaurant-pin-soba',
       'restaurant-pin-other',
     ],
-  ] as any;
+  ] as ExpressionSpecification;
 }
 
 function addSatelliteLayer(map: maplibregl.Map, mode: MapViewMode) {
@@ -253,21 +287,18 @@ function normalizeRestaurant(raw: Partial<Restaurant>): Restaurant | null {
     phone: raw.phone ?? null,
     imageUrl: raw.imageUrl ?? null,
     hasJapaneseSupport: Boolean(raw.hasJapaneseSupport),
+    menuItems: raw.menuItems ? raw.menuItems.map(item => ({
+      id: Number(item.id),
+      name: String(item.name),
+      nameJp: item.nameJp ?? null,
+      price: item.price,
+      description: item.description ?? null,
+      category: item.category || 'other',
+    })) : [],
   };
 }
 
-function withDemoRestaurants(restaurants: Restaurant[]) {
-  if (restaurants.length >= MIN_DEMO_RESTAURANTS) {
-    return restaurants;
-  }
 
-  const existingNames = new Set(restaurants.map((restaurant) => restaurant.name.toLowerCase()));
-  const extras = FALLBACK_RESTAURANTS
-    .filter((restaurant) => !existingNames.has(restaurant.name.toLowerCase()))
-    .slice(0, MIN_DEMO_RESTAURANTS - restaurants.length);
-
-  return [...restaurants, ...extras];
-}
 
 function svgToDataUrl(svg: string) {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
@@ -298,7 +329,7 @@ async function loadMapImage(map: maplibregl.Map, id: string, svg: string) {
   }
 }
 
-function createPopupNode(restaurant: Restaurant) {
+function createPopupNode(restaurant: Restaurant, copy: typeof searchCopy[AppLanguage]) {
   const node = document.createElement('div');
   const categoryStyle = getCategoryStyle(restaurant.category);
   node.className = 'map-popup-card';
@@ -345,7 +376,7 @@ function createPopupNode(restaurant: Restaurant) {
   if (restaurant.hasJapaneseSupport) {
     const supportTag = document.createElement('span');
     supportTag.className = 'map-popup-tag';
-    supportTag.textContent = 'Hỗ trợ tiếng Nhật';
+    supportTag.textContent = copy.supportJapanese;
     tagRow.appendChild(supportTag);
   }
 
@@ -354,7 +385,7 @@ function createPopupNode(restaurant: Restaurant) {
   const link = document.createElement('a');
   link.className = 'map-popup-link';
   link.href = `/restaurant/${restaurant.id}`;
-  link.textContent = 'Đặt bàn';
+  link.textContent = copy.book;
   node.appendChild(link);
 
   return node;
@@ -366,16 +397,18 @@ function RestaurantCard({
   onSelect,
   onHover,
   cardRef,
+  copy,
 }: {
   restaurant: Restaurant;
   isActive: boolean;
   onSelect: (restaurant: Restaurant) => void;
   onHover: (restaurant: Restaurant | null) => void;
   cardRef: (node: HTMLDivElement | null) => void;
+  copy: typeof searchCopy[AppLanguage];
 }) {
   const categoryLabel = CATEGORY_LABELS.get(restaurant.category) || restaurant.category;
   const categoryStyle = getCategoryStyle(restaurant.category);
-  const supportLabel = restaurant.hasJapaneseSupport ? 'Hỗ trợ tiếng Nhật' : 'Phong cách Nhật';
+  const supportLabel = restaurant.hasJapaneseSupport ? copy.supportJapanese : copy.japaneseStyle;
 
   return (
     <div
@@ -432,7 +465,7 @@ function RestaurantCard({
           className="result-card__book-btn"
           onClick={(event) => event.stopPropagation()}
         >
-          Đặt bàn <ArrowIcon />
+          {copy.book} <ArrowIcon />
         </Link>
       </div>
     </div>
@@ -444,6 +477,11 @@ export default function SearchClient() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
   const activeCategory = searchParams.get('filter') || 'all';
+  const activeLocation = searchParams.get('location') || 'all';
+  const sortBy = getSearchSort(searchParams.get('sort'));
+  const { language } = useAppLanguage();
+  const copy = searchCopy[language];
+  const inputRef = useRef<HTMLInputElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
@@ -453,8 +491,6 @@ export default function SearchClient() {
   const mapViewModeRef = useRef<MapViewMode>('map');
 
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [inputValue, setInputValue] = useState(query);
-  const [sortBy, setSortBy] = useState<'rating' | 'name'>('rating');
   const [activeRestaurantId, setActiveRestaurantId] = useState<number | null>(null);
   const [hoveredRestaurantId, setHoveredRestaurantId] = useState<number | null>(null);
   const [mapViewMode, setMapViewMode] = useState<MapViewMode>('map');
@@ -471,7 +507,12 @@ export default function SearchClient() {
       setLoadError('');
 
       try {
-        const response = await fetch(`${API_BASE_URL}/restaurants`, {
+        const response = await fetch(buildRestaurantsApiUrl({
+          q: query,
+          category: activeCategory,
+          location: activeLocation,
+          sort: sortBy,
+        }), {
           cache: 'no-store',
         });
 
@@ -485,15 +526,15 @@ export default function SearchClient() {
           : [];
 
         if (isMounted) {
-          setRestaurants(withDemoRestaurants(normalized));
+          setRestaurants(normalized);
         }
       } catch (error) {
         if (isMounted) {
-          setRestaurants(FALLBACK_RESTAURANTS);
+          setRestaurants([]);
           setLoadError(
             error instanceof Error
-              ? `Không tải được API restaurants (${error.message}). Đang dùng dữ liệu demo.`
-              : 'Không tải được API restaurants. Đang dùng dữ liệu demo.',
+              ? `Không tải được dữ liệu nhà hàng (${error.message}).`
+              : 'Không tải được dữ liệu nhà hàng.',
           );
         }
       } finally {
@@ -508,7 +549,7 @@ export default function SearchClient() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [activeCategory, activeLocation, query, sortBy]);
 
   const filteredResults = useMemo(() => {
     let results = [...restaurants];
@@ -517,15 +558,29 @@ export default function SearchClient() {
       results = results.filter((restaurant) => restaurant.category === activeCategory);
     }
 
+    if (activeLocation !== 'all') {
+      const normalizedLocation = activeLocation.toLowerCase();
+      results = results.filter((restaurant) =>
+        restaurant.address.toLowerCase().includes(normalizedLocation) ||
+        (restaurant.district || '').toLowerCase().includes(normalizedLocation) ||
+        (restaurant.city || '').toLowerCase().includes(normalizedLocation)
+      );
+    }
+
     if (query.trim()) {
-      const normalizedQuery = query.toLowerCase();
+      const normalizedQuery = query.trim().toLowerCase();
       results = results.filter((restaurant) =>
         restaurant.name.toLowerCase().includes(normalizedQuery) ||
         (restaurant.nameJp || '').toLowerCase().includes(normalizedQuery) ||
         restaurant.address.toLowerCase().includes(normalizedQuery) ||
         (restaurant.district || '').toLowerCase().includes(normalizedQuery) ||
         (restaurant.city || '').toLowerCase().includes(normalizedQuery) ||
-        restaurant.category.toLowerCase().includes(normalizedQuery)
+        restaurant.category.toLowerCase().includes(normalizedQuery) ||
+        (restaurant.menuItems || []).some((item) =>
+          item.name.toLowerCase().includes(normalizedQuery) ||
+          (item.nameJp || '').toLowerCase().includes(normalizedQuery) ||
+          (item.description || '').toLowerCase().includes(normalizedQuery)
+        )
       );
     }
 
@@ -535,7 +590,7 @@ export default function SearchClient() {
     });
 
     return results;
-  }, [restaurants, query, activeCategory, sortBy]);
+  }, [restaurants, query, activeCategory, activeLocation, sortBy]);
 
   useEffect(() => {
     filteredResultsRef.current = filteredResults;
@@ -546,6 +601,9 @@ export default function SearchClient() {
     [filteredResults, activeRestaurantId],
   );
   const activeCategoryStyle = getCategoryStyle(activeRestaurant?.category || activeCategory);
+  const activeLocationLabel = activeLocation === 'all'
+    ? copy.hcm
+    : LOCATION_LABELS.get(activeLocation) || activeLocation;
 
   const categoryLegend = useMemo(() => CATEGORIES
     .filter((category) => category.key !== 'all')
@@ -587,9 +645,9 @@ export default function SearchClient() {
       className: 'restaurant-map-popup',
     })
       .setLngLat([restaurant.longitude, restaurant.latitude])
-      .setDOMContent(createPopupNode(restaurant))
+      .setDOMContent(createPopupNode(restaurant, copy))
       .addTo(mapRef.current);
-  }, []);
+  }, [copy]);
 
   const focusRestaurant = useCallback((restaurant: Restaurant) => {
     if (!mapRef.current) return;
@@ -905,11 +963,12 @@ export default function SearchClient() {
   }, [activeRestaurant, filteredResults, mapReady]);
 
   const handleSearch = () => {
-    const params = new URLSearchParams();
-    if (inputValue.trim()) params.set('q', inputValue.trim());
-    if (activeCategory !== 'all') params.set('filter', activeCategory);
-    const targetUrl = params.toString() ? `/search?${params.toString()}` : '/search';
-    router.push(targetUrl);
+    router.push(buildSearchUrl({
+      q: inputRef.current?.value ?? query,
+      category: activeCategory,
+      location: activeLocation,
+      sort: sortBy,
+    }));
     setActiveRestaurantId(null);
     setHoveredRestaurantId(null);
     popupRef.current?.remove();
@@ -924,26 +983,54 @@ export default function SearchClient() {
     setHoveredRestaurantId(null);
     popupRef.current?.remove();
 
-    const params = new URLSearchParams();
-    if (query) params.set('q', query);
-    if (category !== 'all') params.set('filter', category);
-    const targetUrl = params.toString() ? `/search?${params.toString()}` : '/search';
-    router.push(targetUrl);
+    router.push(buildSearchUrl({
+      q: query,
+      category,
+      location: activeLocation,
+      sort: sortBy,
+    }));
+  };
+
+  const handleLocationFilter = (location: string) => {
+    setActiveRestaurantId(null);
+    setHoveredRestaurantId(null);
+    popupRef.current?.remove();
+
+    router.push(buildSearchUrl({
+      q: query,
+      category: activeCategory,
+      location,
+      sort: sortBy,
+    }));
+  };
+
+  const handleSortChange = (sort: SearchSort) => {
+    setActiveRestaurantId(null);
+    setHoveredRestaurantId(null);
+    popupRef.current?.remove();
+
+    router.push(buildSearchUrl({
+      q: query,
+      category: activeCategory,
+      location: activeLocation,
+      sort,
+    }));
   };
 
   return (
     <main className="search-layout" id="search-main">
-      <aside className="sidebar" role="complementary" aria-label="Bộ lọc và danh sách">
+      <aside className="sidebar" role="complementary" aria-label={copy.sidebarLabel}>
         <div className="sidebar__filter">
           <div className="sidebar-search">
             <SearchIcon />
             <input
               type="text"
               id="search-input"
+              key={query}
+              ref={inputRef}
               className="sidebar-search__input"
-              placeholder="Tên nhà hàng, món ăn, địa chỉ..."
-              value={inputValue}
-              onChange={(event) => setInputValue(event.target.value)}
+              placeholder={copy.searchPlaceholder}
+              defaultValue={query}
               onKeyDown={handleKeyDown}
               autoComplete="off"
             />
@@ -952,7 +1039,7 @@ export default function SearchClient() {
               id="btn-sidebar-search"
               onClick={handleSearch}
             >
-              Tìm kiếm
+              {copy.searchButton}
             </button>
           </div>
 
@@ -971,26 +1058,43 @@ export default function SearchClient() {
                   style={{ '--category-color': categoryStyle.color } as React.CSSProperties}
                 >
                   <span className="filter-chip__dot" />
-                  {category.label}
+                  {category.key === 'all' ? copy.all : category.label}
                 </button>
               );
             })}
           </div>
+
+          <div className="location-filter">
+            <span className="location-filter__label">{copy.area}</span>
+            <select
+              value={activeLocation}
+              onChange={(event) => handleLocationFilter(event.target.value)}
+              className="location-filter__select"
+              aria-label={copy.locationFilterLabel}
+            >
+              {LOCATION_OPTIONS.map((location) => (
+                <option key={location.key} value={location.key}>
+                  {location.key === 'all' ? copy.hcm : location.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="sidebar__results-header">
-          <span className="sidebar__results-title">Kết quả</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span className="sidebar__results-title">{copy.results}</span>
+          <div className="sidebar__results-tools">
             <span className="sidebar__results-count">
-              <span data-results-count>{filteredResults.length}</span> kết quả tại Hồ Chí Minh
+              <span data-results-count>{filteredResults.length}</span> {copy.resultsAt} {activeLocationLabel}
             </span>
             <select
               value={sortBy}
-              onChange={(event) => setSortBy(event.target.value as 'rating' | 'name')}
-              style={{ fontSize: '12px', border: '1px solid var(--clr-border)', borderRadius: '6px', padding: '2px 6px', color: 'var(--clr-dark)', background: 'white', cursor: 'pointer' }}
+              onChange={(event) => handleSortChange(event.target.value as SearchSort)}
+              className="sidebar-sort"
+              aria-label={copy.sortLabel}
             >
-              <option value="rating">Đánh giá cao nhất</option>
-              <option value="name">Tên A-Z</option>
+              <option value="rating">{copy.sortRating}</option>
+              <option value="name">{copy.sortName}</option>
             </select>
           </div>
         </div>
@@ -1005,13 +1109,13 @@ export default function SearchClient() {
           {isLoading ? (
             <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--clr-muted)' }}>
               <div style={{ width: '32px', height: '32px', border: '3px solid var(--clr-border)', borderTopColor: 'var(--clr-primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-              <p style={{ fontWeight: 600 }}>Đang tải nhà hàng...</p>
+              <p style={{ fontWeight: 600 }}>{copy.loadingRestaurants}</p>
             </div>
           ) : filteredResults.length === 0 ? (
             <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--clr-muted)' }}>
               <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</div>
-              <p style={{ fontWeight: 600, marginBottom: '4px' }}>Không tìm thấy kết quả</p>
-              <p style={{ fontSize: '13px' }}>Thử tìm với từ khóa khác hoặc chọn &quot;Tất cả&quot;</p>
+              <p style={{ fontWeight: 600, marginBottom: '4px' }}>{copy.noResultsTitle}</p>
+              <p style={{ fontSize: '13px' }}>{copy.noResultsHint}</p>
             </div>
           ) : (
             filteredResults.map((restaurant) => (
@@ -1024,6 +1128,7 @@ export default function SearchClient() {
                 cardRef={(node) => {
                   cardRefs.current[restaurant.id] = node;
                 }}
+                copy={copy}
               />
             ))
           )}
@@ -1032,7 +1137,7 @@ export default function SearchClient() {
 
       <section
         className={`map-section map-section--interactive${mapViewMode === 'satellite' ? ' map-section--satellite' : ''}`}
-        aria-label="Bản đồ nhà hàng"
+        aria-label={copy.mapLabel}
         id="map-section"
       >
         <div ref={mapContainerRef} className="map-canvas" />
@@ -1041,10 +1146,10 @@ export default function SearchClient() {
         <div className="map-floating-count" id="btn-map-results">
           <SearchIcon />
           <strong data-results-count>{filteredResults.length}</strong>
-          <span>Kết quả</span>
+          <span>{copy.results}</span>
         </div>
 
-        <div className="map-view-toggle" role="group" aria-label="Chọn kiểu bản đồ">
+        <div className="map-view-toggle" role="group" aria-label={copy.mapTypeLabel}>
           {MAP_VIEW_OPTIONS.map((option) => (
             <button
               key={option.key}
@@ -1053,13 +1158,13 @@ export default function SearchClient() {
               onClick={() => setMapViewMode(option.key)}
               aria-pressed={mapViewMode === option.key}
             >
-              {option.label}
+              {option.key === 'map' ? copy.map : copy.satellite}
             </button>
           ))}
         </div>
 
         {categoryLegend.length > 0 && (
-          <div className="map-category-legend" aria-label="Chú giải loại nhà hàng">
+          <div className="map-category-legend" aria-label={copy.legendLabel}>
             {categoryLegend.map((category) => (
               <button
                 key={category.key}
@@ -1081,12 +1186,12 @@ export default function SearchClient() {
             style={{ '--category-color': activeCategoryStyle.color } as React.CSSProperties}
           >
             <div>
-              <div className="map-floating-detail__eyebrow">Đang chọn</div>
+              <div className="map-floating-detail__eyebrow">{copy.selected}</div>
               <h2>{activeRestaurant.name}</h2>
               <p>{activeRestaurant.address}</p>
             </div>
             <Link href={`/restaurant/${activeRestaurant.id}`} className="btn btn--primary">
-              Đặt bàn ngay <ArrowIcon />
+              {copy.bookNow} <ArrowIcon />
             </Link>
           </div>
         )}
@@ -1094,7 +1199,7 @@ export default function SearchClient() {
         {!mapReady && (
           <div className="map-loading-overlay">
             <div style={{ width: '40px', height: '40px', border: '3px solid rgba(108,47,0,0.18)', borderTopColor: 'var(--clr-primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-            <span>Đang tải bản đồ...</span>
+            <span>{copy.loadingMap}</span>
           </div>
         )}
       </section>

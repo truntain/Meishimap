@@ -3,30 +3,148 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { detailCopy, useAppLanguage } from '@/config/language';
 
-// ── Mock data (thay bằng API sau) ──
-const MOCK_RESTAURANT = {
-  id: '1',
-  name: 'Miyabi Japanese Dining',
-  nameJp: 'みやび 日本料理',
-  address: '123 Lê Lợi, Quận 1, TP. Hồ Chí Minh',
-  rating: 4.9,
-  reviewCount: 240,
-  phone: '+84 28 3823 4567',
-  hours: '10:00 - 22:00 (Hàng ngày)',
-  languages: 'Tiếng Việt, Tiếng Nhật, English',
-  tags: ['Japanese Speaking', 'Hygiene Certified'],
-  amenities: ['📶 Free Wifi', '🅿️ Free Parking', '💳 Cards Accepted', '♿ Accessibility'],
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+
+type ApiRestaurant = {
+  id: number;
+  name: string;
+  nameJp: string | null;
+  category: string;
+  rating: number;
+  address: string;
+  district: string | null;
+  city: string | null;
+  latitude: number;
+  longitude: number;
+  description: string | null;
+  phone: string | null;
+  imageUrl: string | null;
+  hasJapaneseSupport: boolean;
 };
 
-const MENU_ITEMS = [
-  { id: 1, cat: 'sashimi', emoji: '🐟', name: 'Premium Sashimi Set', price: '450.000đ', desc: 'A curated selection of seasonal fish including Otoro, Sake, and Hamachi.', badge: '✅ Fresh Daily' },
-  { id: 2, cat: 'sashimi', emoji: '🍱', name: 'Sashimi Deluxe',        price: '380.000đ', desc: 'Premium cut fish with authentic wasabi and soy sauce.',                badge: '✅ Fresh Daily' },
-  { id: 3, cat: 'tempura', emoji: '🍤', name: 'Tempura Set',           price: '280.000đ', desc: 'Crispy light-battered shrimp and vegetables with dipping sauce.',   badge: '✅ Fresh Daily' },
-  { id: 4, cat: 'ramen',   emoji: '🍜', name: 'Tonkotsu Ramen',        price: '195.000đ', desc: 'Rich pork bone broth simmered 18 hours, chashu pork, soft egg.',    badge: '✅ Signature Dish' },
-  { id: 5, cat: 'ramen',   emoji: '🍝', name: 'Shoyu Ramen',           price: '175.000đ', desc: 'Aromatic soy-based broth with tender chicken and bamboo shoots.',   badge: '✅ Popular' },
-  { id: 6, cat: 'dessert', emoji: '🍡', name: 'Matcha Ice Cream',      price: '65.000đ',  desc: 'Premium Uji matcha ice cream served with red bean paste.',           badge: '✅ Seasonal' },
-];
+type RestaurantDetail = ApiRestaurant & {
+  reviewCount: number;
+  hours: string;
+  languages: string;
+  tags: string[];
+  amenities: string[];
+};
+
+const CATEGORY_LABELS = new Map([
+  ['sushi', 'Sushi & Grill'],
+  ['ramen', 'Ramen'],
+  ['kaiseki', 'Kaiseki'],
+  ['izakaya', 'Izakaya'],
+  ['bbq', 'Yakiniku'],
+  ['soba', 'Soba & Udon'],
+]);
+
+function buildRestaurantDetailUrl(id: string) {
+  const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;
+  return new URL(`restaurants/${id}`, baseUrl).toString();
+}
+
+function getSafeRating(rating: number) {
+  return Math.max(0, Math.min(5, Math.round(rating)));
+}
+
+const MENU_ITEM_IMAGES: Record<string, string> = {
+  'Premium Sashimi Set': 'https://images.unsplash.com/photo-1534482421-64566f976cfa?auto=format&fit=crop&w=600&q=80',
+  'Sashimi Deluxe': 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=600&q=80',
+  'Tempura Set': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80',
+  'Tonkotsu Ramen': 'https://images.unsplash.com/photo-1557872943-16a5ac26437e?auto=format&fit=crop&w=600&q=80',
+  'Shoyu Ramen': 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80',
+  'Matcha Ice Cream': 'https://images.unsplash.com/photo-1506084868230-bb9d95c24759?auto=format&fit=crop&w=600&q=80',
+};
+
+const MENU_ITEM_EMOJIS: Record<string, string> = {
+  'sashimi': '🐟',
+  'tempura': '🍤',
+  'ramen': '🍜',
+  'dessert': '🍡',
+};
+
+function normalizeRestaurantDetail(raw: Partial<ApiRestaurant> & { menuItems?: any[], hours?: string, languages?: string, reviewCount?: number }, fallbackId: string): RestaurantDetail | null {
+  const id = Number(raw.id ?? fallbackId);
+  const latitude = Number(raw.latitude);
+  const longitude = Number(raw.longitude);
+
+  if (!Number.isFinite(id) || !raw.name) {
+    return null;
+  }
+
+  const category = raw.category || 'other';
+  const hasJapaneseSupport = Boolean(raw.hasJapaneseSupport);
+  const categoryLabel = CATEGORY_LABELS.get(category) || category;
+
+  const rawMenuItems = raw.menuItems || [];
+  const menuItems = rawMenuItems.map((item: any) => {
+    const name = String(item.name).trim();
+    const rawItemImageUrl = item.imageUrl || item.image_url;
+    
+    // Case-insensitive lookup in MENU_ITEM_IMAGES
+    const fallbackImageKey = Object.keys(MENU_ITEM_IMAGES).find(
+      key => key.toLowerCase() === name.toLowerCase()
+    );
+    
+    const itemImageUrl = (rawItemImageUrl && rawItemImageUrl !== 'null' && rawItemImageUrl !== 'undefined')
+      ? rawItemImageUrl
+      : (fallbackImageKey ? MENU_ITEM_IMAGES[fallbackImageKey] : null);
+
+    return {
+      id: Number(item.id),
+      cat: item.category || 'other',
+      emoji: MENU_ITEM_EMOJIS[item.category] || '🍽️',
+      imageUrl: itemImageUrl,
+      name: name,
+      price: new Intl.NumberFormat('vi-VN').format(item.price || 0) + 'đ',
+      desc: item.description || '',
+      badge: item.badge || '',
+    };
+  });
+
+  const rawImageUrl = raw.imageUrl || raw.imageUrl;
+  const imageUrl = (rawImageUrl && rawImageUrl !== 'null' && rawImageUrl !== 'undefined')
+    ? rawImageUrl
+    : 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80';
+
+  return {
+    id,
+    name: String(raw.name),
+    nameJp: raw.nameJp ?? null,
+    category,
+    rating: Number(raw.rating ?? 0),
+    address: raw.address || 'Chưa cập nhật địa chỉ',
+    district: raw.district ?? null,
+    city: raw.city ?? null,
+    latitude: Number.isFinite(latitude) ? latitude : 0,
+    longitude: Number.isFinite(longitude) ? longitude : 0,
+    description: raw.description ?? null,
+    phone: raw.phone || 'Chưa cập nhật',
+    imageUrl,
+    hasJapaneseSupport,
+    reviewCount: raw.reviewCount || 0,
+    hours: (typeof raw.hours === 'object' && raw.hours !== null) ? `${Object.values(raw.hours)[0]} (Hàng ngày)` : (raw.hours || 'Chưa cập nhật'),
+    languages: raw.languages || (hasJapaneseSupport ? 'Tiếng Việt, Tiếng Nhật, English' : 'Tiếng Việt, English'),
+    tags: [
+      categoryLabel,
+      hasJapaneseSupport ? 'Japanese Speaking' : 'Japanese Style',
+    ],
+    amenities: ['📶 Free Wifi', '💳 Cards Accepted'],
+    menuItems: menuItems.length > 0 ? menuItems : undefined,
+  } as any;
+}
+
+function getMapsQuery(restaurant: RestaurantDetail) {
+  if (Number.isFinite(restaurant.latitude) && Number.isFinite(restaurant.longitude)) {
+    return `${restaurant.latitude},${restaurant.longitude}`;
+  }
+
+  return restaurant.address;
+}
+
 
 const MENU_CATS = [
   { key: 'all',     label: 'Tất cả (All)' },
@@ -34,11 +152,6 @@ const MENU_CATS = [
   { key: 'tempura', label: 'Tempura' },
   { key: 'ramen',   label: 'Ramen' },
   { key: 'dessert', label: 'Desserts' },
-];
-
-const MOCK_REVIEWS = [
-  { id: 1, author: 'Anh Nguyen', initial: 'A', date: 'Tháng 5, 2025', stars: 5, text: 'Nhà hàng tuyệt vời! Sashimi tươi ngon, nhân viên thân thiện và hỗ trợ tiếng Nhật rất tốt. Sẽ quay lại lần sau.' },
-  { id: 2, author: 'Minh Tran',  initial: 'M', date: 'Tháng 4, 2025', stars: 4, text: 'Không gian đẹp, món ăn chất lượng cao. Giá hơi cao nhưng xứng đáng với trải nghiệm đem lại.' },
 ];
 
 const TIME_SLOTS = ['11:00', '12:00', '13:00', '18:00', '19:00', '20:00', '21:00'];
@@ -60,7 +173,49 @@ const StarsFull = ({ count }: { count: number }) => (
 
 export default function RestaurantDetailClient() {
   const params = useParams();
-  const restaurantId = params?.id as string;
+  const { language } = useAppLanguage();
+  const copy = detailCopy[language];
+  const restaurantIdParam = params?.id;
+  const restaurantId = Array.isArray(restaurantIdParam)
+    ? restaurantIdParam[0]
+    : restaurantIdParam || String(1);
+
+  const [restaurant, setRestaurant] = useState<RestaurantDetail | null>(null);
+  const [restaurantLoading, setRestaurantLoading] = useState(true);
+  const [restaurantError, setRestaurantError] = useState('');
+
+  // ── Reviews state ──
+  const [reviews, setReviews] = useState<any[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchReviews() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/review/restaurant/${restaurantId}`);
+        if (!res.ok) throw new Error('Failed to fetch reviews');
+        const data = await res.json();
+        if (isMounted) {
+          const formattedReviews = data.map((r: any) => {
+            const dateObj = new Date(r.createdAt);
+            return {
+              id: r.id,
+              author: r.user?.name || 'Khách',
+              initial: (r.user?.name || 'K').charAt(0).toUpperCase(),
+              date: `Tháng ${dateObj.getMonth() + 1}, ${dateObj.getFullYear()}`,
+              stars: r.stars,
+              text: r.title ? `${r.title} — ${r.content}` : r.content,
+            };
+          });
+          setReviews(formattedReviews);
+        }
+      } catch (e) {
+        console.error(e);
+        if (isMounted) setReviews([]);
+      }
+    }
+    fetchReviews();
+    return () => { isMounted = false; };
+  }, [restaurantId]);
 
   // ── Menu state ──
   const [activeCat, setActiveCat]         = useState('all');
@@ -82,6 +237,55 @@ export default function RestaurantDetailClient() {
 
   const modalRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadRestaurant() {
+      setRestaurantLoading(true);
+      setRestaurantError('');
+
+      try {
+        const response = await fetch(buildRestaurantDetailUrl(restaurantId), {
+          cache: 'no-store',
+        });
+
+        if (!response.ok) {
+          throw new Error(`API trả về ${response.status}`);
+        }
+
+        const data = await response.json();
+        const normalized = normalizeRestaurantDetail(data, restaurantId);
+
+        if (!normalized) {
+          throw new Error('Dữ liệu nhà hàng không hợp lệ');
+        }
+
+        if (isMounted) {
+          setRestaurant(normalized);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setRestaurant(null);
+          setRestaurantError(
+            error instanceof Error
+              ? `Không tải được chi tiết nhà hàng (${error.message}).`
+              : 'Không tải được chi tiết nhà hàng.',
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setRestaurantLoading(false);
+        }
+      }
+    }
+
+    loadRestaurant();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [restaurantId]);
+
   // Close modal on backdrop click
   useEffect(() => {
     if (!bookingOpen && !successOpen) return;
@@ -98,16 +302,17 @@ export default function RestaurantDetailClient() {
 
   // ── Menu filter logic ──
   const filteredMenu = useCallback(() => {
-    return MENU_ITEMS.filter(item => {
+    const itemsSource = (restaurant as any)?.menuItems || [];
+    return itemsSource.filter((item: any) => {
       const matchCat = activeCat === 'all' || item.cat === activeCat;
       const q = menuSearch.toLowerCase();
       const matchSearch = !q || item.name.toLowerCase().includes(q) || item.desc.toLowerCase().includes(q);
       return matchCat && matchSearch;
     });
-  }, [activeCat, menuSearch]);
+  }, [restaurant, activeCat, menuSearch]);
 
   // ── Booking submit ──
-  const handleBookingSubmit = (e: React.FormEvent) => {
+  const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!bookingDate) {
       setDateError(true);
@@ -116,29 +321,33 @@ export default function RestaurantDetailClient() {
     setDateError(false);
     setIsSubmitting(true);
 
-    // Simulate API save
-    const booking = {
-      restaurantId,
-      restaurantName: MOCK_RESTAURANT.name,
-      date: bookingDate,
-      time: bookingTime,
-      guests: bookingGuests,
-      note: bookingNote,
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      const res = await fetch(`${API_BASE_URL}/booking`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          restaurantId: Number(restaurantId),
+          date: bookingDate,
+          time: bookingTime,
+          guests: parseInt(bookingGuests) || 2,
+          note: bookingNote,
+        }),
+      });
 
-    const existing = JSON.parse(localStorage.getItem('meshimap_bookings') || '[]');
-    existing.push(booking);
-    localStorage.setItem('meshimap_bookings', JSON.stringify(existing));
-
-    setTimeout(() => {
+      if (!res.ok) throw new Error('Booking failed');
+      
+      setTimeout(() => {
+        setIsSubmitting(false);
+        setBookingOpen(false);
+        setSuccessOpen(true);
+        setBookingDate('');
+        setBookingNote('');
+      }, 600);
+    } catch (e) {
+      console.error(e);
       setIsSubmitting(false);
-      setBookingOpen(false);
-      setSuccessOpen(true);
-      // Reset form
-      setBookingDate('');
-      setBookingNote('');
-    }, 600);
+      alert('Đã xảy ra lỗi khi đặt bàn. Vui lòng thử lại.');
+    }
   };
 
   const openBooking = () => {
@@ -155,11 +364,30 @@ export default function RestaurantDetailClient() {
   const today = new Date().toISOString().split('T')[0];
   const menuItems = filteredMenu();
 
+  if (restaurantLoading && !restaurant) {
+    return <div style={{ padding: '100px', textAlign: 'center', color: '#888' }}>Đang tải dữ liệu...</div>;
+  }
+  if (!restaurant) {
+    return <div style={{ padding: '100px', textAlign: 'center', color: '#888' }}>Không tìm thấy nhà hàng.</div>;
+  }
+
+  const localReviewsCount = reviews.filter(r => String(r.id).startsWith('local-')).length;
+  const displayReviewCount = restaurant.reviewCount + localReviewsCount;
+  const displayRating = localReviewsCount > 0
+    ? (restaurant.rating * restaurant.reviewCount + reviews.filter(r => String(r.id).startsWith('local-')).reduce((sum, r) => sum + r.stars, 0)) / displayReviewCount
+    : restaurant.rating;
+  const starCount = getSafeRating(displayRating);
+
   return (
     <>
       {/* ── Hero ── */}
-      <section className="detail-hero" aria-label="Ảnh nhà hàng" id="detail-hero">
-        <div className="detail-hero__img" />
+      <section className="detail-hero" aria-label={copy.heroLabel} id="detail-hero">
+        <div
+          className="detail-hero__img"
+          style={{
+            background: `url('${restaurant.imageUrl}') center/cover no-repeat`,
+          }}
+        />
         <div className="detail-hero__overlay" />
       </section>
 
@@ -168,28 +396,46 @@ export default function RestaurantDetailClient() {
         <div className="detail-info-card__inner">
           <div className="detail-info-card__left">
             <div className="detail-tags">
-              {MOCK_RESTAURANT.tags.map(tag => (
-                <span key={tag} className={`detail-tag${tag === 'Hygiene Certified' ? ' detail-tag--green' : ''}`}>{tag}</span>
+              {restaurant.tags.map(tag => (
+                <span
+                  key={tag}
+                  className={`detail-tag${tag === 'Japanese Speaking' || tag === 'Hygiene Certified' ? ' detail-tag--green' : ''}`}
+                >
+                  {tag}
+                </span>
               ))}
             </div>
-            <h1 className="detail-name">{MOCK_RESTAURANT.name}</h1>
-            <p style={{ fontSize: '13px', color: 'var(--clr-muted)', marginBottom: '6px' }}>{MOCK_RESTAURANT.nameJp}</p>
+            <h1 className="detail-name">{restaurant.name}</h1>
+            {restaurant.nameJp && (
+              <p style={{ fontSize: '13px', color: 'var(--clr-muted)', marginBottom: '6px' }}>{restaurant.nameJp}</p>
+            )}
             <div className="detail-meta">
               <span className="detail-meta__item">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M7 1.167A3.5 3.5 0 0 1 10.5 4.667C10.5 7.292 7 12.833 7 12.833S3.5 7.292 3.5 4.667A3.5 3.5 0 0 1 7 1.167Z" stroke="#8A8A8A" strokeWidth="1.2" />
                   <circle cx="7" cy="4.667" r="1.167" stroke="#8A8A8A" strokeWidth="1.2" />
                 </svg>
-                {MOCK_RESTAURANT.address}
+                {restaurant.address}
               </span>
               <span className="detail-meta__item">
-                <StarsFull count={5} />
-                ({MOCK_RESTAURANT.rating}/5 • {MOCK_RESTAURANT.reviewCount} reviews)
+                <StarsFull count={starCount} />
+                ({displayRating.toFixed(1)}/5 • {displayReviewCount} reviews)
               </span>
             </div>
+            {restaurant.description && (
+              <p style={{ fontSize: '13px', color: 'var(--clr-muted)', lineHeight: 1.6, maxWidth: '720px' }}>
+                {restaurant.description}
+              </p>
+            )}
+            {restaurantLoading && (
+              <p className="detail-api-status">{copy.loadingApi}</p>
+            )}
+            {restaurantError && (
+              <p className="detail-api-status detail-api-status--warning">{restaurantError}</p>
+            )}
           </div>
           <button className="detail-book-btn" id="btn-open-booking" onClick={openBooking}>
-            <CalendarIcon /> Đặt bàn
+            <CalendarIcon /> {copy.bookingButton}
           </button>
         </div>
       </div>
@@ -210,7 +456,7 @@ export default function RestaurantDetailClient() {
             <input
               type="text"
               className="menu-search__input"
-              placeholder="Tìm kiếm món ăn..."
+              placeholder={copy.menuPlaceholder}
               id="menu-search-input"
               value={menuSearchInput}
               onChange={e => setMenuSearchInput(e.target.value)}
@@ -222,13 +468,13 @@ export default function RestaurantDetailClient() {
               id="btn-menu-search"
               onClick={() => setMenuSearch(menuSearchInput)}
             >
-              Tìm kiếm
+              {copy.menuSearch}
             </button>
           </div>
 
           {/* Category tabs */}
           <div className="menu-cats" id="menu-cats">
-            {MENU_CATS.map(cat => (
+            {MENU_CATS.map((cat: { key: string, label: string }) => (
               <button
                 key={cat.key}
                 className={`menu-cat-btn${activeCat === cat.key ? ' is-active' : ''}`}
@@ -245,12 +491,19 @@ export default function RestaurantDetailClient() {
             {menuItems.length === 0 ? (
               <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: 'var(--clr-muted)' }}>
                 <div style={{ fontSize: '36px', marginBottom: '12px' }}>🍽️</div>
-                <p>Không tìm thấy món ăn nào</p>
+                <p>{copy.noMenu}</p>
               </div>
             ) : (
-              menuItems.map(item => (
+              menuItems.map((item: any) => (
                 <div key={item.id} className="menu-item" data-cat={item.cat}>
-                  <div className="menu-item__img">{item.emoji}</div>
+                  <div className="menu-item__img">
+                    {item.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.imageUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      item.emoji || '🍽️'
+                    )}
+                  </div>
                   <div className="menu-item__body">
                     <div className="menu-item__name">{item.name}</div>
                     <div className="menu-item__price">{item.price}</div>
@@ -265,20 +518,20 @@ export default function RestaurantDetailClient() {
           {/* Reviews */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }} id="reviews-section">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h2 style={{ fontWeight: 700, fontSize: '20px', color: 'var(--clr-dark)' }}>Đánh giá</h2>
+              <h2 style={{ fontWeight: 700, fontSize: '20px', color: 'var(--clr-dark)' }}>{copy.reviews}</h2>
               <Link
                 href={`/restaurant/${restaurantId}/review`}
                 style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--clr-dark)', fontSize: '14px', fontWeight: 600, textDecoration: 'none' }}
                 id="btn-write-review"
               >
-                Viết đánh giá
+                {copy.writeReview}
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M2 14l1.5-4.5L11 2l3 3-7.5 7.5L2 14z" stroke="#6C2F00" strokeWidth="1.3" strokeLinejoin="round" />
                 </svg>
               </Link>
             </div>
 
-            {MOCK_REVIEWS.map(review => (
+            {reviews.map(review => (
               <div key={review.id} className="review-card">
                 <div className="review__header">
                   <div className="review__avatar">{review.initial}</div>
@@ -300,26 +553,26 @@ export default function RestaurantDetailClient() {
         <aside className="detail-right">
           {/* Contact info */}
           <div className="info-card">
-            <h3 className="info-card__title">Thông tin liên hệ</h3>
+            <h3 className="info-card__title">{copy.contact}</h3>
             <div className="info-card__row">
               <div style={{ color: 'var(--clr-dark)', flexShrink: 0, marginTop: '2px' }}>🕐</div>
               <div>
-                <div className="info-card__label">Giờ mở cửa</div>
-                <div className="info-card__value">{MOCK_RESTAURANT.hours}</div>
+                <div className="info-card__label">{copy.hours}</div>
+                <div className="info-card__value">{restaurant.hours}</div>
               </div>
             </div>
             <div className="info-card__row">
               <div style={{ color: 'var(--clr-dark)', flexShrink: 0, marginTop: '2px' }}>📞</div>
               <div>
-                <div className="info-card__label">Điện thoại</div>
-                <div className="info-card__value">{MOCK_RESTAURANT.phone}</div>
+                <div className="info-card__label">{copy.phone}</div>
+                <div className="info-card__value">{restaurant.phone}</div>
               </div>
             </div>
             <div className="info-card__row">
               <div style={{ color: 'var(--clr-dark)', flexShrink: 0, marginTop: '2px' }}>🌐</div>
               <div>
-                <div className="info-card__label">Ngôn ngữ hỗ trợ</div>
-                <div className="info-card__value">{MOCK_RESTAURANT.languages}</div>
+                <div className="info-card__label">{copy.languages}</div>
+                <div className="info-card__value">{restaurant.languages}</div>
               </div>
             </div>
             {/* Map placeholder */}
@@ -328,18 +581,18 @@ export default function RestaurantDetailClient() {
               <button
                 style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', background: 'var(--clr-dark)', color: '#fff', padding: '6px 16px', borderRadius: '9999px', fontSize: '13px', fontWeight: 500, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
                 id="btn-view-map"
-                onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(MOCK_RESTAURANT.address)}`, '_blank')}
+                onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(getMapsQuery(restaurant))}`, '_blank')}
               >
-                Xem bản đồ
+                {copy.viewMap}
               </button>
             </div>
           </div>
 
           {/* Amenities */}
           <div className="info-card">
-            <h3 className="info-card__title">Tiện ích</h3>
+            <h3 className="info-card__title">{copy.amenities}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              {MOCK_RESTAURANT.amenities.map(a => (
+              {restaurant.amenities.map(a => (
                 <div key={a} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--clr-muted)' }}>{a}</div>
               ))}
             </div>
@@ -347,14 +600,14 @@ export default function RestaurantDetailClient() {
 
           {/* Promo */}
           <div style={{ background: 'var(--clr-dark)', borderRadius: '12px', padding: '20px', boxShadow: '0 4px 16px rgba(108,47,0,0.2)', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginBottom: '6px' }}>Ưu đãi đặc biệt</div>
-            <div style={{ fontWeight: 700, fontSize: '18px', color: '#fff', lineHeight: 1.4, marginBottom: '16px' }}>Giảm 15% cho lần đặt bàn đầu tiên</div>
+            <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginBottom: '6px' }}>{copy.promoLabel}</div>
+            <div style={{ fontWeight: 700, fontSize: '18px', color: '#fff', lineHeight: 1.4, marginBottom: '16px' }}>{copy.promoText}</div>
             <button
               style={{ background: '#fff', color: 'var(--clr-dark)', border: 'none', borderRadius: '10px', padding: '8px 18px', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '13px', cursor: 'pointer', transition: 'opacity 0.2s' }}
               id="btn-get-promo"
               onClick={handleGetPromo}
             >
-              {promoCopied ? '✅ Đã copy: MESHIMAP15' : 'Lấy mã ưu đãi'}
+              {promoCopied ? `✅ ${copy.promoCopied}` : copy.promoButton}
             </button>
           </div>
         </aside>
@@ -373,11 +626,11 @@ export default function RestaurantDetailClient() {
         >
           <div className="modal__box" ref={modalRef}>
             <h3 className="modal__title" id="modal-booking-title">
-              Đặt bàn — {MOCK_RESTAURANT.name}
+              {copy.bookingTitle} — {restaurant.name}
             </h3>
             <form id="booking-form" onSubmit={handleBookingSubmit} noValidate>
               <div className="modal__field">
-                <label className="modal__label" htmlFor="booking-date">Ngày <span style={{ color: '#e53e3e' }}>*</span></label>
+                <label className="modal__label" htmlFor="booking-date">{copy.date} <span style={{ color: '#e53e3e' }}>*</span></label>
                 <input
                   type="date"
                   id="booking-date"
@@ -387,30 +640,30 @@ export default function RestaurantDetailClient() {
                   onChange={e => { setBookingDate(e.target.value); setDateError(false); }}
                   required
                 />
-                {dateError && <span className="field-error is-visible">Vui lòng chọn ngày đặt bàn.</span>}
+                {dateError && <span className="field-error is-visible">{copy.dateRequired}</span>}
               </div>
 
               <div className="modal__field">
-                <label className="modal__label" htmlFor="booking-time">Giờ</label>
+                <label className="modal__label" htmlFor="booking-time">{copy.time}</label>
                 <select id="booking-time" className="modal__select" value={bookingTime} onChange={e => setBookingTime(e.target.value)}>
                   {TIME_SLOTS.map(t => <option key={t}>{t}</option>)}
                 </select>
               </div>
 
               <div className="modal__field">
-                <label className="modal__label" htmlFor="booking-guests">Số người</label>
+                <label className="modal__label" htmlFor="booking-guests">{copy.guests}</label>
                 <select id="booking-guests" className="modal__select" value={bookingGuests} onChange={e => setBookingGuests(e.target.value)}>
                   {GUEST_OPTIONS.map(g => <option key={g}>{g}</option>)}
                 </select>
               </div>
 
               <div className="modal__field">
-                <label className="modal__label" htmlFor="booking-note">Ghi chú</label>
+                <label className="modal__label" htmlFor="booking-note">{copy.note}</label>
                 <input
                   type="text"
                   id="booking-note"
                   className="modal__input"
-                  placeholder="Yêu cầu đặc biệt, dị ứng thực phẩm..."
+                  placeholder={copy.notePlaceholder}
                   value={bookingNote}
                   onChange={e => setBookingNote(e.target.value)}
                 />
@@ -418,10 +671,10 @@ export default function RestaurantDetailClient() {
 
               <div className="modal__actions">
                 <button type="button" className="modal__cancel" id="btn-cancel-booking" onClick={() => setBookingOpen(false)}>
-                  Hủy
+                  {copy.cancel}
                 </button>
                 <button type="submit" className="modal__submit" id="btn-confirm-booking" disabled={isSubmitting}>
-                  {isSubmitting ? 'Đang xử lý...' : 'Xác nhận đặt bàn'}
+                  {isSubmitting ? copy.submitting : copy.submitBooking}
                 </button>
               </div>
             </form>
@@ -439,12 +692,12 @@ export default function RestaurantDetailClient() {
         >
           <div className="modal__box" style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '56px', marginBottom: '16px' }}>✅</div>
-            <h3 style={{ fontWeight: 700, fontSize: '22px', color: 'var(--clr-dark)', marginBottom: '8px' }}>Đặt bàn thành công!</h3>
+            <h3 style={{ fontWeight: 700, fontSize: '22px', color: 'var(--clr-dark)', marginBottom: '8px' }}>{copy.successTitle}</h3>
             <p style={{ color: 'var(--clr-muted)', marginBottom: '8px' }}>
-              Cảm ơn bạn đã đặt bàn tại <strong>{MOCK_RESTAURANT.name}</strong>.
+              {copy.successMessagePrefix} <strong>{restaurant.name}</strong>.
             </p>
             <p style={{ color: 'var(--clr-muted)', marginBottom: '24px' }}>
-              Chúng tôi sẽ liên hệ xác nhận qua điện thoại trong vòng 30 phút.
+              {copy.successMessageSuffix}
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button
@@ -453,13 +706,13 @@ export default function RestaurantDetailClient() {
                 id="btn-close-success"
                 onClick={() => setSuccessOpen(false)}
               >
-                Đóng
+                {copy.close}
               </button>
               <Link
                 href="/"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 20px', background: 'var(--clr-light)', color: 'var(--clr-dark)', borderRadius: '10px', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}
               >
-                Về trang chủ
+                {copy.home}
               </Link>
             </div>
           </div>
