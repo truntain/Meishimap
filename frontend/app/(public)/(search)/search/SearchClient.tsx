@@ -9,8 +9,8 @@ import { searchCopy, useAppLanguage, type AppLanguage } from '@/config/language'
 
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
-const MAP_STYLE_URL = process.env.NEXT_PUBLIC_MAP_STYLE_URL || 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
-const HCM_CENTER: [number, number] = [106.7009, 10.7769];
+const MAP_STYLE_URL = process.env.NEXT_PUBLIC_MAP_STYLE_URL || 'https://tiles.openfreemap.org/styles/liberty';
+const HANOI_CENTER: [number, number] = [105.8544, 21.0285];
 const SATELLITE_SOURCE_ID = 'esri-world-imagery';
 const SATELLITE_LAYER_ID = 'esri-world-imagery-layer';
 
@@ -357,7 +357,7 @@ function createPopupNode(restaurant: Restaurant, copy: typeof searchCopy[AppLang
 
   const meta = document.createElement('div');
   meta.className = 'map-popup-meta';
-  meta.textContent = `★ ${restaurant.rating.toFixed(1)} · ${restaurant.district || restaurant.city || 'TP.HCM'}`;
+  meta.textContent = `★ ${restaurant.rating.toFixed(1)} · ${restaurant.district || restaurant.city || 'Hà Nội'}`;
   node.appendChild(meta);
 
   const address = document.createElement('div');
@@ -629,7 +629,7 @@ export default function SearchClient() {
         rating: restaurant.rating,
         address: restaurant.address,
         category: restaurant.category,
-        district: restaurant.district || restaurant.city || 'TP.HCM',
+        district: restaurant.district || restaurant.city || 'Hà Nội',
         hasJapaneseSupport: restaurant.hasJapaneseSupport,
       },
     })),
@@ -681,7 +681,7 @@ export default function SearchClient() {
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
       style: MAP_STYLE_URL,
-      center: HCM_CENTER,
+      center: HANOI_CENTER,
       zoom: 11.5,
       pitch: 0,
       attributionControl: false,

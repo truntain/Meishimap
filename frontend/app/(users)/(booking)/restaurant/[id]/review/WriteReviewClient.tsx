@@ -48,7 +48,7 @@ export default function WriteReviewClient() {
   const [restaurant, setRestaurant] = useState<any>({
     id: restaurantId,
     name: 'Miyabi Japanese Dining',
-    address: '123 Lê Lợi, Quận 1, TP. Hồ Chí Minh',
+    address: '123 Kim Mã, Quận Ba Đình, Hà Nội',
     rating: 4.9,
     reviewCount: 240,
     phone: '+84 28 3823 4567',

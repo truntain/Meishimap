@@ -3,27 +3,33 @@
 import Link from 'next/link';
 import React, { useState, useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
-import { useRouter } from 'next/navigation'; // Import useRouter của Next.js
+import { useRouter, usePathname } from 'next/navigation'; // Import useRouter và usePathname của Next.js
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<{ name?: string, email: string, role: string } | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   const router = useRouter(); // Sử dụng router để chuyển trang
+  const pathname = usePathname();
   const userMenuRef = useRef<HTMLDivElement>(null); // Ref để theo dõi click ra ngoài menu
 
-  // Đọc dữ liệu user từ cookie
+  // Đọc dữ liệu user từ cookie khi mount hoặc khi chuyển trang (chuyển đổi client-side)
   useEffect(() => {
+    setIsMounted(true);
     const userData = Cookies.get('user');
     if (userData) {
       try {
         setUser(JSON.parse(userData));
       } catch (e) {
         console.error('Failed to parse user data');
+        setUser(null);
       }
+    } else {
+      setUser(null);
     }
-  }, []);
+  }, [pathname]);
 
   // Xử lý click ra ngoài để đóng menu user
   useEffect(() => {
@@ -75,7 +81,7 @@ export default function Header() {
         </button>
         <div className="header__divider"></div>
 
-        {user ? (
+        {isMounted && user ? (
           // Thêm ref vào div bọc ngoài cùng
           <div style={{ position: 'relative' }} ref={userMenuRef}>
             <button
@@ -129,8 +135,10 @@ export default function Header() {
               </div>
             )}
           </div>
-        ) : (
+        ) : isMounted && !user ? (
           <Link href="/login" className="btn btn--login" id="btn-login">Đăng nhập</Link>
+        ) : (
+          <div style={{ width: '100px', height: '36px' }} />
         )}
       </div>
 
@@ -149,10 +157,12 @@ export default function Header() {
         {/* Đặt bàn → tới trang chi tiết nhà hàng */}
         <Link href="/restaurant/1" className="header__nav-link" onClick={() => setIsMobileMenuOpen(false)}>Đặt bàn</Link>
 
-        {user ? (
+        {isMounted && user ? (
           <button className="btn btn--login" style={{ marginTop: '8px' }} onClick={handleLogout}>Đăng xuất</button>
-        ) : (
+        ) : isMounted && !user ? (
           <Link href="/login" className="btn btn--login" style={{ marginTop: '8px' }} onClick={() => setIsMobileMenuOpen(false)}>Đăng nhập</Link>
+        ) : (
+          <div style={{ height: '36px' }} />
         )}
       </div>
     </header>

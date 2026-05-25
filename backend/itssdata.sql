@@ -224,8 +224,8 @@ COPY public.menu_items (id, restaurant_id, name, name_jp, category, price, descr
 --
 
 COPY public.restaurants (id, name, name_jp, category, rating, address, district, city, latitude, longitude, description, phone, image_url, has_japanese_support, created_at, updated_at) FROM stdin;
-1	Miyabi Japanese Dining	みやび 日本料理	sushi	4.9	123 Lê Thánh Tôn, Quận 1, TP.HCM	Quận 1	Hồ Chí Minh	10.7769	106.7009	\N	\N	\N	t	2026-05-20 02:14:21.140066	2026-05-20 02:14:21.140066
-2	Sakura Kaiseki	さくら 懐石料理	kaiseki	4.8	45 Võ Văn Tần, Quận 3, TP.HCM	Quận 3	Hồ Chí Minh	10.7828	106.6922	\N	\N	\N	t	2026-05-20 02:14:21.140066	2026-05-20 02:14:21.140066
+1	Miyabi Japanese Dining	みやび 日本料理	sushi	4.9	123 Kim Mã, Quận Ba Đình, Hà Nội	Ba Đình	Hà Nội	21.0313	105.8263	\N	\N	\N	t	2026-05-20 02:14:21.140066	2026-05-20 02:14:21.140066
+2	Sakura Kaiseki	さくら 懐石料理	kaiseki	4.8	45 Tràng Tiền, Quận Hoàn Kiếm, Hà Nội	Hoàn Kiếm	Hà Nội	21.0264	105.8575	\N	\N	\N	t	2026-05-20 02:14:21.140066	2026-05-20 02:14:21.140066
 \.
 
 
