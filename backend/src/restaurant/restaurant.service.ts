@@ -2,6 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Restaurant } from './entities/restaurant.entity';
+import { MenuItem } from './entities/menu-item.entity';
+import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
+import { CreateMenuItemDto } from './dto/create-menu-item.dto';
+import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
+import { ApprovalStatus } from '../common/enums';
+
 
 export type RestaurantResponse = {
   id: number;
@@ -22,6 +28,8 @@ export type RestaurantResponse = {
   languages?: string;
   reviewCount?: number;
   menuItems?: any[];
+  status?: string;
+  rejectReason?: string | null;
 };
 
 const MOCK_MENU_ITEMS: Record<string, any[]> = {
@@ -48,6 +56,8 @@ export class RestaurantService {
   constructor(
     @InjectRepository(Restaurant)
     private restaurantRepository: Repository<Restaurant>,
+    @InjectRepository(MenuItem)
+    private menuItemRepository: Repository<MenuItem>,
   ) { }
 
   async findAll(options: {
@@ -56,6 +66,10 @@ export class RestaurantService {
     sort?: 'rating' | 'name';
   }): Promise<RestaurantResponse[]> {
     const query = this.restaurantRepository.createQueryBuilder('restaurant');
+
+    query.andWhere('restaurant.status = :status', {
+      status: ApprovalStatus.APPROVED,
+    });
 
     if (options.category && options.category !== 'all') {
       query.andWhere('restaurant.category = :category', {
@@ -89,6 +103,7 @@ export class RestaurantService {
 
   async findFeatured(): Promise<RestaurantResponse[]> {
     const restaurants = await this.restaurantRepository.find({
+      where: { status: ApprovalStatus.APPROVED },
       order: {
         rating: 'DESC',
         name: 'ASC',
@@ -101,7 +116,7 @@ export class RestaurantService {
   async findOne(id: number): Promise<RestaurantResponse> {
     const restaurant = await this.restaurantRepository.findOne({
       where: { id },
-      relations: ['reviews'],
+      relations: ['reviews', 'menuItems'],
     });
 
     if (!restaurant) {
@@ -111,12 +126,151 @@ export class RestaurantService {
     const response = this.toResponse(restaurant);
     response.reviewCount = restaurant.reviews?.length || 0;
 
-    const category = restaurant.category.toLowerCase();
-    const menuItems = MOCK_MENU_ITEMS[category] || MOCK_MENU_ITEMS.sushi;
-    response.menuItems = menuItems;
+    response.menuItems = restaurant.menuItems?.map(item => ({
+      id: item.id,
+      name: item.name,
+      price: `${Number(item.price).toLocaleString('vi-VN')}đ`,
+      cat: item.category,
+      icon: item.emoji || item.badge || '🍣',
+      desc: item.description || '',
+    })) || [];
 
     return response;
   }
+
+  async findByOwner(ownerId: number): Promise<RestaurantResponse> {
+    const restaurant = await this.restaurantRepository.findOne({
+      where: { owner: { id: ownerId } },
+      relations: ['reviews', 'menuItems'],
+    });
+
+    if (!restaurant) {
+      throw new NotFoundException('Không tìm thấy nhà hàng của chủ nhà hàng này');
+    }
+
+    const response = this.toResponse(restaurant);
+    response.reviewCount = restaurant.reviews?.length || 0;
+
+    response.menuItems = restaurant.menuItems?.map(item => ({
+      id: item.id,
+      name: item.name,
+      price: `${Number(item.price).toLocaleString('vi-VN')}đ`,
+      cat: item.category,
+      icon: item.emoji || item.badge || '🍣',
+      desc: item.description || '',
+    })) || [];
+
+    return response;
+  }
+
+  async updateByOwner(ownerId: number, dto: UpdateRestaurantDto): Promise<RestaurantResponse> {
+    let restaurant = await this.restaurantRepository.findOne({
+      where: { owner: { id: ownerId } },
+    });
+
+    if (!restaurant) {
+      // Create a new restaurant for this owner
+      restaurant = this.restaurantRepository.create({
+        owner: { id: ownerId } as any,
+        name: dto.name || 'Nhà hàng mới của tôi',
+        category: 'sushi',
+        address: dto.address || 'Địa chỉ nhà hàng',
+        latitude: 21.03,
+        longitude: 105.85,
+      });
+    }
+
+    if (dto.name !== undefined) restaurant.name = dto.name;
+    if (dto.phone !== undefined) restaurant.phone = dto.phone;
+    if (dto.address !== undefined) restaurant.address = dto.address;
+    if (dto.image_url !== undefined) restaurant.image_url = dto.image_url;
+    if (dto.imageUrl !== undefined) restaurant.image_url = dto.imageUrl;
+    if (dto.has_japanese_support !== undefined) restaurant.has_japanese_support = dto.has_japanese_support;
+    if (dto.hasJapaneseSupport !== undefined) restaurant.has_japanese_support = dto.hasJapaneseSupport;
+    if (dto.description !== undefined) restaurant.description = dto.description;
+
+    const updatedRestaurant = await this.restaurantRepository.save(restaurant);
+    return this.findOne(updatedRestaurant.id);
+  }
+
+  async addMenuItem(ownerId: number, dto: CreateMenuItemDto) {
+    const restaurant = await this.restaurantRepository.findOne({
+      where: { owner: { id: ownerId } },
+    });
+
+    if (!restaurant) {
+      throw new NotFoundException('Không tìm thấy nhà hàng của bạn');
+    }
+
+    const menuItem = this.menuItemRepository.create({
+      restaurant_id: restaurant.id,
+      name: dto.name,
+      name_jp: dto.name_jp || dto.nameJp || null,
+      category: dto.category,
+      price: dto.price,
+      description: dto.description || null,
+      image_url: dto.image_url || dto.imageUrl || null,
+      badge: dto.badge || null,
+      emoji: dto.icon || null,
+    });
+
+    await this.menuItemRepository.save(menuItem);
+    return this.findByOwner(ownerId);
+  }
+
+  async updateMenuItem(ownerId: number, itemId: number, dto: UpdateMenuItemDto) {
+    const restaurant = await this.restaurantRepository.findOne({
+      where: { owner: { id: ownerId } },
+    });
+
+    if (!restaurant) {
+      throw new NotFoundException('Không tìm thấy nhà hàng của bạn');
+    }
+
+    const menuItem = await this.menuItemRepository.findOne({
+      where: { id: itemId, restaurant_id: restaurant.id },
+    });
+
+    if (!menuItem) {
+      throw new NotFoundException('Không tìm thấy món ăn này trong thực đơn của bạn');
+    }
+
+    if (dto.name !== undefined) menuItem.name = dto.name;
+    if (dto.name_jp !== undefined) menuItem.name_jp = dto.name_jp;
+    if (dto.nameJp !== undefined) menuItem.name_jp = dto.nameJp;
+    if (dto.category !== undefined) menuItem.category = dto.category;
+    if (dto.price !== undefined) menuItem.price = dto.price;
+    if (dto.description !== undefined) menuItem.description = dto.description;
+    if (dto.image_url !== undefined) menuItem.image_url = dto.image_url;
+    if (dto.imageUrl !== undefined) menuItem.image_url = dto.imageUrl;
+    if (dto.badge !== undefined) menuItem.badge = dto.badge;
+    if (dto.icon !== undefined) menuItem.emoji = dto.icon;
+
+    await this.menuItemRepository.save(menuItem);
+    return this.findByOwner(ownerId);
+  }
+
+  async deleteMenuItem(ownerId: number, itemId: number) {
+    const restaurant = await this.restaurantRepository.findOne({
+      where: { owner: { id: ownerId } },
+    });
+
+    if (!restaurant) {
+      throw new NotFoundException('Không tìm thấy nhà hàng của bạn');
+    }
+
+    const menuItem = await this.menuItemRepository.findOne({
+      where: { id: itemId, restaurant_id: restaurant.id },
+    });
+
+    if (!menuItem) {
+      throw new NotFoundException('Không tìm thấy món ăn này trong thực đơn của bạn');
+    }
+
+    await this.menuItemRepository.remove(menuItem);
+    return this.findByOwner(ownerId);
+  }
+
 
   private toResponse(restaurant: Restaurant): RestaurantResponse {
     return {
@@ -145,6 +299,8 @@ export class RestaurantService {
       },
       languages: restaurant.has_japanese_support ? 'Tiếng Việt, Tiếng Nhật, English' : 'Tiếng Việt, English',
       reviewCount: 0,
+      status: restaurant.status,
+      rejectReason: restaurant.rejectReason,
     };
   }
 }

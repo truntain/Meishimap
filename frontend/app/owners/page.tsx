@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import OwnerHeader from './components/OwnerHeader';
+import Cookies from 'js-cookie';
+
 
 const defaultRestaurant = {
   name: 'Sakura Garden',
@@ -34,13 +36,70 @@ export default function OwnerRestaurantPage() {
   const [menuForm, setMenuForm] = useState({ name: '', price: '', cat: 'sashimi', icon: '🍣', desc: '' });
 
   useEffect(() => {
-    const stored = localStorage.getItem('meshimap_restaurant');
-    if (stored) {
-      setRestaurant(JSON.parse(stored));
-    } else {
-      setRestaurant(defaultRestaurant);
-      localStorage.setItem('meshimap_restaurant', JSON.stringify(defaultRestaurant));
-    }
+    const fetchRestaurant = async () => {
+      const token = Cookies.get('access_token');
+      if (!token) {
+        const stored = localStorage.getItem('meshimap_restaurant');
+        if (stored) {
+          setRestaurant(JSON.parse(stored));
+        } else {
+          setRestaurant(defaultRestaurant);
+        }
+        return;
+      }
+
+      try {
+        const res = await fetch('http://localhost:3001/restaurants/my-restaurant', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (res.status === 404) {
+          setRestaurant(defaultRestaurant);
+          localStorage.setItem('meshimap_restaurant', JSON.stringify(defaultRestaurant));
+          return;
+        }
+        if (res.status === 401) {
+          Cookies.remove('access_token');
+          Cookies.remove('user');
+          showAlert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'warning');
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 2000);
+          return;
+        }
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`Không thể lấy thông tin nhà hàng từ backend. Status: ${res.status}. Msg: ${errText}`);
+        }
+        const data = await res.json();
+        const mappedRes = {
+          ...data,
+          name: data.name,
+          address: data.address,
+          phone: data.phone || '',
+          banner: data.imageUrl || '',
+          jpSupport: data.hasJapaneseSupport,
+          jpSupportText: data.languages || 'Tiếng Việt, English',
+          openTime: data.hours?.monday?.split(' - ')[0] || '10:00',
+          closeTime: data.hours?.monday?.split(' - ')[1] || '22:00',
+          menu: data.menuItems || [],
+          reviews: data.reviews || [],
+        };
+        setRestaurant(mappedRes);
+        localStorage.setItem('meshimap_restaurant', JSON.stringify(mappedRes));
+      } catch (err) {
+        console.error(err);
+        const stored = localStorage.getItem('meshimap_restaurant');
+        if (stored) {
+          setRestaurant(JSON.parse(stored));
+        } else {
+          setRestaurant(defaultRestaurant);
+        }
+      }
+    };
+
+    fetchRestaurant();
   }, []);
 
   const showAlert = (msg: string, type = 'success') => {
@@ -48,11 +107,72 @@ export default function OwnerRestaurantPage() {
     setTimeout(() => setAlertMsg(null), 3500);
   };
 
-  const handleInfoSubmit = (e: React.FormEvent) => {
+  const handleInfoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem('meshimap_restaurant', JSON.stringify(restaurant));
-    showAlert('Lưu thông tin nhà hàng thành công!');
+
+    const token = Cookies.get('access_token');
+    if (!token) {
+      showAlert('Lưu thông tin thành công (Offline)!');
+      return;
+    }
+
+    try {
+      const res = await fetch('http://localhost:3001/restaurants/my-restaurant', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: restaurant.name,
+          phone: restaurant.phone,
+          address: restaurant.address,
+          imageUrl: restaurant.banner,
+          hasJapaneseSupport: restaurant.jpSupport,
+          description: restaurant.description || ''
+        })
+      });
+
+      if (res.status === 401) {
+        Cookies.remove('access_token');
+        Cookies.remove('user');
+        showAlert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'warning');
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+        return;
+      }
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Lỗi cập nhật nhà hàng');
+      }
+
+      const updatedData = await res.json();
+      const mappedRes = {
+        ...updatedData,
+        name: updatedData.name,
+        address: updatedData.address,
+        phone: updatedData.phone || '',
+        banner: updatedData.imageUrl || '',
+        jpSupport: updatedData.hasJapaneseSupport,
+        jpSupportText: updatedData.languages || 'Tiếng Việt, English',
+        openTime: updatedData.hours?.monday?.split(' - ')[0] || '10:00',
+        closeTime: updatedData.hours?.monday?.split(' - ')[1] || '22:00',
+        menu: updatedData.menuItems || [],
+        reviews: updatedData.reviews || [],
+      };
+      
+      setRestaurant(mappedRes);
+      localStorage.setItem('meshimap_restaurant', JSON.stringify(mappedRes));
+      showAlert('Lưu thông tin nhà hàng lên hệ thống thành công!');
+    } catch (err: any) {
+      console.error(err);
+      showAlert(`Lỗi kết nối: ${err.message || 'Không thể lưu lên hệ thống'}`, 'warning');
+    }
   };
+
 
   const handleInfoChange = (field: string, value: any) => {
     setRestaurant((prev: any) => ({ ...prev, [field]: value }));
@@ -68,28 +188,151 @@ export default function OwnerRestaurantPage() {
     setShowMenuModal(true);
   };
 
-  const handleMenuSubmit = (e: React.FormEvent) => {
+  const handleMenuSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const updated = { ...restaurant };
-    if (editingIndex !== null) {
-      updated.menu[editingIndex] = menuForm;
-      showAlert('Đã cập nhật món ăn!');
-    } else {
-      updated.menu.push(menuForm);
-      showAlert('Đã thêm món ăn mới!');
+    const token = Cookies.get('access_token');
+    if (!token) {
+      showAlert('Vui lòng đăng nhập lại.', 'warning');
+      return;
     }
-    setRestaurant(updated);
-    localStorage.setItem('meshimap_restaurant', JSON.stringify(updated));
-    setShowMenuModal(false);
+
+    const cleanPrice = parseInt(menuForm.price.replace(/[^\d]/g, '')) || 0;
+    const body = {
+      name: menuForm.name,
+      price: cleanPrice,
+      category: menuForm.cat,
+      icon: menuForm.icon,
+      description: menuForm.desc,
+    };
+
+    try {
+      let res;
+      if (editingIndex !== null) {
+        const itemId = restaurant.menu[editingIndex].id;
+        res = await fetch(`http://localhost:3001/restaurants/my-restaurant/menu-items/${itemId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(body)
+        });
+      } else {
+        res = await fetch(`http://localhost:3001/restaurants/my-restaurant/menu-items`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(body)
+        });
+      }
+
+      if (res.status === 401) {
+        Cookies.remove('access_token');
+        Cookies.remove('user');
+        showAlert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'warning');
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+        return;
+      }
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Lỗi lưu món ăn');
+      }
+
+      const updatedRestaurant = await res.json();
+      const mappedRes = {
+        ...updatedRestaurant,
+        name: updatedRestaurant.name,
+        address: updatedRestaurant.address,
+        phone: updatedRestaurant.phone || '',
+        banner: updatedRestaurant.imageUrl || '',
+        jpSupport: updatedRestaurant.hasJapaneseSupport,
+        jpSupportText: updatedRestaurant.languages || 'Tiếng Việt, English',
+        openTime: updatedRestaurant.hours?.monday?.split(' - ')[0] || '10:00',
+        closeTime: updatedRestaurant.hours?.monday?.split(' - ')[1] || '22:00',
+        menu: updatedRestaurant.menuItems || [],
+        reviews: updatedRestaurant.reviews || [],
+      };
+
+      setRestaurant(mappedRes);
+      localStorage.setItem('meshimap_restaurant', JSON.stringify(mappedRes));
+      showAlert(editingIndex !== null ? 'Đã cập nhật món ăn!' : 'Đã thêm món ăn mới!');
+      setShowMenuModal(false);
+    } catch (err: any) {
+      console.error(err);
+      showAlert(`Lỗi: ${err.message || 'Không thể cập nhật món ăn'}`, 'warning');
+    }
   };
 
-  const deleteMenuItem = (index: number) => {
-    if (window.confirm('Bạn có chắc muốn xóa món ăn này khỏi thực đơn không?')) {
+  const deleteMenuItem = async (index: number) => {
+    if (!window.confirm('Bạn có chắc muốn xóa món ăn này khỏi thực đơn không?')) {
+      return;
+    }
+
+    const token = Cookies.get('access_token');
+    if (!token) {
+      showAlert('Vui lòng đăng nhập lại.', 'warning');
+      return;
+    }
+
+    const itemId = restaurant.menu[index].id;
+    if (!itemId) {
       const updated = { ...restaurant };
       updated.menu.splice(index, 1);
       setRestaurant(updated);
       localStorage.setItem('meshimap_restaurant', JSON.stringify(updated));
       showAlert('Đã xóa món ăn khỏi thực đơn!', 'warning');
+      return;
+    }
+
+    try {
+      const res = await fetch(`http://localhost:3001/restaurants/my-restaurant/menu-items/${itemId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (res.status === 401) {
+        Cookies.remove('access_token');
+        Cookies.remove('user');
+        showAlert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'warning');
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+        return;
+      }
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Lỗi xóa món ăn');
+      }
+
+      const updatedRestaurant = await res.json();
+      const mappedRes = {
+        ...updatedRestaurant,
+        name: updatedRestaurant.name,
+        address: updatedRestaurant.address,
+        phone: updatedRestaurant.phone || '',
+        banner: updatedRestaurant.imageUrl || '',
+        jpSupport: updatedRestaurant.hasJapaneseSupport,
+        jpSupportText: updatedRestaurant.languages || 'Tiếng Việt, English',
+        openTime: updatedRestaurant.hours?.monday?.split(' - ')[0] || '10:00',
+        closeTime: updatedRestaurant.hours?.monday?.split(' - ')[1] || '22:00',
+        menu: updatedRestaurant.menuItems || [],
+        reviews: updatedRestaurant.reviews || [],
+      };
+
+      setRestaurant(mappedRes);
+      localStorage.setItem('meshimap_restaurant', JSON.stringify(mappedRes));
+      showAlert('Đã xóa món ăn khỏi thực đơn!', 'warning');
+    } catch (err: any) {
+      console.error(err);
+      showAlert(`Lỗi: ${err.message || 'Không thể xóa món ăn'}`, 'warning');
     }
   };
 

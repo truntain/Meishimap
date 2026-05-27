@@ -2,8 +2,11 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { detailCopy, useAppLanguage } from '@/config/language';
+import Cookies from 'js-cookie';
+import { io } from 'socket.io-client';
+import { toast } from 'react-hot-toast';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
@@ -173,6 +176,7 @@ const StarsFull = ({ count }: { count: number }) => (
 
 export default function RestaurantDetailClient() {
   const params = useParams();
+  const router = useRouter();
   const { language } = useAppLanguage();
   const copy = detailCopy[language];
   const restaurantIdParam = params?.id;
@@ -204,6 +208,7 @@ export default function RestaurantDetailClient() {
               date: `Tháng ${dateObj.getMonth() + 1}, ${dateObj.getFullYear()}`,
               stars: r.stars,
               text: r.title ? `${r.title} — ${r.content}` : r.content,
+              ownerReply: r.ownerReply || r.owner_reply || null,
             };
           });
           setReviews(formattedReviews);
@@ -234,6 +239,7 @@ export default function RestaurantDetailClient() {
 
   // ── Promo copy state ──
   const [promoCopied, setPromoCopied] = useState(false);
+
 
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -322,9 +328,15 @@ export default function RestaurantDetailClient() {
     setIsSubmitting(true);
 
     try {
+      const token = Cookies.get('access_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const res = await fetch(`${API_BASE_URL}/booking`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           restaurantId: Number(restaurantId),
           date: bookingDate,
@@ -339,18 +351,28 @@ export default function RestaurantDetailClient() {
       setTimeout(() => {
         setIsSubmitting(false);
         setBookingOpen(false);
-        setSuccessOpen(true);
+        router.push(
+          `/booking-success?restaurantId=${restaurantId}&restaurantName=${encodeURIComponent(
+            restaurant?.name || ''
+          )}&date=${bookingDate}&time=${bookingTime}&guests=${encodeURIComponent(bookingGuests)}`
+        );
         setBookingDate('');
         setBookingNote('');
       }, 600);
     } catch (e) {
       console.error(e);
       setIsSubmitting(false);
-      alert('Đã xảy ra lỗi khi đặt bàn. Vui lòng thử lại.');
+      toast.error('Đã xảy ra lỗi khi đặt bàn. Vui lòng thử lại.');
     }
   };
 
   const openBooking = () => {
+    const token = Cookies.get('access_token');
+    if (!token) {
+      toast.error('Vui lòng đăng nhập để thực hiện đặt bàn!');
+      router.push('/login');
+      return;
+    }
     setBookingOpen(true);
     setDateError(false);
   };
@@ -544,6 +566,12 @@ export default function RestaurantDetailClient() {
                   </div>
                 </div>
                 <p className="review__text">{review.text}</p>
+                {review.ownerReply && (
+                  <div className="review__reply">
+                    <div className="review__reply-title">{copy.ownerReply || 'Phản hồi của chủ nhà hàng'}:</div>
+                    <p className="review__reply-text">"{review.ownerReply}"</p>
+                  </div>
+                )}
               </div>
             ))}
           </div>

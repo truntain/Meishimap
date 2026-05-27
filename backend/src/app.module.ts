@@ -10,6 +10,7 @@ import { RestaurantModule } from './restaurant/restaurant.module';
 import { BookingModule } from './booking/booking.module';
 import { NotificationModule } from './notification/notification.module';
 import { ReviewModule } from './review/review.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -29,7 +30,7 @@ import { ReviewModule } from './review/review.module';
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
-        synchronize: true,
+        synchronize: false,
         autoLoadEntities: true,
       }),
     }),
@@ -45,6 +46,8 @@ import { ReviewModule } from './review/review.module';
     NotificationModule,
     
     ReviewModule,
+
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

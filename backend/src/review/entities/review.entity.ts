@@ -35,6 +35,12 @@ export class Review {
   @Column({ type: 'date', name: 'visit_date', nullable: true })
   visitDate: string;
 
+  @Column({ type: 'boolean', name: 'is_reported', default: false })
+  isReported: boolean;
+
+  @Column({ type: 'text', name: 'report_reason', nullable: true })
+  reportReason: string | null;
+
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 }

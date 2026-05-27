@@ -36,6 +36,9 @@ export class Booking {
   @Column({ type: 'enum', enum: BookingStatus, default: BookingStatus.PENDING })
   status: BookingStatus;
 
+  @Column({ type: 'text', nullable: true, name: 'reject_reason' })
+  rejectReason: string | null;
+
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 

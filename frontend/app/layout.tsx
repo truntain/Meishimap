@@ -4,6 +4,8 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import RealtimeNotification from "../components/RealtimeNotification";
+import { Toaster } from "react-hot-toast";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-brand-google",
@@ -33,6 +35,8 @@ export default function RootLayout({
         <Header />
         {children}
         <Footer />
+        <RealtimeNotification />
+        <Toaster position="top-right" />
       </body>
     </html>
   );

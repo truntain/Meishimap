@@ -2,9 +2,18 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import * as express from 'express';
+import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  
+  // Tăng giới hạn payload body (để tải lên ảnh/giấy tờ dạng Base64)
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ limit: '10mb', extended: true }));
+  
+  // Cấu hình serve file tĩnh từ thư mục uploads
+  app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
   
   // Kích hoạt CORS để Frontend có thể gọi API mà không bị chặn
   app.enableCors();

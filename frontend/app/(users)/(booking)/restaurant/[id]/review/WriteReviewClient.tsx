@@ -3,6 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
@@ -135,7 +136,7 @@ export default function WriteReviewClient() {
   };
 
   // ── Form submit ──
-  const handleSubmit = useCallback((e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
     const newErrors = {
@@ -148,31 +149,40 @@ export default function WriteReviewClient() {
 
     setIsSubmitting(true);
 
-    // Save to localStorage (sẽ thay bằng API call)
-    const review = {
-      restaurantId: String(restaurantId),
-      restaurantName: restaurant.name,
-      rating,
-      title: title.trim(),
-      content: content.trim(),
-      visitDate,
-      visitType,
-      author: 'Bạn',
-      createdAt: new Date().toISOString(),
-    };
-    const existing = JSON.parse(localStorage.getItem('meshimap_reviews') || '[]');
-    existing.push(review);
-    localStorage.setItem('meshimap_reviews', JSON.stringify(existing));
+    try {
+      const token = Cookies.get('access_token');
+      
+      const res = await fetch(`${API_BASE_URL}/review`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          restaurantId: Number(restaurantId),
+          stars: rating,
+          title: title.trim(),
+          content: content.trim(),
+          visitDate: visitDate || undefined,
+        }),
+      });
 
-    setTimeout(() => {
+      if (!res.ok) {
+        throw new Error('Gửi đánh giá thất bại');
+      }
+
       setIsSubmitting(false);
       setShowSuccess(true);
       // Auto-redirect sau 2.5s
       setTimeout(() => {
         window.location.href = `/restaurant/${restaurantId}`;
       }, 2500);
-    }, 700);
-  }, [rating, title, content, visitDate, visitType, restaurantId, restaurant.name]);
+    } catch (err) {
+      console.error(err);
+      setIsSubmitting(false);
+      alert('Đã xảy ra lỗi khi gửi đánh giá. Vui lòng đăng nhập lại và thử lại.');
+    }
+  }, [rating, title, content, visitDate, restaurantId]);
 
   return (
     <>

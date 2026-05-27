@@ -2,12 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AdminHeader from '../components/AdminHeader';
-
-const defaultPendingRestaurants = [
-  { id: 1, name: 'Kyoto Ramen House', email: 'sato@kyoto.com', address: '45 Phan Xich Long, Phu Nhuan, HCM', phone: '0909887766', date: '2026-05-22', cuisine: 'RAMEN', status: 'pending', description: 'Mô hình ramen truyền thống của vùng Kyoto, nước dùng xương heo ninh nhừ 15 tiếng.' },
-  { id: 2, name: 'Nagoya Bento', email: 'nagoya@bento.com', address: '12 Nguyễn Thị Thập, Quận 7, HCM', phone: '0912334455', date: '2026-05-23', cuisine: 'BENTO', status: 'pending', description: 'Cơm hộp Bento chuẩn vị Nhật Bản tiện lợi, đầy đủ dinh dưỡng cho giới văn phòng.' },
-  { id: 3, name: 'Tokyo Sushi Bar', email: 'tokyo@sushi.com', address: '78 Lê Thánh Tôn, Quận 1, HCM', phone: '0988112233', date: '2026-05-23', cuisine: 'SUSHI', status: 'pending', description: 'Sushi quầy bar cao cấp do đầu bếp Nhật trực tiếp đứng quầy và làm món.' }
-];
+import Cookies from 'js-cookie';
 
 export default function AdminApprovalsPage() {
   const [restaurants, setRestaurants] = useState<any[]>([]);
@@ -17,14 +12,58 @@ export default function AdminApprovalsPage() {
   const [rejectReason, setRejectReason] = useState('');
   const [alertMsg, setAlertMsg] = useState<{msg: string, type: string} | null>(null);
 
-  useEffect(() => {
-    const stored = localStorage.getItem('meshimap_pending_restaurants');
-    if (stored) {
-      setRestaurants(JSON.parse(stored));
-    } else {
-      setRestaurants(defaultPendingRestaurants);
-      localStorage.setItem('meshimap_pending_restaurants', JSON.stringify(defaultPendingRestaurants));
+  const fetchApprovals = async () => {
+    const token = Cookies.get('access_token');
+    if (!token) {
+      window.location.href = '/login';
+      return;
     }
+
+    try {
+      const res = await fetch('http://localhost:3001/admin/approvals', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (res.status === 401) {
+        Cookies.remove('access_token');
+        Cookies.remove('user');
+        window.location.href = '/login';
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error('Lỗi lấy danh sách phê duyệt từ backend');
+      }
+
+      const data = await res.json();
+      const mapped = data.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        email: item.owner?.email || 'Chưa liên kết chủ',
+        address: item.address,
+        phone: item.phone || 'Chưa cập nhật',
+        date: new Date(item.created_at || item.createdAt).toLocaleDateString('vi-VN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }),
+        cuisine: (item.category || 'sushi').toUpperCase(),
+        status: item.status, // 'pending' | 'approved' | 'rejected'
+        description: item.description || 'Không có mô tả giới thiệu.',
+        rejectReason: item.rejectReason || '',
+        documents: item.documents || null
+      }));
+      setRestaurants(mapped);
+    } catch (err: any) {
+      console.error(err);
+      showAlert(`Lỗi: ${err.message || 'Không thể lấy dữ liệu'}`, 'warning');
+    }
+  };
+
+  useEffect(() => {
+    fetchApprovals();
   }, []);
 
   const showAlert = (msg: string, type = 'success') => {
@@ -32,30 +71,81 @@ export default function AdminApprovalsPage() {
     setTimeout(() => setAlertMsg(null), 3500);
   };
 
-  const saveToStorage = (data: any[]) => {
-    setRestaurants(data);
-    localStorage.setItem('meshimap_pending_restaurants', JSON.stringify(data));
+  const handleApprove = async (id: number) => {
+    const token = Cookies.get('access_token');
+    if (!token) {
+      showAlert('Vui lòng đăng nhập lại.', 'warning');
+      return;
+    }
+
+    try {
+      const res = await fetch(`http://localhost:3001/admin/approvals/${id}/approve`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (res.status === 401) {
+        Cookies.remove('access_token');
+        Cookies.remove('user');
+        window.location.href = '/login';
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error('Lỗi phê duyệt nhà hàng');
+      }
+
+      setShowDetailModal(false);
+      showAlert('Đã phê duyệt nhà hàng thành công!');
+      fetchApprovals();
+    } catch (err: any) {
+      console.error(err);
+      showAlert(`Lỗi: ${err.message}`, 'warning');
+    }
   };
 
-  const handleApprove = (id: number) => {
-    const updated = restaurants.map(r => r.id === id ? { ...r, status: 'approved' } : r);
-    saveToStorage(updated);
-    setShowDetailModal(false);
-    showAlert('Đã phê duyệt nhà hàng thành công!');
-  };
-
-  const handleRejectSubmit = (e: React.FormEvent) => {
+  const handleRejectSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedResId === null) return;
-    
-    const updated = restaurants.map(r => 
-      r.id === selectedResId ? { ...r, status: 'rejected', rejectReason } : r
-    );
-    saveToStorage(updated);
-    setShowRejectModal(false);
-    setShowDetailModal(false);
-    setRejectReason('');
-    showAlert('Đã từ chối đăng ký nhà hàng.', 'warning');
+
+    const token = Cookies.get('access_token');
+    if (!token) {
+      showAlert('Vui lòng đăng nhập lại.', 'warning');
+      return;
+    }
+
+    try {
+      const res = await fetch(`http://localhost:3001/admin/approvals/${selectedResId}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ rejectReason })
+      });
+
+      if (res.status === 401) {
+        Cookies.remove('access_token');
+        Cookies.remove('user');
+        window.location.href = '/login';
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error('Lỗi từ chối phê duyệt');
+      }
+
+      setShowRejectModal(false);
+      setShowDetailModal(false);
+      setRejectReason('');
+      showAlert('Đã từ chối đăng ký nhà hàng.', 'warning');
+      fetchApprovals();
+    } catch (err: any) {
+      console.error(err);
+      showAlert(`Lỗi: ${err.message}`, 'warning');
+    }
   };
 
   const openDetail = (id: number) => {
@@ -166,10 +256,63 @@ export default function AdminApprovalsPage() {
               <div><strong>Số điện thoại:</strong> {selectedRes.phone}</div>
               <div><strong>Email:</strong> {selectedRes.email}</div>
               <div><strong>Ngày gửi yêu cầu:</strong> {selectedRes.date}</div>
-              <div><strong>Mô tả giới thiệu:</strong></div>
+              {selectedRes.status === 'rejected' && selectedRes.rejectReason && (
+                <div style={{ color: '#dc2626' }}><strong>Lý do từ chối:</strong> {selectedRes.rejectReason}</div>
+              )}
               <p style={{ background: 'var(--clr-cream)', padding: 10, borderRadius: 6, fontStyle: 'italic', lineHeight: 1.5, color: 'var(--clr-medium)' }}>
                 "{selectedRes.description}"
               </p>
+              {selectedRes.documents && (
+                <div style={{ marginTop: 8, borderTop: '1px solid var(--clr-border)', paddingTop: 12 }}>
+                  <strong style={{ display: 'block', marginBottom: 8 }}>Giấy tờ minh chứng pháp lý:</strong>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    {selectedRes.documents.japaneseProof && (
+                      <a 
+                        href={`http://localhost:3001${selectedRes.documents.japaneseProof}`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="btn btn--outline"
+                        style={{ padding: '8px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textAlign: 'center', minHeight: '38px' }}
+                      >
+                        🇯🇵 Minh chứng tiếng Nhật
+                      </a>
+                    )}
+                    {selectedRes.documents.businessLicense && (
+                      <a 
+                        href={`http://localhost:3001${selectedRes.documents.businessLicense}`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="btn btn--outline"
+                        style={{ padding: '8px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textAlign: 'center', minHeight: '38px' }}
+                      >
+                        📄 Giấy phép kinh doanh
+                      </a>
+                    )}
+                    {selectedRes.documents.foodSafetyCert && (
+                      <a 
+                        href={`http://localhost:3001${selectedRes.documents.foodSafetyCert}`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="btn btn--outline"
+                        style={{ padding: '8px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textAlign: 'center', minHeight: '38px' }}
+                      >
+                        🛡️ Giấy chứng nhận ATTP
+                      </a>
+                    )}
+                    {selectedRes.documents.identityCard && (
+                      <a 
+                        href={`http://localhost:3001${selectedRes.documents.identityCard}`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="btn btn--outline"
+                        style={{ padding: '8px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textAlign: 'center', minHeight: '38px' }}
+                      >
+                        🪪 CMND/CCCD chủ quán
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="db-modal__actions" style={{ marginTop: 24 }}>
               <button type="button" className="modal__cancel" onClick={() => setShowDetailModal(false)}>Đóng</button>

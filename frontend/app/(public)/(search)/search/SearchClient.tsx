@@ -167,7 +167,7 @@ function getCategoryStyle(category: string) {
   return CATEGORY_STYLES[category] || DEFAULT_CATEGORY_STYLE;
 }
 
-function getCategoryColorExpression(defaultColor = DEFAULT_CATEGORY_STYLE.color): ExpressionSpecification {
+function getCategoryColorExpression(defaultColor = DEFAULT_CATEGORY_STYLE.color): any {
   return [
     'match',
     ['get', 'category'],
@@ -178,10 +178,10 @@ function getCategoryColorExpression(defaultColor = DEFAULT_CATEGORY_STYLE.color)
     'bbq', CATEGORY_STYLES.bbq.color,
     'soba', CATEGORY_STYLES.soba.color,
     defaultColor,
-  ] as ExpressionSpecification;
+  ] as any;
 }
 
-function getCategoryPinExpression(selectedId: number | null): ExpressionSpecification {
+function getCategoryPinExpression(selectedId: number | null): any {
   return [
     'case',
     ['==', ['get', 'id'], selectedId ?? -1],
@@ -197,7 +197,7 @@ function getCategoryPinExpression(selectedId: number | null): ExpressionSpecific
       'soba', 'restaurant-pin-soba',
       'restaurant-pin-other',
     ],
-  ] as ExpressionSpecification;
+  ] as any;
 }
 
 function addSatelliteLayer(map: maplibregl.Map, mode: MapViewMode) {

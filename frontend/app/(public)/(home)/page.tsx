@@ -165,7 +165,7 @@ export default function HomePage() {
             <div className="cta__card-content">
               <h2 className="cta__heading cta__heading--light">Kết nối văn hóa qua từng bữa ăn</h2>
               <p className="cta__text cta__text--light">Trở thành đối tác của Meshimap để tiếp cận cộng đồng thực khách tinh tế từ cả Việt Nam và Nhật Bản.</p>
-              <Link href="/register" className="btn btn--primary btn--primary-lg" id="btn-register">Đăng ký nhà hàng</Link>
+              <Link href="/register-restaurant" className="btn btn--primary btn--primary-lg" id="btn-register">Đăng ký nhà hàng</Link>
             </div>
           </div>
         </div>

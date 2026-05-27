@@ -187,6 +187,7 @@ export const detailCopy = {
     notePlaceholder: 'Yêu cầu đặc biệt, dị ứng thực phẩm...',
     successMessagePrefix: 'Cảm ơn bạn đã đặt bàn tại',
     successMessageSuffix: 'Chúng tôi sẽ liên hệ xác nhận qua điện thoại trong vòng 30 phút.',
+    ownerReply: 'Phản hồi của chủ nhà hàng',
   },
   ja: {
     bookingButton: '予約',
@@ -222,5 +223,6 @@ export const detailCopy = {
     notePlaceholder: '特別なリクエスト、アレルギーなど...',
     successMessagePrefix: 'ご予約ありがとうございます:',
     successMessageSuffix: '30分以内に電話で確認いたします。',
+    ownerReply: 'レストランからの返信',
   },
 } satisfies Record<AppLanguage, Record<string, string>>;

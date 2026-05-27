@@ -11,6 +11,7 @@ import { Booking } from '../../booking/entities/booking.entity';
 import { Notification } from '../../notification/entities/notification.entity';
 import { Review } from '../../review/entities/review.entity';
 import { UserRole } from '../../common/enums';
+import { Restaurant } from '../../restaurant/entities/restaurant.entity';
 
 @Entity('users')
 export class User {
@@ -74,4 +75,7 @@ export class User {
 
   @OneToMany(() => Review, review => review.user)
   reviews!: Review[];
+
+  @OneToMany(() => Restaurant, restaurant => restaurant.owner)
+  restaurants!: Restaurant[];
 }

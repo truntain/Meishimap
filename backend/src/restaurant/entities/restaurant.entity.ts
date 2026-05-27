@@ -5,10 +5,17 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
+  OneToOne,
 } from 'typeorm';
 
 import { Booking } from '../../booking/entities/booking.entity';
 import { Review } from '../../review/entities/review.entity';
+import { User } from '../../user/entities/user.entity';
+import { MenuItem } from './menu-item.entity';
+import { ApprovalStatus } from '../../common/enums';
+import { RestaurantDocument } from './restaurant-document.entity';
 
 @Entity('restaurants')
 export class Restaurant {
@@ -54,6 +61,17 @@ export class Restaurant {
   @Column({ type: 'boolean', default: false })
   has_japanese_support!: boolean;
 
+  @Column({
+    type: 'enum',
+    enum: ApprovalStatus,
+    enumName: 'approval_status',
+    default: ApprovalStatus.PENDING,
+  })
+  status!: ApprovalStatus;
+
+  @Column({ type: 'text', nullable: true, name: 'reject_reason' })
+  rejectReason!: string | null;
+
   @CreateDateColumn({
     type: 'timestamp without time zone',
     default: () => 'CURRENT_TIMESTAMP',
@@ -72,4 +90,13 @@ export class Restaurant {
 
   @OneToMany(() => Review, review => review.restaurant)
   reviews!: Review[];
+
+  @OneToMany(() => MenuItem, (menuItem) => menuItem.restaurant)
+  menuItems!: MenuItem[];
+
+  @ManyToOne(() => User, user => user.restaurants, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'owner_id' })
+  owner!: User | null;
+  @OneToOne(() => RestaurantDocument, document => document.restaurant, { cascade: true })
+  documents!: RestaurantDocument;
 }

@@ -15,6 +15,7 @@ import {
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
 import AdminHeader from './components/AdminHeader';
+import Cookies from 'js-cookie';
 
 // Register Chart.js components
 ChartJS.register(
@@ -30,25 +31,55 @@ ChartJS.register(
 );
 
 export default function AdminStatsPage() {
-  const [totalRestaurants, setTotalRestaurants] = useState(12);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // Dynamic update logic from localStorage
-    const stored = localStorage.getItem('meshimap_pending_restaurants');
-    if (stored) {
-      const data = JSON.parse(stored);
-      const approved = data.filter((r: any) => r.status === 'approved').length;
-      // Start with base 12 and add newly approved
-      setTotalRestaurants(12 + approved);
-    }
+    const fetchStats = async () => {
+      const token = Cookies.get('access_token');
+      if (!token) {
+        window.location.href = '/login';
+        return;
+      }
+
+      try {
+        const res = await fetch('http://localhost:3001/admin/stats', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (res.status === 401) {
+          Cookies.remove('access_token');
+          Cookies.remove('user');
+          window.location.href = '/login';
+          return;
+        }
+
+        if (!res.ok) {
+          throw new Error('Không thể lấy dữ liệu thống kê từ backend');
+        }
+
+        const data = await res.json();
+        setStats(data);
+      } catch (err: any) {
+        console.error(err);
+        setError(err.message || 'Lỗi kết nối dữ liệu');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
   }, []);
 
-  const revenueData = {
-    labels: ['Tháng 12', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5'],
+  const restaurantData = {
+    labels: stats?.charts?.labels || ['Tháng 12', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5'],
     datasets: [
       {
-        label: 'Doanh thu hệ thống (triệu VNĐ)',
-        data: [12.4, 15.8, 14.2, 19.5, 22.1, 25.4],
+        label: 'Nhà hàng mới đăng ký',
+        data: stats?.charts?.restaurantRegistrations || [1, 2, 1, 3, 2, 4],
         borderColor: '#FD8A3E',
         backgroundColor: 'rgba(253, 138, 62, 0.1)',
         borderWidth: 3,
@@ -59,7 +90,7 @@ export default function AdminStatsPage() {
     ],
   };
 
-  const revenueOptions = {
+  const restaurantOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -68,7 +99,7 @@ export default function AdminStatsPage() {
     scales: {
       y: {
         grid: { color: 'rgba(218,194,182,0.15)' },
-        ticks: { color: '#54433A', font: { family: 'Be Vietnam Pro' } },
+        ticks: { color: '#54433A', font: { family: 'Be Vietnam Pro' }, stepSize: 1 },
       },
       x: {
         grid: { display: false },
@@ -78,11 +109,11 @@ export default function AdminStatsPage() {
   };
 
   const userData = {
-    labels: ['Tháng 12', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5'],
+    labels: stats?.charts?.labels || ['Tháng 12', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5'],
     datasets: [
       {
         label: 'Đăng ký mới',
-        data: [42, 65, 58, 89, 72, 98],
+        data: stats?.charts?.userRegistrations || [42, 65, 58, 89, 72, 98],
         backgroundColor: '#6C2F00',
         hoverBackgroundColor: '#FD8A3E',
         borderRadius: 6,
@@ -112,33 +143,38 @@ export default function AdminStatsPage() {
     <>
       <AdminHeader title="Thống kê & Tổng quan" />
       <div className="db-content">
-        <div className="db-stats-grid">
+        {loading && (
+          <div style={{ textAlign: 'center', padding: 20, color: 'var(--clr-muted)' }}>
+            Đang tải dữ liệu thống kê...
+          </div>
+        )}
+        {error && (
+          <div className="db-alert db-alert--warning" style={{ marginBottom: 20 }}>
+            <span>⚠️</span>
+            <span>{error}</span>
+          </div>
+        )}
+        
+        <div className="db-stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
           <div className="db-stat-card">
             <div className="db-stat-card__info">
-              <span className="db-stat-card__label">Tổng số nhà hàng</span>
-              <span className="db-stat-card__value">{totalRestaurants}</span>
-              <span className="db-stat-card__trend db-stat-card__trend--up">▲ +12% tháng này</span>
+              <span className="db-stat-card__label">Tổng số nhà hàng đã duyệt</span>
+              <span className="db-stat-card__value">{stats?.summary?.totalRestaurants ?? '...'}</span>
+              <span className="db-stat-card__trend db-stat-card__trend--up">▲ +{stats?.summary?.totalRestaurantsTrend ?? 100}% tháng này</span>
             </div>
           </div>
           <div className="db-stat-card">
             <div className="db-stat-card__info">
               <span className="db-stat-card__label">Số lượng thành viên</span>
-              <span className="db-stat-card__value">352</span>
-              <span className="db-stat-card__trend db-stat-card__trend--up">▲ +24% tháng này</span>
+              <span className="db-stat-card__value">{stats?.summary?.totalMembers ?? '...'}</span>
+              <span className="db-stat-card__trend db-stat-card__trend--up">▲ +{stats?.summary?.totalMembersTrend ?? 100}% tháng này</span>
             </div>
           </div>
-          <div className="db-stat-card">
+          <div className="db-stat-card" style={{ borderColor: 'rgba(239, 68, 68, 0.3)' }}>
             <div className="db-stat-card__info">
-              <span className="db-stat-card__label">Lượt đặt bàn thành công</span>
-              <span className="db-stat-card__value">1,428</span>
-              <span className="db-stat-card__trend db-stat-card__trend--up">▲ +18% tháng này</span>
-            </div>
-          </div>
-          <div className="db-stat-card">
-            <div className="db-stat-card__info">
-              <span className="db-stat-card__label">Doanh thu hệ thống</span>
-              <span className="db-stat-card__value">25,4M VNĐ</span>
-              <span className="db-stat-card__trend db-stat-card__trend--up">▲ +15% tháng này</span>
+              <span className="db-stat-card__label">Yêu cầu chờ duyệt</span>
+              <span className="db-stat-card__value" style={{ color: '#ef4444' }}>{stats?.summary?.pendingRestaurants ?? '...'}</span>
+              <span className="db-stat-card__trend db-stat-card__trend--up" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>▲ Mới</span>
             </div>
           </div>
         </div>
@@ -146,10 +182,10 @@ export default function AdminStatsPage() {
         <div className="db-charts-grid">
           <div className="db-card">
             <h3 className="db-card__title" style={{ marginBottom: 20 }}>
-              Doanh thu hệ thống (Hàng tháng)
+              Tăng trưởng nhà hàng mới (Hàng tháng)
             </h3>
             <div style={{ position: 'relative', height: 300, width: '100%' }}>
-              <Line data={revenueData} options={revenueOptions} />
+              <Line data={restaurantData} options={restaurantOptions} />
             </div>
           </div>
           <div className="db-card">

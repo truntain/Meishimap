@@ -5,6 +5,7 @@ import { CreateAuthDto } from './dto/create-auth.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RegisterOwnerDto } from './dto/register-owner.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -15,6 +16,12 @@ export class AuthController {
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
+  }
+
+  @ApiOperation({ summary: 'Đăng ký đối tác chủ nhà hàng' })
+  @Post('register-owner')
+  async registerOwner(@Body() registerOwnerDto: RegisterOwnerDto) {
+    return this.authService.registerOwner(registerOwnerDto);
   }
 
   @ApiOperation({ summary: 'Đăng nhập vào hệ thống' })
