@@ -11,7 +11,7 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-EXPOSE 3000
+EXPOSE 3002
 
 # Chạy ứng dụng Next.js
 CMD ["npm", "run", "start"]
