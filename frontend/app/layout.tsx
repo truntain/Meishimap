@@ -6,6 +6,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import RealtimeNotification from "../components/RealtimeNotification";
 import { Toaster } from "react-hot-toast";
+import I18nProvider from "../components/I18nProvider";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-brand-google",
@@ -32,12 +33,15 @@ export default function RootLayout({
   return (
     <html lang="vi" className={`${plusJakartaSans.variable} ${beVietnamPro.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        <Header />
-        {children}
-        <Footer />
-        <RealtimeNotification />
-        <Toaster position="top-right" />
+        <I18nProvider>
+          <Header />
+          {children}
+          <Footer />
+          <RealtimeNotification />
+          <Toaster position="top-right" />
+        </I18nProvider>
       </body>
     </html>
   );
 }
+

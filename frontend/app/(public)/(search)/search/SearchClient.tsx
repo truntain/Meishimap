@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import maplibregl from 'maplibre-gl';
 import type { ExpressionSpecification } from '@maplibre/maplibre-gl-style-spec';
-import { searchCopy, useAppLanguage, type AppLanguage } from '@/config/language';
+import { searchCopy, useAppLanguage, type AppLanguage } from '@/config/i18n';
 
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
@@ -685,6 +685,15 @@ export default function SearchClient() {
       zoom: 11.5,
       pitch: 0,
       attributionControl: false,
+    });
+
+    // Suppress warnings about missing style images from the vector tile styling
+    map.on('styleimagemissing', (e) => {
+      const id = e.id;
+      if (!map.hasImage(id)) {
+        const placeholder = new Uint8Array(4); // Transparent pixel [0, 0, 0, 0]
+        map.addImage(id, { width: 1, height: 1, data: placeholder });
+      }
     });
 
     mapRef.current = map;

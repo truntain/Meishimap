@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAppLanguage, homeCopy } from '@/config/i18n';
 
 interface Restaurant {
   id: number;
@@ -21,6 +22,8 @@ export default function HomePage() {
   const router = useRouter();
   const [featuredRestaurants, setFeaturedRestaurants] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { language } = useAppLanguage();
+  const copy = homeCopy[language];
 
   useEffect(() => {
     fetch('http://localhost:3001/restaurants/featured')
@@ -51,14 +54,14 @@ export default function HomePage() {
     <main>
       {/* ══ HERO ══════════════════════════════════════════ */}
       <section className="hero" id="hero-section">
-        <img src="/hero-bg-35c07e.png" alt="Ẩm thực Nhật Bản tại Việt Nam" className="hero__bg" />
+        <img src="/hero-bg-35c07e.png" alt={copy.title} className="hero__bg" />
         <div className="hero__overlay"></div>
         <div className="hero__content">
           <h1 className="hero__heading fade-in-up">
-            Tinh hoa ẩm thực Nhật Bản tại Việt Nam
+            {copy.title}
           </h1>
           <p className="hero__subtitle fade-in-up delay-1">
-            Khám phá những nhà hàng chuẩn vị, hỗ trợ ngôn ngữ và dịch vụ tận tâm nhất dành cho cộng đồng người Việt - Nhật
+            {copy.subtitle}
           </p>
 
           {/* Search bar */}
@@ -70,18 +73,18 @@ export default function HomePage() {
               type="text"
               id="hero-search-input"
               className="search-bar__input"
-              placeholder="Nhập tên nhà hàng, món ăn, địa chỉ..."
+              placeholder={copy.searchPlaceholder}
               onKeyDown={handleKeyDown}
             />
             <div className="search-bar__divider"></div>
-            <button className="btn btn--primary" onClick={handleSearchSubmit} id="btn-search-hero">Tìm kiếm</button>
+            <button className="btn btn--primary" onClick={handleSearchSubmit} id="btn-search-hero">{copy.searchButton}</button>
           </div>
 
           {/* Chips */}
           <div className="hero__chips fade-in-up delay-3">
-            <button className="chip">📍 Tìm quanh đây</button>
-            <button className="chip">🇯🇵 Hỗ trợ tiếng Nhật</button>
-            <button className="chip">✨ Đảm bảo vệ sinh</button>
+            <button className="chip">{copy.chipNearMe}</button>
+            <button className="chip">{copy.chipJapanese}</button>
+            <button className="chip">{copy.chipHygiene}</button>
           </div>
         </div>
       </section>
@@ -91,19 +94,19 @@ export default function HomePage() {
         <div className="section__header">
           <div>
             <h2 className="section__title">
-              
+              {copy.featuredTitle}
             </h2>
-            <p className="section__subtitle">Lựa chọn hàng đầu cho trải nghiệm ẩm thực tinh tế</p>
+            <p className="section__subtitle">{copy.featuredSubtitle}</p>
           </div>
           <Link href="/search" className="btn btn--outline" id="btn-see-all">
-            Xem tất cả
+            {copy.seeAll}
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.333 8h9.334M8.667 5l3 3-3 3" stroke="#6C2F00" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </Link>
         </div>
 
         <div className="section__grid" id="featured-grid">
           {isLoading ? (
-            <div style={{ padding: '40px', textAlign: 'center', gridColumn: '1 / -1' }}>Đang tải...</div>
+            <div style={{ padding: '40px', textAlign: 'center', gridColumn: '1 / -1' }}>{copy.loading}</div>
           ) : featuredRestaurants.length > 0 ? (
             featuredRestaurants.map((restaurant) => (
               <article className="card" key={restaurant.id} id={`card-${restaurant.id}`}>
@@ -124,7 +127,7 @@ export default function HomePage() {
                   </div>
                   <div className="card__tags">
                     <span className="badge">{restaurant.category.toUpperCase()}</span>
-                    {restaurant.hasJapaneseSupport && <span className="badge badge--sm">Hỗ trợ tiếng nhật</span>}
+                    {restaurant.hasJapaneseSupport && <span className="badge badge--sm">{copy.supportJapanese}</span>}
                   </div>
                   <div className="card__footer">
                     <span className="card__location">
@@ -132,7 +135,7 @@ export default function HomePage() {
                       {restaurant.district || restaurant.city || restaurant.address}
                     </span>
                     <Link href={`/restaurant/${restaurant.id}`} className="btn btn--dark" id={`btn-book-${restaurant.id}`}>
-                      Đặt bàn
+                      {copy.bookNow}
                       <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6.5 3l3 3-3 3" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </Link>
                   </div>
@@ -140,7 +143,7 @@ export default function HomePage() {
               </article>
             ))
           ) : (
-            <div style={{ padding: '40px', textAlign: 'center', gridColumn: '1 / -1' }}>Không có nhà hàng nổi bật.</div>
+            <div style={{ padding: '40px', textAlign: 'center', gridColumn: '1 / -1' }}>{copy.noFeatured}</div>
           )}
         </div>
       </section>
@@ -152,20 +155,20 @@ export default function HomePage() {
           <div className="cta__card cta__card--support" id="cta-support">
             <div className="cta__icon-row">
               <span style={{ fontSize: '2rem' }}>🕐</span>
-              <h2 className="cta__heading">Hỗ trợ 24/7</h2>
+              <h2 className="cta__heading">{copy.support247}</h2>
             </div>
-            <p className="cta__text">Đội ngũ của chúng tôi luôn sẵn sàng hỗ trợ mọi lúc.</p>
-            <a href="mailto:support@meshimap.com" className="btn btn--primary btn--primary-lg" id="btn-contact">Liên hệ ngay</a>
+            <p className="cta__text">{copy.supportDesc}</p>
+            <a href="mailto:support@meshimap.com" className="btn btn--primary btn--primary-lg" id="btn-contact">{copy.contactNow}</a>
           </div>
 
           {/* Partner card */}
           <div className="cta__card cta__card--partner" id="cta-partner">
-            <img src="/cta-bg.png" alt="Kết nối văn hóa" className="cta__card-bg" />
+            <img src="/cta-bg.png" alt={copy.connectCulture} className="cta__card-bg" />
             <div className="cta__card-overlay"></div>
             <div className="cta__card-content">
-              <h2 className="cta__heading cta__heading--light">Kết nối văn hóa qua từng bữa ăn</h2>
-              <p className="cta__text cta__text--light">Trở thành đối tác của Meshimap để tiếp cận cộng đồng thực khách tinh tế từ cả Việt Nam và Nhật Bản.</p>
-              <Link href="/register-restaurant" className="btn btn--primary btn--primary-lg" id="btn-register">Đăng ký nhà hàng</Link>
+              <h2 className="cta__heading cta__heading--light">{copy.connectCulture}</h2>
+              <p className="cta__text cta__text--light">{copy.partnerDesc}</p>
+              <Link href="/register-restaurant" className="btn btn--primary btn--primary-lg" id="btn-register">{copy.registerRestaurant}</Link>
             </div>
           </div>
         </div>

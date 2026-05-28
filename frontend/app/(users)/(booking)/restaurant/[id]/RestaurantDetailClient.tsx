@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { detailCopy, useAppLanguage } from '@/config/language';
+import { detailCopy, useAppLanguage } from '@/config/i18n';
 import Cookies from 'js-cookie';
 import { io } from 'socket.io-client';
 import { toast } from 'react-hot-toast';
@@ -69,7 +69,7 @@ const MENU_ITEM_EMOJIS: Record<string, string> = {
   'dessert': '🍡',
 };
 
-function normalizeRestaurantDetail(raw: Partial<ApiRestaurant> & { menuItems?: any[], hours?: string, languages?: string, reviewCount?: number }, fallbackId: string): RestaurantDetail | null {
+function normalizeRestaurantDetail(raw: Partial<ApiRestaurant> & { menuItems?: any[], hours?: string, languages?: string, reviewCount?: number }, fallbackId: string, language: string): RestaurantDetail | null {
   const id = Number(raw.id ?? fallbackId);
   const latitude = Number(raw.latitude);
   const longitude = Number(raw.longitude);
@@ -81,17 +81,18 @@ function normalizeRestaurantDetail(raw: Partial<ApiRestaurant> & { menuItems?: a
   const category = raw.category || 'other';
   const hasJapaneseSupport = Boolean(raw.hasJapaneseSupport);
   const categoryLabel = CATEGORY_LABELS.get(category) || category;
+  const isJa = language === 'ja';
 
   const rawMenuItems = raw.menuItems || [];
   const menuItems = rawMenuItems.map((item: any) => {
     const name = String(item.name).trim();
     const rawItemImageUrl = item.imageUrl || item.image_url;
-    
+
     // Case-insensitive lookup in MENU_ITEM_IMAGES
     const fallbackImageKey = Object.keys(MENU_ITEM_IMAGES).find(
       key => key.toLowerCase() === name.toLowerCase()
     );
-    
+
     const itemImageUrl = (rawItemImageUrl && rawItemImageUrl !== 'null' && rawItemImageUrl !== 'undefined')
       ? rawItemImageUrl
       : (fallbackImageKey ? MENU_ITEM_IMAGES[fallbackImageKey] : null);
@@ -119,23 +120,29 @@ function normalizeRestaurantDetail(raw: Partial<ApiRestaurant> & { menuItems?: a
     nameJp: raw.nameJp ?? null,
     category,
     rating: Number(raw.rating ?? 0),
-    address: raw.address || 'Chưa cập nhật địa chỉ',
+    address: raw.address || (isJa ? '住所未登録' : 'Chưa cập nhật địa chỉ'),
     district: raw.district ?? null,
     city: raw.city ?? null,
     latitude: Number.isFinite(latitude) ? latitude : 0,
     longitude: Number.isFinite(longitude) ? longitude : 0,
     description: raw.description ?? null,
-    phone: raw.phone || 'Chưa cập nhật',
+    phone: raw.phone || (isJa ? '未登録' : 'Chưa cập nhật'),
     imageUrl,
     hasJapaneseSupport,
     reviewCount: raw.reviewCount || 0,
-    hours: (typeof raw.hours === 'object' && raw.hours !== null) ? `${Object.values(raw.hours)[0]} (Hàng ngày)` : (raw.hours || 'Chưa cập nhật'),
-    languages: raw.languages || (hasJapaneseSupport ? 'Tiếng Việt, Tiếng Nhật, English' : 'Tiếng Việt, English'),
+    hours: (typeof raw.hours === 'object' && raw.hours !== null)
+      ? `${Object.values(raw.hours)[0]} ${isJa ? '(毎日)' : '(Hàng ngày)'}`
+      : (raw.hours || (isJa ? '未登録' : 'Chưa cập nhật')),
+    languages: raw.languages || (hasJapaneseSupport 
+      ? (isJa ? 'ベトナム語、日本語、英語' : 'Tiếng Việt, Tiếng Nhật, English')
+      : (isJa ? 'ベトナム語、英語' : 'Tiếng Việt, English')),
     tags: [
       categoryLabel,
-      hasJapaneseSupport ? 'Japanese Speaking' : 'Japanese Style',
+      hasJapaneseSupport 
+        ? (isJa ? '日本語対応' : 'Japanese Speaking') 
+        : (isJa ? '和食スタイル' : 'Japanese Style'),
     ],
-    amenities: ['📶 Free Wifi', '💳 Cards Accepted'],
+    amenities: isJa ? ['📶 無料Wi-Fi', '💳 カード支払い可'] : ['📶 Free Wifi', '💳 Cards Accepted'],
     menuItems: menuItems.length > 0 ? menuItems : undefined,
   } as any;
 }
@@ -150,15 +157,15 @@ function getMapsQuery(restaurant: RestaurantDetail) {
 
 
 const MENU_CATS = [
-  { key: 'all',     label: 'Tất cả (All)' },
+  { key: 'all', label: 'Tất cả (All)' },
   { key: 'sashimi', label: 'Sashimi' },
   { key: 'tempura', label: 'Tempura' },
-  { key: 'ramen',   label: 'Ramen' },
+  { key: 'ramen', label: 'Ramen' },
   { key: 'dessert', label: 'Desserts' },
 ];
 
 const TIME_SLOTS = ['11:00', '12:00', '13:00', '18:00', '19:00', '20:00', '21:00'];
-const GUEST_OPTIONS = ['1 người', '2 người', '3 người', '4 người', '5+ người'];
+const GUEST_OPTIONS = [1, 2, 3, 4, 5];
 
 // ── Icons ──
 const CalendarIcon = () => (
@@ -179,6 +186,13 @@ export default function RestaurantDetailClient() {
   const router = useRouter();
   const { language } = useAppLanguage();
   const copy = detailCopy[language];
+  const menuCats = [
+    { key: 'all', label: language === 'ja' ? 'すべて' : 'Tất cả' },
+    { key: 'sashimi', label: 'Sashimi' },
+    { key: 'tempura', label: 'Tempura' },
+    { key: 'ramen', label: 'Ramen' },
+    { key: 'dessert', label: language === 'ja' ? 'デザート' : 'Tráng miệng' },
+  ];
   const restaurantIdParam = params?.id;
   const restaurantId = Array.isArray(restaurantIdParam)
     ? restaurantIdParam[0]
@@ -201,11 +215,15 @@ export default function RestaurantDetailClient() {
         if (isMounted) {
           const formattedReviews = data.map((r: any) => {
             const dateObj = new Date(r.createdAt);
+            const author = r.user?.name || (language === 'ja' ? 'ゲスト' : 'Khách');
+            const date = language === 'ja'
+              ? `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月`
+              : `Tháng ${dateObj.getMonth() + 1}, ${dateObj.getFullYear()}`;
             return {
               id: r.id,
-              author: r.user?.name || 'Khách',
-              initial: (r.user?.name || 'K').charAt(0).toUpperCase(),
-              date: `Tháng ${dateObj.getMonth() + 1}, ${dateObj.getFullYear()}`,
+              author,
+              initial: author.charAt(0).toUpperCase(),
+              date,
               stars: r.stars,
               text: r.title ? `${r.title} — ${r.content}` : r.content,
               ownerReply: r.ownerReply || r.owner_reply || null,
@@ -220,22 +238,22 @@ export default function RestaurantDetailClient() {
     }
     fetchReviews();
     return () => { isMounted = false; };
-  }, [restaurantId]);
+  }, [restaurantId, language]);
 
   // ── Menu state ──
-  const [activeCat, setActiveCat]         = useState('all');
-  const [menuSearch, setMenuSearch]       = useState('');
+  const [activeCat, setActiveCat] = useState('all');
+  const [menuSearch, setMenuSearch] = useState('');
   const [menuSearchInput, setMenuSearchInput] = useState('');
 
   // ── Booking modal state ──
-  const [bookingOpen, setBookingOpen]     = useState(false);
-  const [successOpen, setSuccessOpen]     = useState(false);
-  const [bookingDate, setBookingDate]     = useState('');
-  const [bookingTime, setBookingTime]     = useState('18:00');
-  const [bookingGuests, setBookingGuests] = useState('2 người');
-  const [bookingNote, setBookingNote]     = useState('');
-  const [dateError, setDateError]         = useState(false);
-  const [isSubmitting, setIsSubmitting]   = useState(false);
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [bookingDate, setBookingDate] = useState('');
+  const [bookingTime, setBookingTime] = useState('18:00');
+  const [bookingGuests, setBookingGuests] = useState(2);
+  const [bookingNote, setBookingNote] = useState('');
+  const [dateError, setDateError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ── Promo copy state ──
   const [promoCopied, setPromoCopied] = useState(false);
@@ -260,7 +278,7 @@ export default function RestaurantDetailClient() {
         }
 
         const data = await response.json();
-        const normalized = normalizeRestaurantDetail(data, restaurantId);
+        const normalized = normalizeRestaurantDetail(data, restaurantId, language);
 
         if (!normalized) {
           throw new Error('Dữ liệu nhà hàng không hợp lệ');
@@ -274,7 +292,9 @@ export default function RestaurantDetailClient() {
           setRestaurant(null);
           setRestaurantError(
             error instanceof Error
-              ? `Không tải được chi tiết nhà hàng (${error.message}).`
+              ? (language === 'ja'
+                  ? `Không tải được chi tiết nhà hàng (${error.message}).`
+                  : `Không tải được chi tiết nhà hàng (${error.message}).`)
               : 'Không tải được chi tiết nhà hàng.',
           );
         }
@@ -290,7 +310,7 @@ export default function RestaurantDetailClient() {
     return () => {
       isMounted = false;
     };
-  }, [restaurantId]);
+  }, [restaurantId, language]);
 
   // Close modal on backdrop click
   useEffect(() => {
@@ -341,20 +361,20 @@ export default function RestaurantDetailClient() {
           restaurantId: Number(restaurantId),
           date: bookingDate,
           time: bookingTime,
-          guests: parseInt(bookingGuests) || 2,
+          guests: bookingGuests,
           note: bookingNote,
         }),
       });
 
       if (!res.ok) throw new Error('Booking failed');
-      
+
       setTimeout(() => {
         setIsSubmitting(false);
         setBookingOpen(false);
         router.push(
           `/booking-success?restaurantId=${restaurantId}&restaurantName=${encodeURIComponent(
             restaurant?.name || ''
-          )}&date=${bookingDate}&time=${bookingTime}&guests=${encodeURIComponent(bookingGuests)}`
+          )}&date=${bookingDate}&time=${bookingTime}&guests=${bookingGuests}`
         );
         setBookingDate('');
         setBookingNote('');
@@ -362,14 +382,22 @@ export default function RestaurantDetailClient() {
     } catch (e) {
       console.error(e);
       setIsSubmitting(false);
-      toast.error('Đã xảy ra lỗi khi đặt bàn. Vui lòng thử lại.');
+      toast.error(
+        language === 'ja'
+          ? '予約中にエラーが発生しました。もう一度お試しください。'
+          : 'Đã xảy ra lỗi khi đặt bàn. Vui lòng thử lại.'
+      );
     }
   };
 
   const openBooking = () => {
     const token = Cookies.get('access_token');
     if (!token) {
-      toast.error('Vui lòng đăng nhập để thực hiện đặt bàn!');
+      toast.error(
+        language === 'ja'
+          ? '予約するにはログインしてください。'
+          : 'Vui lòng đăng nhập để thực hiện đặt bàn!'
+      );
       router.push('/login');
       return;
     }
@@ -378,7 +406,7 @@ export default function RestaurantDetailClient() {
   };
 
   const handleGetPromo = () => {
-    navigator.clipboard?.writeText('MESHIMAP15').catch(() => {});
+    navigator.clipboard?.writeText('MESHIMAP15').catch(() => { });
     setPromoCopied(true);
     setTimeout(() => setPromoCopied(false), 2500);
   };
@@ -387,10 +415,10 @@ export default function RestaurantDetailClient() {
   const menuItems = filteredMenu();
 
   if (restaurantLoading && !restaurant) {
-    return <div style={{ padding: '100px', textAlign: 'center', color: '#888' }}>Đang tải dữ liệu...</div>;
+    return <div style={{ padding: '100px', textAlign: 'center', color: '#888' }}>{language === 'ja' ? 'データを読み込み中...' : 'Đang tải dữ liệu...'}</div>;
   }
   if (!restaurant) {
-    return <div style={{ padding: '100px', textAlign: 'center', color: '#888' }}>Không tìm thấy nhà hàng.</div>;
+    return <div style={{ padding: '100px', textAlign: 'center', color: '#888' }}>{language === 'ja' ? 'レストランが見つかりません。' : 'Không tìm thấy nhà hàng.'}</div>;
   }
 
   const localReviewsCount = reviews.filter(r => String(r.id).startsWith('local-')).length;
@@ -441,7 +469,7 @@ export default function RestaurantDetailClient() {
               </span>
               <span className="detail-meta__item">
                 <StarsFull count={starCount} />
-                ({displayRating.toFixed(1)}/5 • {displayReviewCount} reviews)
+                ({displayRating.toFixed(1)}/5 • {displayReviewCount} {language === 'ja' ? 'レビュー' : 'reviews'})
               </span>
             </div>
             {restaurant.description && (
@@ -496,7 +524,7 @@ export default function RestaurantDetailClient() {
 
           {/* Category tabs */}
           <div className="menu-cats" id="menu-cats">
-            {MENU_CATS.map((cat: { key: string, label: string }) => (
+            {menuCats.map((cat: { key: string, label: string }) => (
               <button
                 key={cat.key}
                 className={`menu-cat-btn${activeCat === cat.key ? ' is-active' : ''}`}
@@ -680,8 +708,14 @@ export default function RestaurantDetailClient() {
 
               <div className="modal__field">
                 <label className="modal__label" htmlFor="booking-guests">{copy.guests}</label>
-                <select id="booking-guests" className="modal__select" value={bookingGuests} onChange={e => setBookingGuests(e.target.value)}>
-                  {GUEST_OPTIONS.map(g => <option key={g}>{g}</option>)}
+                <select id="booking-guests" className="modal__select" value={bookingGuests} onChange={e => setBookingGuests(Number(e.target.value))}>
+                  {GUEST_OPTIONS.map(g => (
+                    <option key={g} value={g}>
+                      {g === 5
+                        ? (language === 'ja' ? '5人以上' : '5+ người')
+                        : (language === 'ja' ? `${g}人` : `${g} người`)}
+                    </option>
+                  ))}
                 </select>
               </div>
 

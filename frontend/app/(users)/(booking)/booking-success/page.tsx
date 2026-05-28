@@ -3,42 +3,43 @@
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useAppLanguage, detailCopy } from '@/config/language';
+import { useAppLanguage, detailCopy, bookingSuccessCopy } from '@/config/i18n';
 
 function BookingSuccessContent() {
   const searchParams = useSearchParams();
   const { language } = useAppLanguage();
   const copy = detailCopy[language];
+  const successCopy = bookingSuccessCopy[language];
 
   const restaurantId = searchParams.get('restaurantId') || '1';
-  const restaurantName = searchParams.get('restaurantName') || 'Nhà hàng';
+  const restaurantName = searchParams.get('restaurantName') || (language === 'ja' ? 'レストラン' : 'Nhà hàng');
   const date = searchParams.get('date') || '';
   const time = searchParams.get('time') || '';
-  const guests = searchParams.get('guests') || '2 người';
-
-  const isJa = language === 'ja';
+  const guestsParam = searchParams.get('guests') || '2';
+  const guestsNum = parseInt(guestsParam) || 2;
+  const guestsDisplay = guestsNum === 5
+    ? successCopy.guestsMoreFormat
+    : successCopy.guestsFormat.replace('{{count}}', String(guestsNum));
 
   return (
     <div className="flex-1 flex items-center justify-center p-6 bg-gradient-to-br from-[#FAF6F0] to-[#F0E6DF] min-h-[70vh]">
       <div className="w-full max-w-lg bg-white/90 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-[#DAC2B6]/40 text-center animate-fade-in">
-        
+
         {/* Tiêu đề trạng thái */}
         <h1 className="text-3xl font-extrabold text-[#6C2F00] tracking-tight mb-4 pt-4">
-          {isJa ? '予約リクエスト送信完了' : 'Đặt bàn thành công'}
+          {successCopy.title}
         </h1>
-        
+
         {/* Nội dung thông báo */}
         <p className="text-base text-gray-600 font-medium mb-8 leading-relaxed px-2">
-          {isJa 
-            ? 'システムにリクエストが記録されました。レストランからの返信をお待ちください。' 
-            : 'Hệ thống đã ghi nhận yêu cầu của bạn, vui lòng chờ phản hồi của nhà hàng.'}
+          {successCopy.description}
         </p>
 
         {/* Booking Info Box */}
         <div className="bg-[#FAF6F0] rounded-xl p-5 mb-8 border border-[#DAC2B6]/30 text-left space-y-3.5">
           <div className="flex justify-between items-center border-b border-[#DAC2B6]/20 pb-2">
             <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-              {isJa ? 'レストラン' : 'Nhà hàng'}
+              {successCopy.restaurant}
             </span>
             <span className="text-sm font-bold text-[#6C2F00]">
               {restaurantName}
@@ -69,7 +70,7 @@ function BookingSuccessContent() {
               {copy.guests}
             </span>
             <span className="text-sm font-medium text-gray-700">
-              {guests}
+              {guestsDisplay}
             </span>
           </div>
         </div>
@@ -80,7 +81,7 @@ function BookingSuccessContent() {
             href={`/restaurant/${restaurantId}`}
             className="flex-1 inline-flex items-center justify-center px-6 py-3 border border-[#6C2F00]/30 hover:border-[#6C2F00] text-[#6C2F00] font-semibold text-sm rounded-xl transition duration-200"
           >
-            {isJa ? 'レストランに戻る' : 'Quay lại nhà hàng'}
+            {successCopy.backToRestaurant}
           </Link>
           <Link
             href="/"
