@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # Cấu hình Database PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: "ITSS Nhat"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Cấu hình Backend NestJS
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nest_backend
+    restart: always
+    environment:
+      # Thay đổi DB_HOST từ localhost thành db (tên service phía trên)
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=123456
+      - DB_NAME=ITSS Nhat
+      - JWT_SECRET=ITSS
+    ports:
+      # Map cổng 3001 trên máy host vào cổng 3000 của container để tránh trùng lặp với frontend
+      - "3001:3000"
+    depends_on:
+      - db
+
+  # Cấu hình Frontend Next.js
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: next_frontend
+    restart: always
+    environment:
+      # Thay đổi URL API trỏ về backend nếu frontend có gọi API (ví dụ)
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
