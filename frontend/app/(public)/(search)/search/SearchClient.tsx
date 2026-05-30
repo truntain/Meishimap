@@ -488,6 +488,146 @@ export default function SearchClient() {
   const [mapReady, setMapReady] = useState(false);
   const selectedMarkerId = hoveredRestaurantId ?? activeRestaurantId;
 
+  // Draggable Bottom Sheet states
+  const [sheetState, setSheetState] = useState<'collapsed' | 'expanded'>('collapsed');
+  const [isDragging, setIsDragging] = useState(false);
+  const [startY, setStartY] = useState(0);
+  const [currentTranslateY, setCurrentTranslateY] = useState(0);
+  const [hasMoved, setHasMoved] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const sheetRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 900);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent, clientY: number) => {
+    if (window.innerWidth > 900) return;
+
+    // Prevent dragging when clicking on interactive elements like buttons
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('a') || target.closest('input') || target.closest('select')) {
+      return;
+    }
+
+    setIsDragging(true);
+    setStartY(clientY);
+    setHasMoved(false);
+
+    // Initialize currentTranslateY to match the starting visual position, preventing layout jumps
+    if (sheetRef.current) {
+      const rect = sheetRef.current.getBoundingClientRect();
+      const sheetHeight = rect.height;
+      const collapsedTranslate = Math.max(0, sheetHeight - 220);
+      setCurrentTranslateY(sheetState === 'collapsed' ? collapsedTranslate : 0);
+    }
+  };
+
+  const handleDragMove = useCallback((clientY: number) => {
+    if (!isDragging || !sheetRef.current) return;
+    const diffY = clientY - startY;
+    if (Math.abs(diffY) > 5) {
+      setHasMoved(true);
+    }
+    
+    const rect = sheetRef.current.getBoundingClientRect();
+    const sheetHeight = rect.height;
+    const collapsedTranslate = Math.max(0, sheetHeight - 220); // 220px is visible height when collapsed
+    
+    const baseTranslate = sheetState === 'collapsed' ? collapsedTranslate : 0;
+    let newTranslate = baseTranslate + diffY;
+    
+    if (newTranslate < 0) newTranslate = 0;
+    if (newTranslate > collapsedTranslate) newTranslate = collapsedTranslate;
+    
+    setCurrentTranslateY(newTranslate);
+  }, [isDragging, startY, sheetState]);
+
+  const handleDragEnd = useCallback(() => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    
+    if (!hasMoved) {
+      // Toggle state on click/tap
+      setSheetState(prev => prev === 'collapsed' ? 'expanded' : 'collapsed');
+      setCurrentTranslateY(0);
+      return;
+    }
+    
+    if (!sheetRef.current) return;
+    const rect = sheetRef.current.getBoundingClientRect();
+    const sheetHeight = rect.height;
+    const collapsedTranslate = Math.max(0, sheetHeight - 220);
+    
+    if (sheetState === 'collapsed') {
+      if (currentTranslateY < collapsedTranslate * 0.7) {
+        setSheetState('expanded');
+      }
+    } else {
+      if (currentTranslateY > collapsedTranslate * 0.3) {
+        setSheetState('collapsed');
+      }
+    }
+    setCurrentTranslateY(0);
+  }, [isDragging, hasMoved, currentTranslateY, sheetState]);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const onMouseMove = (e: MouseEvent) => {
+      handleDragMove(e.clientY);
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      // Prevent browser scrolling and bouncy page behaviors when dragging the bottom sheet
+      e.preventDefault();
+      if (e.touches.length > 0) {
+        handleDragMove(e.touches[0].clientY);
+      }
+    };
+
+    const onMouseUp = () => {
+      handleDragEnd();
+    };
+
+    const onTouchEnd = () => {
+      handleDragEnd();
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [isDragging, handleDragMove, handleDragEnd]);
+
+  const sheetStyle = useMemo(() => {
+    if (!isMobile) return {};
+    
+    let translateYStr = '0px';
+    if (isDragging) {
+      translateYStr = `${currentTranslateY}px`;
+    } else {
+      translateYStr = sheetState === 'collapsed' ? 'calc(100% - 220px)' : '0px';
+    }
+    
+    return {
+      transform: `translateY(${translateYStr})`,
+      transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+    } as React.CSSProperties;
+  }, [isMobile, isDragging, currentTranslateY, sheetState]);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -1097,64 +1237,86 @@ export default function SearchClient() {
           </div>
         </div>
 
-        <div className="sidebar__results-header">
-          <span className="sidebar__results-title">{copy.results}</span>
-          <div className="sidebar__results-tools">
-            <span className="sidebar__results-count">
-              <span data-results-count>{filteredResults.length}</span> {copy.resultsAt} {activeLocationLabel}
-            </span>
-            <div className="sort-toggle-group">
-              <button
-                type="button"
-                className={`sort-toggle-btn ${sortBy === 'rating' ? 'is-active' : ''}`}
-                onClick={() => handleSortChange('rating')}
-              >
-                ⭐ {copy.sortRating}
-              </button>
-              <button
-                type="button"
-                className={`sort-toggle-btn ${sortBy === 'name' ? 'is-active' : ''}`}
-                onClick={() => handleSortChange('name')}
-              >
-                🔤 {copy.sortName}
-              </button>
+        <div 
+          ref={sheetRef}
+          className={`sidebar__results-sheet ${sheetState}`}
+          style={sheetStyle}
+        >
+          <div 
+            className="sidebar__results-sheet-header-wrapper"
+            onMouseDown={(e) => handleDragStart(e, e.clientY)}
+            onTouchStart={(e) => {
+              if (e.touches.length > 0) {
+                handleDragStart(e, e.touches[0].clientY);
+              }
+            }}
+            style={{ cursor: isMobile ? (isDragging ? 'grabbing' : 'ns-resize') : 'default' }}
+          >
+            {isMobile && (
+              <div className="sheet-drag-handle">
+                <div className="sheet-drag-line" />
+              </div>
+            )}
+            <div className="sidebar__results-header">
+              <span className="sidebar__results-title">{copy.results}</span>
+              <div className="sidebar__results-tools">
+                <span className="sidebar__results-count">
+                  <span data-results-count>{filteredResults.length}</span> {copy.resultsAt} {activeLocationLabel}
+                </span>
+                <div className="sort-toggle-group">
+                  <button
+                    type="button"
+                    className={`sort-toggle-btn ${sortBy === 'rating' ? 'is-active' : ''}`}
+                    onClick={() => handleSortChange('rating')}
+                  >
+                    ⭐ {copy.sortRating}
+                  </button>
+                  <button
+                    type="button"
+                    className={`sort-toggle-btn ${sortBy === 'name' ? 'is-active' : ''}`}
+                    onClick={() => handleSortChange('name')}
+                  >
+                    🔤 {copy.sortName}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        {loadError && (
-          <div className="map-status map-status--warning">
-            {loadError}
-          </div>
-        )}
-
-        <div className="sidebar__list" id="results-list">
-          {isLoading ? (
-            <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--clr-muted)' }}>
-              <div style={{ width: '32px', height: '32px', border: '3px solid var(--clr-border)', borderTopColor: 'var(--clr-primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-              <p style={{ fontWeight: 600 }}>{copy.loadingRestaurants}</p>
+          {loadError && (
+            <div className="map-status map-status--warning">
+              {loadError}
             </div>
-          ) : filteredResults.length === 0 ? (
-            <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--clr-muted)' }}>
-              <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</div>
-              <p style={{ fontWeight: 600, marginBottom: '4px' }}>{copy.noResultsTitle}</p>
-              <p style={{ fontSize: '13px' }}>{copy.noResultsHint}</p>
-            </div>
-          ) : (
-            filteredResults.map((restaurant) => (
-              <RestaurantCard
-                key={restaurant.id}
-                restaurant={restaurant}
-                isActive={activeRestaurantId === restaurant.id}
-                onSelect={focusRestaurant}
-                onHover={(item) => setHoveredRestaurantId(item?.id ?? null)}
-                cardRef={(node) => {
-                  cardRefs.current[restaurant.id] = node;
-                }}
-                copy={copy}
-              />
-            ))
           )}
+
+          <div className="sidebar__list" id="results-list">
+            {isLoading ? (
+              <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--clr-muted)' }}>
+                <div style={{ width: '32px', height: '32px', border: '3px solid var(--clr-border)', borderTopColor: 'var(--clr-primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+                <p style={{ fontWeight: 600 }}>{copy.loadingRestaurants}</p>
+              </div>
+            ) : filteredResults.length === 0 ? (
+              <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--clr-muted)' }}>
+                <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</div>
+                <p style={{ fontWeight: 600, marginBottom: '4px' }}>{copy.noResultsTitle}</p>
+                <p style={{ fontSize: '13px' }}>{copy.noResultsHint}</p>
+              </div>
+            ) : (
+              filteredResults.map((restaurant) => (
+                <RestaurantCard
+                  key={restaurant.id}
+                  restaurant={restaurant}
+                  isActive={activeRestaurantId === restaurant.id}
+                  onSelect={focusRestaurant}
+                  onHover={(item) => setHoveredRestaurantId(item?.id ?? null)}
+                  cardRef={(node) => {
+                    cardRefs.current[restaurant.id] = node;
+                  }}
+                  copy={copy}
+                />
+              ))
+            )}
+          </div>
         </div>
       </aside>
 

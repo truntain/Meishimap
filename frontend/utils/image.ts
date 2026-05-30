@@ -2,17 +2,20 @@ export function getBeautifulImage(url: string | null, name: string = ''): string
   const cleanUrl = url ? url.toLowerCase() : '';
   const cleanName = name ? name.toLowerCase() : '';
 
-  // 1. Check if it's already a valid HTTP(S) URL or local uploaded file
+  // 1. Check if it's already a valid HTTP(S) URL or local uploaded file / base64 image
   if (
     cleanUrl.startsWith('http://') || 
     cleanUrl.startsWith('https://') || 
     cleanUrl.startsWith('/uploads/') || 
+    cleanUrl.startsWith('uploads/') || 
+    cleanUrl.startsWith('data:image/') ||
     cleanUrl.startsWith('/')
   ) {
     // If it's a relative path starting with uploads, ensure it points to backend host
-    if (cleanUrl.startsWith('/uploads/')) {
+    if (cleanUrl.startsWith('/uploads/') || cleanUrl.startsWith('uploads/')) {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
-      return `${apiBase}${url}`;
+      const path = url!.startsWith('/') ? url! : `/${url!}`;
+      return `${apiBase}${path}`;
     }
     return url!;
   }

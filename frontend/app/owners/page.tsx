@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import OwnerHeader from './components/OwnerHeader';
 import Cookies from 'js-cookie';
+import { getBeautifulImage } from '@/utils/image';
 
 
 const defaultRestaurant = {
@@ -15,10 +16,10 @@ const defaultRestaurant = {
   phone: '+84 28 3823 4567',
   banner: '',
   menu: [
-    { name: 'Premium Sashimi Set', price: '450.000đ', cat: 'sashimi', icon: '🐟', desc: 'A curated selection of seasonal fish including Otoro, Sake, and Hamachi.' },
-    { name: 'Sashimi Deluxe', price: '380.000đ', cat: 'sashimi', icon: '🍱', desc: 'Premium cut fish with authentic wasabi and soy sauce.' },
-    { name: 'Tempura Set', price: '280.000đ', cat: 'tempura', icon: '🍤', desc: 'Crispy light-battered shrimp and vegetables with dipping sauce.' },
-    { name: 'Tonkotsu Ramen', price: '195.000đ', cat: 'ramen', icon: '🍜', desc: 'Rich pork bone broth simmered 18 hours, chashu pork, soft egg.' }
+    { name: 'Premium Sashimi Set', price: '450.000đ', cat: 'sashimi', icon: '🐟', imageUrl: '', desc: 'A curated selection of seasonal fish including Otoro, Sake, and Hamachi.' },
+    { name: 'Sashimi Deluxe', price: '380.000đ', cat: 'sashimi', icon: '🍱', imageUrl: '', desc: 'Premium cut fish with authentic wasabi and soy sauce.' },
+    { name: 'Tempura Set', price: '280.000đ', cat: 'tempura', icon: '🍤', imageUrl: '', desc: 'Crispy light-battered shrimp and vegetables with dipping sauce.' },
+    { name: 'Tonkotsu Ramen', price: '195.000đ', cat: 'ramen', icon: '🍜', imageUrl: '', desc: 'Rich pork bone broth simmered 18 hours, chashu pork, soft egg.' }
   ],
   reviews: [
     { author: 'Anh Nguyen', rating: 5, date: 'Tháng 5, 2024', content: 'Nhà hàng tuyệt vời! Sashimi tươi ngon, nhân viên thân thiện và hỗ trợ tiếng Nhật rất tốt. Sẽ quay lại lần sau.', replies: [], reported: false },
@@ -33,7 +34,7 @@ export default function OwnerRestaurantPage() {
   // Menu Modal State
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [menuForm, setMenuForm] = useState({ name: '', price: '', cat: 'sashimi', icon: '🍣', desc: '' });
+  const [menuForm, setMenuForm] = useState({ name: '', price: '', cat: 'sashimi', icon: '🍣', imageUrl: '', desc: '' });
 
   useEffect(() => {
     const fetchRestaurant = async () => {
@@ -178,12 +179,64 @@ export default function OwnerRestaurantPage() {
     setRestaurant((prev: any) => ({ ...prev, [field]: value }));
   };
 
+  const isRealImage = (url: string | null) => {
+    if (!url) return false;
+    const clean = url.toLowerCase();
+    return (
+      clean.startsWith('http://') ||
+      clean.startsWith('https://') ||
+      clean.startsWith('/uploads/') ||
+      clean.startsWith('uploads/') ||
+      clean.startsWith('data:image/')
+    );
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showAlert('Kích thước ảnh tối đa là 5MB', 'warning');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setMenuForm((prev) => ({ ...prev, imageUrl: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showAlert('Kích thước ảnh tối đa là 5MB', 'warning');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      handleInfoChange('banner', reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const openMenuModal = (index: number | null = null) => {
     setEditingIndex(index);
     if (index !== null) {
-      setMenuForm(restaurant.menu[index]);
+      const item = restaurant.menu[index];
+      setMenuForm({
+        name: item.name || '',
+        price: typeof item.price === 'number' ? `${item.price}` : (item.price || ''),
+        cat: item.cat || item.category || 'sashimi',
+        icon: item.icon || item.emoji || '🍣',
+        imageUrl: item.imageUrl || item.image_url || '',
+        desc: item.desc || item.description || '',
+      });
     } else {
-      setMenuForm({ name: '', price: '', cat: 'sashimi', icon: '🍣', desc: '' });
+      setMenuForm({ name: '', price: '', cat: 'sashimi', icon: '🍣', imageUrl: '', desc: '' });
     }
     setShowMenuModal(true);
   };
@@ -196,12 +249,13 @@ export default function OwnerRestaurantPage() {
       return;
     }
 
-    const cleanPrice = parseInt(menuForm.price.replace(/[^\d]/g, '')) || 0;
+    const cleanPrice = typeof menuForm.price === 'number' ? menuForm.price : (parseInt(String(menuForm.price).replace(/[^\d]/g, '')) || 0);
     const body = {
       name: menuForm.name,
       price: cleanPrice,
       category: menuForm.cat,
       icon: menuForm.icon,
+      imageUrl: menuForm.imageUrl || '',
       description: menuForm.desc,
     };
 
@@ -416,11 +470,39 @@ export default function OwnerRestaurantPage() {
 
             <div className="db-form-row" style={{ marginTop: 12 }}>
               <div className="db-form-field" style={{ gridColumn: 'span 2' }}>
-                <label>Hình ảnh banner (URL) <span>/ カバー写真 (URL)</span></label>
-                <input type="text" className="db-input" placeholder="Nhập link ảnh (để trống sẽ dùng ảnh mặc định)" 
-                  value={restaurant.banner || ''} 
-                  onChange={(e) => handleInfoChange('banner', e.target.value)} 
+                <label>Hình ảnh banner <span>/ カバー写真</span></label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="db-input" 
+                  onChange={handleBannerFileChange} 
                 />
+                {isRealImage(restaurant.banner) && (
+                  <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontSize: 13, color: 'var(--clr-muted)' }}>Ảnh hiện tại:</span>
+                    <img 
+                      src={restaurant.banner.startsWith('data:') ? restaurant.banner : getBeautifulImage(restaurant.banner, restaurant.name)} 
+                      alt="Banner preview" 
+                      style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--clr-border)' }} 
+                    />
+                    <button 
+                      type="button" 
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: 12,
+                        background: '#fee2e2',
+                        border: '1px solid #fcd34d',
+                        borderRadius: 4,
+                        color: '#dc2626',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                      }}
+                      onClick={() => handleInfoChange('banner', '')}
+                    >
+                      Xóa ảnh / 削除
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -442,11 +524,18 @@ export default function OwnerRestaurantPage() {
           <div className="db-menu-list">
             {restaurant.menu?.map((item: any, index: number) => (
               <div className="db-menu-card" key={index}>
-                <div className="db-menu-card__icon">{item.icon || '🍣'}</div>
+                <div className="db-menu-card__icon" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {isRealImage(item.imageUrl || item.image_url) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={getBeautifulImage(item.imageUrl || item.image_url, item.name)} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    item.icon || '🍣'
+                  )}
+                </div>
                 <div className="db-menu-card__info">
                   <h4 className="db-menu-card__name">{item.name}</h4>
                   <div className="db-menu-card__price">{item.price}</div>
-                  <p className="db-menu-card__desc">{item.desc || ''}</p>
+                  <p className="db-menu-card__desc">{item.desc || item.description || ''}</p>
                 </div>
                 <div className="db-menu-card__actions">
                   <button className="db-icon-btn" title="Sửa món" onClick={() => openMenuModal(index)}>✏️</button>
@@ -485,8 +574,48 @@ export default function OwnerRestaurantPage() {
               </div>
               <div className="db-form-field" style={{ marginBottom: 12 }}>
                 <label>Biểu tượng (Emoji) <span>/ 絵文字</span></label>
-                <input type="text" className="db-input" placeholder="Ví dụ: 🍣, 🍥, 🍜" required 
-                  value={menuForm.icon} onChange={e => setMenuForm({...menuForm, icon: e.target.value})} />
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <input type="text" className="db-input" placeholder="Ví dụ: 🍣, 🍥, 🍜" required 
+                    value={menuForm.icon} onChange={e => setMenuForm({...menuForm, icon: e.target.value})} style={{ flex: 1 }} />
+                  <div style={{ fontSize: 24, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--clr-cream)', borderRadius: 8, border: '1px solid var(--clr-border)' }}>
+                    {menuForm.icon || '🍣'}
+                  </div>
+                </div>
+              </div>
+              <div className="db-form-field" style={{ marginBottom: 12 }}>
+                <label>Hình ảnh món ăn <span>/ 料理写真</span></label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="db-input" 
+                  onChange={handleFileChange} 
+                />
+                {isRealImage(menuForm.imageUrl) && (
+                  <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 13, color: 'var(--clr-muted)' }}>Xem trước:</span>
+                    <img 
+                      src={menuForm.imageUrl.startsWith('data:') ? menuForm.imageUrl : getBeautifulImage(menuForm.imageUrl, menuForm.name)} 
+                      alt="Preview" 
+                      style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--clr-border)' }} 
+                    />
+                    <button 
+                      type="button" 
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: 12,
+                        background: '#fee2e2',
+                        border: '1px solid #fcd34d',
+                        borderRadius: 4,
+                        color: '#dc2626',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                      }}
+                      onClick={() => setMenuForm(prev => ({ ...prev, imageUrl: '' }))}
+                    >
+                      Xóa ảnh / 削除
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="db-form-field" style={{ marginBottom: 12 }}>
                 <label>Mô tả chi tiết <span>/ 説明</span></label>

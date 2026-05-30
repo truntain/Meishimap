@@ -118,7 +118,14 @@ function normalizeRestaurantDetail(raw: Partial<ApiRestaurant> & { menuItems?: a
     const name = String(item.name).trim();
     const rawItemImageUrl = item.imageUrl || item.image_url;
 
-    const itemImageUrl = getBeautifulImage(rawItemImageUrl, name);
+    const hasRealImage = rawItemImageUrl && (
+      rawItemImageUrl.startsWith('http://') ||
+      rawItemImageUrl.startsWith('https://') ||
+      rawItemImageUrl.startsWith('/uploads/') ||
+      rawItemImageUrl.startsWith('uploads/') ||
+      rawItemImageUrl.startsWith('data:image/')
+    );
+    const itemImageUrl = hasRealImage ? getBeautifulImage(rawItemImageUrl, name) : '';
 
     let priceVal = item.price;
     if (typeof priceVal === 'string') {
@@ -129,7 +136,7 @@ function normalizeRestaurantDetail(raw: Partial<ApiRestaurant> & { menuItems?: a
     return {
       id: Number(item.id),
       cat: item.category || item.cat || 'other',
-      emoji: MENU_ITEM_EMOJIS[String(item.category || item.cat || '').toLowerCase()] || item.emoji || item.icon || item.badge || '🍣',
+      emoji: item.emoji || item.icon || MENU_ITEM_EMOJIS[String(item.category || item.cat || '').toLowerCase()] || item.badge || '🍣',
       imageUrl: itemImageUrl,
       name: name,
       price: new Intl.NumberFormat('vi-VN').format(priceVal || 0) + 'đ',

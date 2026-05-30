@@ -7,6 +7,8 @@ import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
 import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
 import { ApprovalStatus } from '../common/enums';
+import * as fs from 'fs';
+import { join } from 'path';
 
 
 export type RestaurantResponse = {
@@ -59,6 +61,48 @@ export class RestaurantService {
     @InjectRepository(MenuItem)
     private menuItemRepository: Repository<MenuItem>,
   ) { }
+
+  private saveBase64File(base64Str: string | undefined, folderName: string): string | null {
+    if (!base64Str) return null;
+    
+    // Check if it's already a URL/path
+    if (base64Str.startsWith('http://') || base64Str.startsWith('https://') || base64Str.startsWith('/uploads/')) {
+      return base64Str;
+    }
+
+    const matches = base64Str.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      return null;
+    }
+
+    const mimeType = matches[1];
+    const base64Data = matches[2];
+    
+    let extension = 'png';
+    if (mimeType.includes('pdf')) {
+      extension = 'pdf';
+    } else if (mimeType.includes('jpeg') || mimeType.includes('jpg')) {
+      extension = 'jpg';
+    } else if (mimeType.includes('webp')) {
+      extension = 'webp';
+    } else if (mimeType.includes('gif')) {
+      extension = 'gif';
+    }
+    
+    const buffer = Buffer.from(base64Data, 'base64');
+    const uploadDir = join(process.cwd(), 'uploads', folderName);
+    
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    
+    const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}.${extension}`;
+    const filePath = join(uploadDir, fileName);
+    
+    fs.writeFileSync(filePath, buffer);
+    
+    return `/uploads/${folderName}/${fileName}`;
+  }
 
   async findAll(options: {
     q?: string;
@@ -209,6 +253,7 @@ export class RestaurantService {
       price: `${Number(item.price).toLocaleString('vi-VN')}đ`,
       cat: item.category,
       icon: item.emoji || item.badge || '🍣',
+      imageUrl: item.image_url || '',
       desc: item.description || '',
     })) || [];
 
@@ -234,6 +279,7 @@ export class RestaurantService {
       price: `${Number(item.price).toLocaleString('vi-VN')}đ`,
       cat: item.category,
       icon: item.emoji || item.badge || '🍣',
+      imageUrl: item.image_url || '',
       desc: item.description || '',
     })) || [];
 
@@ -260,8 +306,14 @@ export class RestaurantService {
     if (dto.name !== undefined) restaurant.name = dto.name;
     if (dto.phone !== undefined) restaurant.phone = dto.phone;
     if (dto.address !== undefined) restaurant.address = dto.address;
-    if (dto.image_url !== undefined) restaurant.image_url = dto.image_url;
-    if (dto.imageUrl !== undefined) restaurant.image_url = dto.imageUrl;
+    if (dto.image_url !== undefined) {
+      const saved = this.saveBase64File(dto.image_url, 'restaurants');
+      restaurant.image_url = saved || dto.image_url;
+    }
+    if (dto.imageUrl !== undefined) {
+      const saved = this.saveBase64File(dto.imageUrl, 'restaurants');
+      restaurant.image_url = saved || dto.imageUrl;
+    }
     if (dto.has_japanese_support !== undefined) restaurant.has_japanese_support = dto.has_japanese_support;
     if (dto.hasJapaneseSupport !== undefined) restaurant.has_japanese_support = dto.hasJapaneseSupport;
     if (dto.description !== undefined) restaurant.description = dto.description;
@@ -279,6 +331,8 @@ export class RestaurantService {
       throw new NotFoundException('Không tìm thấy nhà hàng của bạn');
     }
 
+    const imageUrl = this.saveBase64File(dto.image_url || dto.imageUrl, 'menu-items');
+
     const menuItem = this.menuItemRepository.create({
       restaurant_id: restaurant.id,
       name: dto.name,
@@ -286,7 +340,7 @@ export class RestaurantService {
       category: dto.category,
       price: dto.price,
       description: dto.description || null,
-      image_url: dto.image_url || dto.imageUrl || null,
+      image_url: imageUrl || null,
       badge: dto.badge || null,
       emoji: dto.icon || null,
     });
@@ -318,8 +372,12 @@ export class RestaurantService {
     if (dto.category !== undefined) menuItem.category = dto.category;
     if (dto.price !== undefined) menuItem.price = dto.price;
     if (dto.description !== undefined) menuItem.description = dto.description;
-    if (dto.image_url !== undefined) menuItem.image_url = dto.image_url;
-    if (dto.imageUrl !== undefined) menuItem.image_url = dto.imageUrl;
+    if (dto.image_url !== undefined) {
+      menuItem.image_url = this.saveBase64File(dto.image_url, 'menu-items');
+    }
+    if (dto.imageUrl !== undefined) {
+      menuItem.image_url = this.saveBase64File(dto.imageUrl, 'menu-items');
+    }
     if (dto.badge !== undefined) menuItem.badge = dto.badge;
     if (dto.icon !== undefined) menuItem.emoji = dto.icon;
 
@@ -388,6 +446,8 @@ export class RestaurantService {
         price: Number(item.price),
         description: item.description,
         category: item.category,
+        imageUrl: item.image_url || '',
+        icon: item.emoji || item.badge || '🍣',
       }));
     }
 
