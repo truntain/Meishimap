@@ -87,7 +87,7 @@ function normalizeRestaurantDetail(raw: Partial<ApiRestaurant> & { menuItems?: a
   const menuItems = rawMenuItems.map((item: any) => {
     // 1. Áp dụng logic dịch tên món ăn
     const displayName = (isJa && item.nameJp) ? String(item.nameJp).trim() : String(item.name || '').trim();
-    
+
     const rawItemImageUrl = item.imageUrl || item.image_url;
 
     // Case-insensitive lookup in MENU_ITEM_IMAGES

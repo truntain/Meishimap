@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
@@ -10,17 +11,28 @@ export default function OwnerSidebar() {
   const router = useRouter();
   const { t } = useTranslation();
 
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const handleLogout = () => {
     Cookies.remove('user');
     localStorage.removeItem('meshimap_user');
     router.push('/login');
   };
 
+  const roleText = isMounted ? t('owner.sidebar.role') : 'Chủ nhà hàng / Owner';
+  const restaurantText = isMounted ? t('owner.sidebar.restaurant') : 'Nhà hàng của tôi';
+  const bookingsText = isMounted ? t('owner.sidebar.bookings') : 'Quản lý đặt bàn';
+  const reviewsText = isMounted ? t('owner.sidebar.reviews') : 'Xem đánh giá';
+  const logoutText = isMounted ? t('owner.sidebar.logout') : 'Đăng xuất';
+
   return (
     <aside className="db-sidebar">
       <div className="db-sidebar__brand">
         <div className="db-sidebar__brand-logo">MESHI<span>MAP</span></div>
-        <div className="db-sidebar__role">{t('owner.sidebar.role')}</div>
+        <div className="db-sidebar__role">{roleText}</div>
       </div>
 
       <nav className="db-sidebar__nav">
@@ -28,25 +40,25 @@ export default function OwnerSidebar() {
           href="/owners"
           className={`db-sidebar__link ${pathname === '/owners' ? 'is-active' : ''}`}
         >
-          <span>{t('owner.sidebar.restaurant')}</span>
+          <span>{restaurantText}</span>
         </Link>
         <Link
           href="/owners/bookings"
           className={`db-sidebar__link ${pathname === '/owners/bookings' ? 'is-active' : ''}`}
         >
-          <span>{t('owner.sidebar.bookings')}</span>
+          <span>{bookingsText}</span>
         </Link>
         <Link
           href="/owners/reviews"
           className={`db-sidebar__link ${pathname === '/owners/reviews' ? 'is-active' : ''}`}
         >
-          <span>{t('owner.sidebar.reviews')}</span>
+          <span>{reviewsText}</span>
         </Link>
       </nav>
 
       <div className="db-sidebar__footer">
         <button className="db-sidebar__link" onClick={handleLogout}>
-          <span>{t('owner.sidebar.logout')}</span>
+          <span>{logoutText}</span>
         </button>
       </div>
     </aside>

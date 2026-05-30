@@ -45,6 +45,7 @@ export class AdminService {
     // Tạo cấu trúc dữ liệu cho 6 tháng gần đây (ví dụ: Tháng 12 -> Tháng 5)
     for (let i = 5; i >= 0; i--) {
       const d = new Date();
+      d.setDate(1); // Thiết lập ngày mồng 1 để tránh lỗi tràn ngày khi setMonth sang tháng có ít ngày hơn (ví dụ tháng 2)
       d.setMonth(today.getMonth() - i);
       const year = d.getFullYear();
       const month = d.getMonth(); // 0-11
