@@ -31,8 +31,8 @@ services:
       - DB_NAME=ITSS Nhat
       - JWT_SECRET=ITSS
     ports:
-      # Map cổng 3001 trên máy host vào cổng 3000 của container để tránh trùng lặp với frontend
-      - "3001:3000"
+      # Map cổng 3001 trên máy host vào cổng 3001 của container
+      - "3001:3001"
     depends_on:
       - db
 
@@ -45,7 +45,7 @@ services:
     restart: always
     environment:
       # Thay đổi URL API trỏ về backend nếu frontend có gọi API (ví dụ)
-      - NEXT_PUBLIC_API_URL=http://localhost:3001
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
     ports:
       - "3000:3000"
     depends_on:

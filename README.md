@@ -257,24 +257,65 @@ ITSS-Nihongo2/
 
 ## 🚀 Hướng Dẫn Cài Đặt & Chạy Thử Dự Án
 
-### Yêu Cầu Hệ Thống
-*   **Node.js**: Phiên bản 18.x trở lên.
+Bạn có thể lựa chọn chạy dự án bằng **Docker (Khuyên dùng)** hoặc **Cài đặt thủ công trên máy cục bộ (Local Setup)**.
+
+---
+
+### 🐳 CÁCH 1: Chạy nhanh bằng Docker & Docker Compose (Khuyên dùng)
+
+Cách này sẽ tự động cài đặt và cấu hình PostgreSQL, Backend (NestJS) và Frontend (Next.js) trong các container riêng biệt.
+
+#### 1. Yêu Cầu Hệ Thống
+* Đã cài đặt **Docker** và **Docker Compose** (Khuyến nghị sử dụng **Docker Desktop**).
+
+#### 2. Khởi Chạy Các Container
+Chạy lệnh sau tại thư mục gốc của dự án (nơi chứa file [docker-compose.yml](file:///d:/20252/ITSS%20In%20JPS/Project/ITSS-Nihongo2/docker-compose.yml)):
+```bash
+docker compose up -d --build
+```
+*Lệnh này sẽ tự động tải các image cần thiết, build mã nguồn frontend/backend và khởi chạy 3 service: `db` (PostgreSQL), `backend` và `frontend`.*
+
+#### 3. Khôi Phục Dữ Liệu Mẫu (Database Restore)
+Sau khi các container chạy ổn định (trạng thái `Running`), bạn tiến hành nạp dữ liệu từ file sao lưu [backup.sql](file:///d:/20252/ITSS%20In%20JPS/Project/ITSS-Nihongo2/backend/backup.sql) vào cơ sở dữ liệu trong Docker:
+
+*   **Trên Linux / macOS / Windows (Git Bash, Command Prompt - CMD):**
+    ```bash
+    docker exec -i postgres_db psql -U postgres -d "ITSS Nhat" < backend/backup.sql
+    ```
+*   **Trên Windows (PowerShell):**
+    ```powershell
+    Get-Content backend/backup.sql | docker exec -i postgres_db psql -U postgres -d "ITSS Nhat"
+    ```
+
+#### 4. Truy Cập Ứng Dụng
+*   **Giao diện Frontend (Next.js):** [http://localhost:3000](http://localhost:3000)
+*   **API Backend (NestJS):** [http://localhost:3001](http://localhost:3001)
+*   **Tài liệu API Swagger:** [http://localhost:3001/api](http://localhost:3001/api)
+
+---
+
+### 💻 CÁCH 2: Cài Đặt & Khởi Chạy Thủ Công (Local Setup)
+
+Nếu không sử dụng Docker, bạn cần chuẩn bị môi trường và chạy từng phân hệ thủ công.
+
+#### 1. Yêu Cầu Hệ Thống
+*   **Node.js**: Phiên bản 18.x hoặc 20.x trở lên.
 *   **PostgreSQL**: Phiên bản 15.x trở lên.
 
-### Bước 1: Chuẩn Bị Cơ Sở Dữ Liệu
+#### 2. Chuẩn Bị Cơ Sở Dữ Liệu
 1.  Mở công cụ dòng lệnh hoặc pgAdmin của PostgreSQL.
-2.  Tạo một cơ sở dữ liệu mới có tên là `ITSS Nhat` (hoặc tên tùy chọn của bạn):
+2.  Tạo một cơ sở dữ liệu mới có tên là `ITSS Nhat`:
     ```sql
     CREATE DATABASE "ITSS Nhat";
     ```
-3.  Phục hồi dữ liệu từ file sao lưu `backup.sql` nằm trong thư mục `backend/`:
+3.  Phục hồi dữ liệu từ file sao lưu [backup.sql](file:///d:/20252/ITSS%20In%20JPS/Project/ITSS-Nihongo2/backend/backup.sql) nằm trong thư mục `backend/`:
     ```bash
     psql -U postgres -d "ITSS Nhat" -f backend/backup.sql
     ```
     *(Thay đổi `-U postgres` thành tài khoản quản trị của PostgreSQL tương ứng nếu cần)*.
 
-### Bước 2: Thiết Lập & Khởi Chạy Backend
-1.  Di chuyển vào thư mục backend:
+#### 3. Thiết Lập & Khởi Chạy Backend
+1.  Di chuyển vào thư mục [backend](file:///d:/20252/ITSS%20In%20JPS/Project/ITSS-Nihongo2/backend):
     ```bash
     cd backend
     ```
@@ -282,7 +323,7 @@ ITSS-Nihongo2/
     ```bash
     npm install
     ```
-3.  Tạo file `.env` từ file mẫu `.env.example`:
+3.  Tạo file `.env` từ file mẫu [backend/.env.example](file:///d:/20252/ITSS%20In%20JPS/Project/ITSS-Nihongo2/backend/.env.example):
     ```bash
     cp .env.example .env
     ```
@@ -299,13 +340,13 @@ ITSS-Nihongo2/
     ```bash
     npm run start:dev
     ```
-    *Ứng dụng backend sẽ khởi chạy tại cổng mặc định: `http://localhost:3001`.*
-    *Tài liệu API Swagger có thể truy cập tại: `http://localhost:3001/api`.*
+    *Backend sẽ chạy tại cổng mặc định: `http://localhost:3001`.*
+    *Tài liệu API Swagger: `http://localhost:3001/api`.*
 
-### Bước 3: Thiết Lập & Khởi Chạy Frontend
-1.  Di chuyển vào thư mục frontend:
+#### 4. Thiết Lập & Khởi Chạy Frontend
+1.  Mở một cửa sổ Terminal mới và di chuyển vào thư mục [frontend](file:///d:/20252/ITSS%20In%20JPS/Project/ITSS-Nihongo2/frontend):
     ```bash
-    cd ../frontend
+    cd frontend
     ```
 2.  Cài đặt các gói phụ thuộc:
     ```bash
@@ -319,7 +360,7 @@ ITSS-Nihongo2/
     ```bash
     npm run dev
     ```
-    *Mở trình duyệt truy cập: `http://localhost:3000` để trải nghiệm dự án.*
+    *Truy cập trình duyệt: [http://localhost:3000](http://localhost:3000) để trải nghiệm ứng dụng.*
 
 ---
 
