@@ -3,10 +3,12 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
+import { useTranslation } from 'react-i18next';
 
 export default function OwnerSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const handleLogout = () => {
     Cookies.remove('user');
@@ -18,7 +20,7 @@ export default function OwnerSidebar() {
     <aside className="db-sidebar">
       <div className="db-sidebar__brand">
         <div className="db-sidebar__brand-logo">MESHI<span>MAP</span></div>
-        <div className="db-sidebar__role">Chủ nhà hàng / Owner</div>
+        <div className="db-sidebar__role">{t('owner.sidebar.role')}</div>
       </div>
 
       <nav className="db-sidebar__nav">
@@ -26,31 +28,25 @@ export default function OwnerSidebar() {
           href="/owners"
           className={`db-sidebar__link ${pathname === '/owners' ? 'is-active' : ''}`}
         >
-          <span>Quản lý nhà hàng</span>
+          <span>{t('owner.sidebar.restaurant')}</span>
         </Link>
         <Link
           href="/owners/bookings"
           className={`db-sidebar__link ${pathname === '/owners/bookings' ? 'is-active' : ''}`}
         >
-          <span>Quản lý đặt bàn</span>
+          <span>{t('owner.sidebar.bookings')}</span>
         </Link>
         <Link
           href="/owners/reviews"
           className={`db-sidebar__link ${pathname === '/owners/reviews' ? 'is-active' : ''}`}
         >
-          <span>Xem đánh giá</span>
+          <span>{t('owner.sidebar.reviews')}</span>
         </Link>
-        {/* <Link 
-          href="/owners/preview" 
-          className={`db-sidebar__link ${pathname === '/owners/preview' ? 'is-active' : ''}`}
-        >
-          <span>Xem trước (Preview)</span>
-        </Link> */}
       </nav>
 
       <div className="db-sidebar__footer">
         <button className="db-sidebar__link" onClick={handleLogout}>
-          <span>Đăng xuất</span>
+          <span>{t('owner.sidebar.logout')}</span>
         </button>
       </div>
     </aside>

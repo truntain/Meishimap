@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import OwnerHeader from '../components/OwnerHeader';
 import Cookies from 'js-cookie';
+import { useTranslation } from 'react-i18next';
 
 export default function OwnerReviewsPage() {
   const [reviews, setReviews] = useState<any[]>([]);
@@ -10,11 +11,12 @@ export default function OwnerReviewsPage() {
   const [replyingId, setReplyingId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
   const [alertMsg, setAlertMsg] = useState<{msg: string, type: string} | null>(null);
+  const { t } = useTranslation();
 
   const fetchReviews = async () => {
     const token = Cookies.get('access_token');
     if (!token) {
-      showAlert('Không tìm thấy phiên đăng nhập. Vui lòng đăng nhập lại.', 'warning');
+      showAlert(t('owner.restaurant.alertSessionExpired'), 'warning');
       setTimeout(() => {
         window.location.href = '/login';
       }, 2000);
@@ -31,7 +33,7 @@ export default function OwnerReviewsPage() {
       if (res.status === 401) {
         Cookies.remove('access_token');
         Cookies.remove('user');
-        showAlert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'warning');
+        showAlert(t('owner.restaurant.alertSessionExpired'), 'warning');
         setTimeout(() => {
           window.location.href = '/login';
         }, 2000);
@@ -75,7 +77,7 @@ export default function OwnerReviewsPage() {
   };
 
   const handleReport = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn báo cáo đánh giá này là vi phạm tiêu chuẩn cộng đồng không?')) {
+    if (!window.confirm(t('owner.reviews.confirmReport'))) {
       return;
     }
 
@@ -98,7 +100,7 @@ export default function OwnerReviewsPage() {
       if (res.status === 401) {
         Cookies.remove('access_token');
         Cookies.remove('user');
-        showAlert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'warning');
+        showAlert(t('owner.restaurant.alertSessionExpired'), 'warning');
         setTimeout(() => {
           window.location.href = '/login';
         }, 2000);
@@ -110,7 +112,7 @@ export default function OwnerReviewsPage() {
         throw new Error(errorData.message || 'Lỗi báo cáo đánh giá');
       }
 
-      showAlert('Đã gửi báo cáo vi phạm. Đang chờ Admin xử lý!', 'warning');
+      showAlert(t('owner.reviews.alertReportSuccess'), 'warning');
       fetchReviews();
     } catch (err: any) {
       console.error(err);
@@ -140,7 +142,7 @@ export default function OwnerReviewsPage() {
       if (res.status === 401) {
         Cookies.remove('access_token');
         Cookies.remove('user');
-        showAlert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'warning');
+        showAlert(t('owner.restaurant.alertSessionExpired'), 'warning');
         setTimeout(() => {
           window.location.href = '/login';
         }, 2000);
@@ -152,7 +154,7 @@ export default function OwnerReviewsPage() {
         throw new Error(errorData.message || 'Lỗi gửi phản hồi');
       }
 
-      showAlert('Đã gửi phản hồi đánh giá!');
+      showAlert(t('owner.reviews.alertReplySuccess'));
       setReplyText('');
       setReplyingId(null);
       fetchReviews();
@@ -166,7 +168,7 @@ export default function OwnerReviewsPage() {
 
   return (
     <>
-      <OwnerHeader title="Xem đánh giá khách hàng" />
+      <OwnerHeader title={t('owner.reviews.headerTitle')} />
       <div className="db-content">
         {alertMsg && (
           <div className={`db-alert db-alert--${alertMsg.type}`}>
@@ -177,9 +179,9 @@ export default function OwnerReviewsPage() {
 
         <div className="db-card">
           <div className="db-card__title">
-            <span>Đánh giá từ khách hàng</span>
+            <span>{t('owner.reviews.cardTitle')}</span>
             <select className="db-select" style={{ padding: '6px 12px', fontSize: 13 }} value={filterStars} onChange={e => setFilterStars(e.target.value)}>
-              <option value="all">Tất cả số sao</option>
+              <option value="all">{t('owner.reviews.filterAll')}</option>
               <option value="5">⭐⭐⭐⭐⭐ (5 sao)</option>
               <option value="4">⭐⭐⭐⭐ (4 sao)</option>
               <option value="3">⭐⭐⭐ (3 sao)</option>
@@ -191,7 +193,7 @@ export default function OwnerReviewsPage() {
           <div>
             {filteredReviews.length === 0 && (
               <div style={{ textAlign: 'center', padding: 32, color: 'var(--clr-muted)' }}>
-                Không có đánh giá nào thỏa mãn bộ lọc.
+                {t('owner.reviews.noReviews')}
               </div>
             )}
             {filteredReviews.map((rev) => (
@@ -201,10 +203,10 @@ export default function OwnerReviewsPage() {
                     <span className="db-review-author">{rev.author}</span>
                     <span className="db-review-date" style={{ marginLeft: 8 }}>{rev.date}</span>
                     {rev.reported ? (
-                      <span className="db-badge db-badge--reported" style={{ marginLeft: 10 }}>Đã báo cáo</span>
+                      <span className="db-badge db-badge--reported" style={{ marginLeft: 10 }}>{t('owner.reviews.badgeReported')}</span>
                     ) : (
                       <button className="btn btn--outline" style={{ padding: '2px 8px', fontSize: 11, marginLeft: 10, borderColor: '#dc2626', color: '#dc2626' }} onClick={() => handleReport(rev.id)}>
-                        🚩 Báo cáo vi phạm
+                        {t('owner.reviews.btnReport')}
                       </button>
                     )}
                   </div>
@@ -216,22 +218,22 @@ export default function OwnerReviewsPage() {
                 
                 {rev.replies?.map((rep: string, i: number) => (
                   <div className="db-review-reply-box" style={{ marginTop: 8 }} key={i}>
-                    <strong>Bạn đã phản hồi:</strong>
+                    <strong>{t('owner.reviews.labelReplied')}</strong>
                     <p style={{ marginTop: 4, fontStyle: 'italic' }}>"{rep}"</p>
                   </div>
                 ))}
 
                 <div style={{ marginTop: 8 }}>
                   <button className="db-review-reply-btn" onClick={() => { setReplyingId(replyingId === rev.id ? null : rev.id); setReplyText(''); }}>
-                    💬 Trả lời
+                    {t('owner.reviews.btnReply')}
                   </button>
                   {replyingId === rev.id && (
                     <div style={{ marginTop: 8 }}>
-                      <textarea className="db-textarea" style={{ width: '100%', minHeight: 60 }} placeholder="Viết phản hồi..." 
+                      <textarea className="db-textarea" style={{ width: '100%', minHeight: 60 }} placeholder={t('owner.reviews.placeholderReply')} 
                         value={replyText} onChange={e => setReplyText(e.target.value)} />
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-                        <button className="btn btn--outline" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => setReplyingId(null)}>Hủy</button>
-                        <button className="btn btn--primary" style={{ padding: '4px 12px', fontSize: 12 }} onClick={() => handleReplySubmit(rev.id)}>Gửi phản hồi</button>
+                        <button className="btn btn--outline" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => setReplyingId(null)}>{t('owner.restaurant.btnCancel')}</button>
+                        <button className="btn btn--primary" style={{ padding: '4px 12px', fontSize: 12 }} onClick={() => handleReplySubmit(rev.id)}>{t('owner.reviews.btnSendReply')}</button>
                       </div>
                     </div>
                   )}

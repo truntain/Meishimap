@@ -157,6 +157,7 @@ CREATE TABLE public.menu_items (
     name_jp character varying(255),
     price numeric(10,2) NOT NULL,
     description text,
+    description_jp text,
     category character varying(100),
     image_url character varying(255),
     badge character varying(50),
@@ -500,16 +501,16 @@ COPY public.bookings (id, user_id, restaurant_id, booking_date, booking_time, gu
 -- Data for Name: menu_items; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.menu_items (id, restaurant_id, name, name_jp, price, description, category, image_url, badge, emoji, created_at) FROM stdin;
-1	1	Phở Bò Đặc Biệt	牛肉のフォー（特別）	95000.00	Phở bò tái nạm gầu gân bò viên	Main Dish	url_pho_dacbiet.jpg	Signature	🍜	2026-05-24 08:12:04.272656+07
-2	1	Chả Giò Chiên (3 cuốn)	揚げ春巻き（3本）	45000.00	Chả giò tôm thịt chiên giòn	Appetizer	url_chagio.jpg	Popular	🌯	2026-05-24 08:12:04.272656+07
-4	1	Bia Saigon Special	サイゴンビール・スペシャル	25000.00	Bia Sài Gòn xanh	Drink	url_biasg.jpg	Recommend	🍺	2026-05-24 08:12:04.272656+07
-5	2	Bún Chả	ブンチャー（豚肉の炭火焼き秘伝だれ）	70000.00	Bún chả thịt nướng than hoa	Main Dish	url_buncha.jpg	Popular	🍲	2026-05-24 08:12:04.272656+07
-6	2	Nem Cua Bể	蟹の揚げ春巻き	35000.00	Nem cua bể vuông chiên giòn	Side Dish	url_nemcua.jpg	Chef Choice	🦀	2026-05-24 08:12:04.272656+07
-7	2	Bia Hà Nội	ハノイビール	20000.00	Bia chai Hà Nội	Drink	url_biahanoi.jpg	\N	🍻	2026-05-24 08:12:04.272656+07
-8	3	Mực Nướng Sa Tế	イカのサテ焼き	120000.00	Mực nướng cay	BBQ	url_mucnuong.jpg	Spicy	🦑	2026-05-24 08:12:04.272656+07
-9	3	Đậu Phộng Luộc	茹でピーナッツ	20000.00	Món nhắm cơ bản	Snack	url_dauphong.jpg	\N	🥜	2026-05-24 08:12:04.272656+07
-10	1	àasda	\N	100000.00	dfsdfase	sashimi	\N	\N	🍣	2026-05-26 14:40:13.740634+07
+COPY public.menu_items (id, restaurant_id, name, name_jp, price, description, description_jp, category, image_url, badge, emoji, created_at) FROM stdin;
+1	1	Phở Bò Đặc Biệt	牛肉のフォー（特別）	95000.00	Phở bò tái nạm gầu gân bò viên	半生牛肉、牛フランク、牛バラ、牛すじ、牛肉団子入りの特製ベトナムフォー	Main Dish	url_pho_dacbiet.jpg	Signature	🍜	2026-05-24 08:12:04.272656+07
+2	1	Chả Giò Chiên (3 cuốn)	揚げ春巻き（3本）	45000.00	Chả giò tôm thịt chiên giòn	エビと豚肉의サクサク揚げ春巻き	Appetizer	url_chagio.jpg	Popular	🌯	2026-05-24 08:12:04.272656+07
+4	1	Bia Saigon Special	サイゴンビール・スペシャル	25000.00	Bia Sài Gòn xanh	ベトナムで大人気のサイゴンビール（グリーンラベル）	Drink	url_biasg.jpg	Recommend	🍺	2026-05-24 08:12:04.272656+07
+5	2	Bún Chả	ブンチャー（豚肉の炭火焼き秘伝だれ）	70000.00	Bún chả thịt nướng than hoa	秘伝のタレでいただく炭火焼き豚肉と米粉麺のブンチャー	Main Dish	url_buncha.jpg	Popular	🍲	2026-05-24 08:12:04.272656+07
+6	2	Nem Cua Bể	蟹の揚げ春巻き	35000.00	Nem cua bể vuông chiên giòn	カニ身がたっぷり詰まったサクサク四角い揚げ春巻き	Side Dish	url_nemcua.jpg	Chef Choice	🦀	2026-05-24 08:12:04.272656+07
+7	2	Bia Hà Nội	ハノイビール	20000.00	Bia chai Hà Nội	ハノイ伝統のさっぱりとした味わいの瓶ビール	Drink	url_biahanoi.jpg	\N	🍻	2026-05-24 08:12:04.272656+07
+8	3	Mực Nướng Sa Tế	イカのサテ焼き	120000.00	Mực nướng cay	スパイシーなサテソースで焼き上げたピリ辛イカ焼き	BBQ	url_mucnuong.jpg	Spicy	🦑	2026-05-24 08:12:04.272656+07
+9	3	Đậu Phộng Luộc	茹でピーナッツ	20000.00	Món nhắm cơ bản	ビールにぴったりの定番おつまみ茹でピーナッツ	Snack	url_dauphong.jpg	\N	🥜	2026-05-24 08:12:04.272656+07
+10	1	àasda	\N	100000.00	dfsdfase	テスト用説明文	sashimi	\N	\N	🍣	2026-05-26 14:40:13.740634+07
 \.
 
 

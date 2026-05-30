@@ -5,6 +5,7 @@ import OwnerHeader from '../components/OwnerHeader';
 import Cookies from 'js-cookie';
 import { io } from 'socket.io-client';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const API_BASE_URL = 'http://localhost:3001';
 
@@ -13,6 +14,7 @@ export default function OwnerBookingsPage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
 
   // Reject Modal
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -124,10 +126,10 @@ export default function OwnerBookingsPage() {
       }
 
       // Beautiful custom toast
-      toast.custom((t) => (
+      toast.custom((tActive) => (
         <div
           className={`${
-            t.visible ? 'animate-bounce' : 'opacity-0'
+            tActive.visible ? 'animate-bounce' : 'opacity-0'
           } max-w-md w-full bg-white shadow-2xl rounded-2xl pointer-events-auto flex border border-gray-150 p-4`}
         >
           <div className="flex-1 w-0">
@@ -137,17 +139,17 @@ export default function OwnerBookingsPage() {
               </div>
               <div className="ml-3 flex-1">
                 <p className="text-sm font-bold text-gray-900">
-                  Yêu Cầu Đặt Bàn Mới!
+                  {t('owner.bookings.toastNewBooking')}
                 </p>
                 <p className="mt-1 text-xs text-gray-500">
-                  Giờ hẹn lúc {newBooking.time} ngày {newBooking.date} cho {newBooking.guests}.
+                  {t('owner.bookings.toastNewBookingDesc', { time: newBooking.time, date: newBooking.date, guests: newBooking.guests })}
                 </p>
               </div>
             </div>
           </div>
           <div className="ml-4 flex-shrink-0 flex">
             <button
-              onClick={() => toast.dismiss(t.id)}
+              onClick={() => toast.dismiss(tActive.id)}
               className="bg-white rounded-md inline-flex text-[#6C2F00] hover:text-[#8A3E03] focus:outline-none"
             >
               <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -162,7 +164,7 @@ export default function OwnerBookingsPage() {
     return () => {
       socket.disconnect();
     };
-  }, [restaurantId]);
+  }, [restaurantId, t]);
 
   const handleApprove = async (id: any) => {
     const token = Cookies.get('access_token');
@@ -180,7 +182,7 @@ export default function OwnerBookingsPage() {
 
       const updated = bookings.map(b => String(b.id) === String(id) ? { ...b, status: 'approved' } : b);
       setBookings(updated);
-      showAlert('Đã duyệt chấp nhận đặt bàn!');
+      showAlert(t('owner.bookings.alertApproveSuccess'));
     } catch (err: any) {
       showAlert('Lỗi: ' + err.message, 'warning');
     }
@@ -212,7 +214,7 @@ export default function OwnerBookingsPage() {
       const updated = bookings.map(b => String(b.id) === String(selectedBookingId) ? { ...b, status: 'rejected', rejectReason } : b);
       setBookings(updated);
       setShowRejectModal(false);
-      showAlert('Đã từ chối đơn đặt bàn này.', 'warning');
+      showAlert(t('owner.bookings.alertRejectSuccess'), 'warning');
     } catch (err: any) {
       showAlert('Lỗi: ' + err.message, 'warning');
     }
@@ -224,19 +226,17 @@ export default function OwnerBookingsPage() {
 
   return (
     <>
-      <OwnerHeader title="Quản lý đặt bàn" />
+      <OwnerHeader title={t('owner.bookings.headerTitle')} />
       <div className="db-content">
-
-
         <div className="db-card">
           <div className="db-card__title">
-            <span>Danh sách yêu cầu đặt bàn</span>
+            <span>{t('owner.bookings.cardTitle')}</span>
             <div style={{ display: 'flex', gap: 10 }}>
               <select className="db-select" style={{ padding: '6px 12px', fontSize: 13 }} value={filter} onChange={e => setFilter(e.target.value)}>
-                <option value="all">Tất cả trạng thái</option>
-                <option value="pending">Chờ duyệt (Pending)</option>
-                <option value="approved">Đã chấp nhận (Approved)</option>
-                <option value="rejected">Đã từ chối (Rejected)</option>
+                <option value="all">{t('owner.bookings.filterAll')}</option>
+                <option value="pending">{t('owner.bookings.filterPending')}</option>
+                <option value="approved">{t('owner.bookings.filterApproved')}</option>
+                <option value="rejected">{t('owner.bookings.filterRejected')}</option>
               </select>
             </div>
           </div>
@@ -245,23 +245,23 @@ export default function OwnerBookingsPage() {
             <table className="db-table">
               <thead>
                 <tr>
-                  <th>Email liên hệ</th>
-                  <th>Ngày đặt</th>
-                  <th>Thời gian</th>
-                  <th>Số người</th>
-                  <th>Ghi chú</th>
-                  <th>Trạng thái</th>
-                  <th>Thao tác</th>
+                  <th>{t('owner.bookings.thEmail')}</th>
+                  <th>{t('owner.bookings.thDate')}</th>
+                  <th>{t('owner.bookings.thTime')}</th>
+                  <th>{t('owner.bookings.thGuests')}</th>
+                  <th>{t('owner.bookings.thNote')}</th>
+                  <th>{t('owner.bookings.thStatus')}</th>
+                  <th>{t('owner.bookings.thAction')}</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>Đang tải danh sách đặt bàn...</td>
+                    <td colSpan={7} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>{t('owner.bookings.loadingBookings')}</td>
                   </tr>
                 ) : filteredBookings.length === 0 ? (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>Không tìm thấy lượt đặt bàn nào.</td>
+                    <td colSpan={7} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>{t('owner.bookings.noBookings')}</td>
                   </tr>
                 ) : (
                   filteredBookings.map((b) => (
@@ -274,19 +274,19 @@ export default function OwnerBookingsPage() {
                         {b.note || '-'}
                       </td>
                       <td>
-                        {b.status === 'pending' && <span className="db-badge db-badge--pending">Chờ duyệt</span>}
-                        {b.status === 'approved' && <span className="db-badge db-badge--approved">Đã nhận</span>}
-                        {b.status === 'rejected' && <span className="db-badge db-badge--rejected" title={`Lý do: ${b.rejectReason || ''}`}>Đã từ chối</span>}
+                        {b.status === 'pending' && <span className="db-badge db-badge--pending">{t('owner.bookings.statusPending')}</span>}
+                        {b.status === 'approved' && <span className="db-badge db-badge--approved">{t('owner.bookings.statusApproved')}</span>}
+                        {b.status === 'rejected' && <span className="db-badge db-badge--rejected" title={`Lý do: ${b.rejectReason || ''}`}>{t('owner.bookings.statusRejected')}</span>}
                       </td>
                       <td>
                         <div style={{ display: 'flex', gap: 6 }}>
                           {b.status === 'pending' ? (
                             <>
-                              <button className="btn btn--dark" style={{ padding: '4px 10px', fontSize: 12, background: '#059669' }} onClick={() => handleApprove(b.id)}>Duyệt</button>
-                              <button className="btn btn--dark" style={{ padding: '4px 10px', fontSize: 12, background: '#dc2626' }} onClick={() => openRejectModal(b.id)}>Từ chối</button>
+                              <button className="btn btn--dark" style={{ padding: '4px 10px', fontSize: 12, background: '#059669' }} onClick={() => handleApprove(b.id)}>{t('owner.bookings.btnApprove')}</button>
+                              <button className="btn btn--dark" style={{ padding: '4px 10px', fontSize: 12, background: '#dc2626' }} onClick={() => openRejectModal(b.id)}>{t('owner.bookings.btnReject')}</button>
                             </>
                           ) : (
-                            <span style={{ fontSize: 12, color: 'var(--clr-muted)' }}>Đã xử lý</span>
+                            <span style={{ fontSize: 12, color: 'var(--clr-muted)' }}>{t('owner.bookings.btnDone')}</span>
                           )}
                         </div>
                       </td>
@@ -302,16 +302,16 @@ export default function OwnerBookingsPage() {
       {showRejectModal && (
         <div className="db-modal" style={{ display: 'flex' }}>
           <div className="db-modal__box">
-            <h3 className="db-modal__title">Từ chối yêu cầu đặt bàn</h3>
+            <h3 className="db-modal__title">{t('owner.bookings.modalRejectTitle')}</h3>
             <form onSubmit={handleRejectSubmit}>
               <div className="db-form-field">
-                <label>Lý do từ chối <span>/ 却下の理由</span></label>
-                <textarea className="db-textarea" placeholder="Nhập lý do từ chối (vd: Hết bàn giờ này...)" required
+                <label>{t('owner.bookings.labelRejectReason')} <span>/ 却下の理由</span></label>
+                <textarea className="db-textarea" placeholder={t('owner.bookings.placeholderRejectReason')} required
                   value={rejectReason} onChange={e => setRejectReason(e.target.value)} />
               </div>
               <div className="db-modal__actions">
-                <button type="button" className="modal__cancel" onClick={() => setShowRejectModal(false)}>Hủy</button>
-                <button type="submit" className="modal__submit" style={{ background: '#dc2626' }}>Từ chối đặt bàn</button>
+                <button type="button" className="modal__cancel" onClick={() => setShowRejectModal(false)}>{t('owner.restaurant.btnCancel')}</button>
+                <button type="submit" className="modal__submit" style={{ background: '#dc2626' }}>{t('owner.bookings.btnRejectSubmit')}</button>
               </div>
             </form>
           </div>

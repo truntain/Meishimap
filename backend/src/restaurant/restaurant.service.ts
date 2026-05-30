@@ -129,10 +129,12 @@ export class RestaurantService {
     response.menuItems = restaurant.menuItems?.map(item => ({
       id: item.id,
       name: item.name,
+      nameJp: item.name_jp || '',
       price: `${Number(item.price).toLocaleString('vi-VN')}đ`,
       cat: item.category,
       icon: item.emoji || item.badge || '🍣',
       desc: item.description || '',
+      descJp: item.description_jp || '',
     })) || [];
 
     return response;
@@ -154,10 +156,12 @@ export class RestaurantService {
     response.menuItems = restaurant.menuItems?.map(item => ({
       id: item.id,
       name: item.name,
+      nameJp: item.name_jp || '',
       price: `${Number(item.price).toLocaleString('vi-VN')}đ`,
       cat: item.category,
       icon: item.emoji || item.badge || '🍣',
       desc: item.description || '',
+      descJp: item.description_jp || '',
     })) || [];
 
     return response;
@@ -209,6 +213,7 @@ export class RestaurantService {
       category: dto.category,
       price: dto.price,
       description: dto.description || null,
+      description_jp: dto.description_jp || dto.descriptionJp || null,
       image_url: dto.image_url || dto.imageUrl || null,
       badge: dto.badge || null,
       emoji: dto.icon || null,
@@ -241,6 +246,8 @@ export class RestaurantService {
     if (dto.category !== undefined) menuItem.category = dto.category;
     if (dto.price !== undefined) menuItem.price = dto.price;
     if (dto.description !== undefined) menuItem.description = dto.description;
+    if (dto.description_jp !== undefined) menuItem.description_jp = dto.description_jp;
+    if (dto.descriptionJp !== undefined) menuItem.description_jp = dto.descriptionJp;
     if (dto.image_url !== undefined) menuItem.image_url = dto.image_url;
     if (dto.imageUrl !== undefined) menuItem.image_url = dto.imageUrl;
     if (dto.badge !== undefined) menuItem.badge = dto.badge;

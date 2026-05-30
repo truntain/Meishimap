@@ -31,6 +31,9 @@ export class MenuItem {
   @Column({ type: 'text', nullable: true })
   description!: string | null;
 
+  @Column({ type: 'text', name: 'description_jp', nullable: true })
+  description_jp!: string | null;
+
   @Column({ type: 'varchar', length: 255, nullable: true })
   image_url!: string | null;
 

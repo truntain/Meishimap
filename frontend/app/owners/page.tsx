@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import OwnerHeader from './components/OwnerHeader';
 import Cookies from 'js-cookie';
-
+import { useTranslation } from 'react-i18next';
 
 const defaultRestaurant = {
   name: 'Sakura Garden',
@@ -28,13 +28,13 @@ const defaultRestaurant = {
 
 export default function OwnerRestaurantPage() {
   const [restaurant, setRestaurant] = useState<any>(null);
-  const [alertMsg, setAlertMsg] = useState<{msg: string, type: string} | null>(null);
-  
-  // Menu Modal State
+  const [alertMsg, setAlertMsg] = useState<{ msg: string, type: string } | null>(null);
+  const { t } = useTranslation();
+
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [menuForm, setMenuForm] = useState({ name: '', price: '', cat: 'sashimi', icon: '🍣', desc: '' });
 
+  const [menuForm, setMenuForm] = useState({ name: '', nameJp: '', price: '', cat: 'sashimi', icon: '🍣', desc: '', descJp: '' });
   useEffect(() => {
     const fetchRestaurant = async () => {
       const token = Cookies.get('access_token');
@@ -62,7 +62,7 @@ export default function OwnerRestaurantPage() {
         if (res.status === 401) {
           Cookies.remove('access_token');
           Cookies.remove('user');
-          showAlert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'warning');
+          showAlert(t('owner.restaurant.alertSessionExpired'), 'warning');
           setTimeout(() => {
             window.location.href = '/login';
           }, 2000);
@@ -100,7 +100,7 @@ export default function OwnerRestaurantPage() {
     };
 
     fetchRestaurant();
-  }, []);
+  }, [t]);
 
   const showAlert = (msg: string, type = 'success') => {
     setAlertMsg({ msg, type });
@@ -113,7 +113,7 @@ export default function OwnerRestaurantPage() {
 
     const token = Cookies.get('access_token');
     if (!token) {
-      showAlert('Lưu thông tin thành công (Offline)!');
+      showAlert(t('owner.restaurant.alertOfflineSave'));
       return;
     }
 
@@ -137,7 +137,7 @@ export default function OwnerRestaurantPage() {
       if (res.status === 401) {
         Cookies.remove('access_token');
         Cookies.remove('user');
-        showAlert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'warning');
+        showAlert(t('owner.restaurant.alertSessionExpired'), 'warning');
         setTimeout(() => {
           window.location.href = '/login';
         }, 2000);
@@ -163,16 +163,15 @@ export default function OwnerRestaurantPage() {
         menu: updatedData.menuItems || [],
         reviews: updatedData.reviews || [],
       };
-      
+
       setRestaurant(mappedRes);
       localStorage.setItem('meshimap_restaurant', JSON.stringify(mappedRes));
-      showAlert('Lưu thông tin nhà hàng lên hệ thống thành công!');
+      showAlert(t('owner.restaurant.alertOnlineSave'));
     } catch (err: any) {
       console.error(err);
       showAlert(`Lỗi kết nối: ${err.message || 'Không thể lưu lên hệ thống'}`, 'warning');
     }
   };
-
 
   const handleInfoChange = (field: string, value: any) => {
     setRestaurant((prev: any) => ({ ...prev, [field]: value }));
@@ -181,9 +180,18 @@ export default function OwnerRestaurantPage() {
   const openMenuModal = (index: number | null = null) => {
     setEditingIndex(index);
     if (index !== null) {
-      setMenuForm(restaurant.menu[index]);
+      const item = restaurant.menu[index];
+      setMenuForm({
+        name: item.name || '',
+        nameJp: item.nameJp || '',
+        price: item.price || '',
+        cat: item.cat || 'sashimi',
+        icon: item.icon || '🍣',
+        desc: item.desc || '',
+        descJp: item.descJp || '',
+      });
     } else {
-      setMenuForm({ name: '', price: '', cat: 'sashimi', icon: '🍣', desc: '' });
+      setMenuForm({ name: '', nameJp: '', price: '', cat: 'sashimi', icon: '🍣', desc: '', descJp: '' });
     }
     setShowMenuModal(true);
   };
@@ -199,10 +207,12 @@ export default function OwnerRestaurantPage() {
     const cleanPrice = parseInt(menuForm.price.replace(/[^\d]/g, '')) || 0;
     const body = {
       name: menuForm.name,
+      nameJp: menuForm.nameJp,
       price: cleanPrice,
       category: menuForm.cat,
       icon: menuForm.icon,
       description: menuForm.desc,
+      descriptionJp: menuForm.descJp,
     };
 
     try {
@@ -231,7 +241,7 @@ export default function OwnerRestaurantPage() {
       if (res.status === 401) {
         Cookies.remove('access_token');
         Cookies.remove('user');
-        showAlert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'warning');
+        showAlert(t('owner.restaurant.alertSessionExpired'), 'warning');
         setTimeout(() => {
           window.location.href = '/login';
         }, 2000);
@@ -260,7 +270,7 @@ export default function OwnerRestaurantPage() {
 
       setRestaurant(mappedRes);
       localStorage.setItem('meshimap_restaurant', JSON.stringify(mappedRes));
-      showAlert(editingIndex !== null ? 'Đã cập nhật món ăn!' : 'Đã thêm món ăn mới!');
+      showAlert(editingIndex !== null ? t('owner.restaurant.alertMenuUpdated') : t('owner.restaurant.alertMenuAdded'));
       setShowMenuModal(false);
     } catch (err: any) {
       console.error(err);
@@ -269,7 +279,7 @@ export default function OwnerRestaurantPage() {
   };
 
   const deleteMenuItem = async (index: number) => {
-    if (!window.confirm('Bạn có chắc muốn xóa món ăn này khỏi thực đơn không?')) {
+    if (!window.confirm(t('owner.restaurant.confirmDeleteMenu'))) {
       return;
     }
 
@@ -285,7 +295,7 @@ export default function OwnerRestaurantPage() {
       updated.menu.splice(index, 1);
       setRestaurant(updated);
       localStorage.setItem('meshimap_restaurant', JSON.stringify(updated));
-      showAlert('Đã xóa món ăn khỏi thực đơn!', 'warning');
+      showAlert(t('owner.restaurant.alertMenuDeleted'), 'warning');
       return;
     }
 
@@ -300,7 +310,7 @@ export default function OwnerRestaurantPage() {
       if (res.status === 401) {
         Cookies.remove('access_token');
         Cookies.remove('user');
-        showAlert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'warning');
+        showAlert(t('owner.restaurant.alertSessionExpired'), 'warning');
         setTimeout(() => {
           window.location.href = '/login';
         }, 2000);
@@ -329,7 +339,7 @@ export default function OwnerRestaurantPage() {
 
       setRestaurant(mappedRes);
       localStorage.setItem('meshimap_restaurant', JSON.stringify(mappedRes));
-      showAlert('Đã xóa món ăn khỏi thực đơn!', 'warning');
+      showAlert(t('owner.restaurant.alertMenuDeleted'), 'warning');
     } catch (err: any) {
       console.error(err);
       showAlert(`Lỗi: ${err.message || 'Không thể xóa món ăn'}`, 'warning');
@@ -340,7 +350,7 @@ export default function OwnerRestaurantPage() {
 
   return (
     <>
-      <OwnerHeader title="Quản lý thông tin nhà hàng" />
+      <OwnerHeader title={t('owner.restaurant.headerTitle')} />
       <div className="db-content">
         {alertMsg && (
           <div className={`db-alert db-alert--${alertMsg.type}`}>
@@ -351,48 +361,48 @@ export default function OwnerRestaurantPage() {
 
         {/* General Info Card */}
         <div className="db-card">
-          <h2 className="db-card__title">Thông tin chung nhà hàng</h2>
+          <h2 className="db-card__title">{t('owner.restaurant.cardGeneralInfo')}</h2>
           <form onSubmit={handleInfoSubmit}>
             <div className="db-form-row">
               <div className="db-form-field">
-                <label>Tên nhà hàng <span>/ 店名</span></label>
-                <input type="text" className="db-input" required 
-                  value={restaurant.name || ''} 
-                  onChange={(e) => handleInfoChange('name', e.target.value)} 
+                <label>{t('owner.restaurant.labelResName')} <span>/ 店名</span></label>
+                <input type="text" className="db-input" required
+                  value={restaurant.name || ''}
+                  onChange={(e) => handleInfoChange('name', e.target.value)}
                 />
               </div>
               <div className="db-form-field">
-                <label>Số điện thoại <span>/ 電話番号</span></label>
-                <input type="text" className="db-input" required 
-                  value={restaurant.phone || ''} 
-                  onChange={(e) => handleInfoChange('phone', e.target.value)} 
+                <label>{t('owner.restaurant.labelPhone')} <span>/ 電話番号</span></label>
+                <input type="text" className="db-input" required
+                  value={restaurant.phone || ''}
+                  onChange={(e) => handleInfoChange('phone', e.target.value)}
                 />
               </div>
             </div>
 
             <div className="db-form-row">
               <div className="db-form-field" style={{ gridColumn: 'span 2' }}>
-                <label>Địa chỉ nhà hàng <span>/ 住所</span></label>
-                <input type="text" className="db-input" required 
-                  value={restaurant.address || ''} 
-                  onChange={(e) => handleInfoChange('address', e.target.value)} 
+                <label>{t('owner.restaurant.labelAddress')} <span>/ 住所</span></label>
+                <input type="text" className="db-input" required
+                  value={restaurant.address || ''}
+                  onChange={(e) => handleInfoChange('address', e.target.value)}
                 />
               </div>
             </div>
 
             <div className="db-form-row">
               <div className="db-form-field">
-                <label>Giờ mở cửa <span>/ 開店時間</span></label>
-                <input type="time" className="db-input" required 
-                  value={restaurant.openTime || ''} 
-                  onChange={(e) => handleInfoChange('openTime', e.target.value)} 
+                <label>{t('owner.restaurant.labelOpenTime')} <span>/ 開店時間</span></label>
+                <input type="time" className="db-input" required
+                  value={restaurant.openTime || ''}
+                  onChange={(e) => handleInfoChange('openTime', e.target.value)}
                 />
               </div>
               <div className="db-form-field">
-                <label>Giờ đóng cửa <span>/ 閉店時間</span></label>
-                <input type="time" className="db-input" required 
-                  value={restaurant.closeTime || ''} 
-                  onChange={(e) => handleInfoChange('closeTime', e.target.value)} 
+                <label>{t('owner.restaurant.labelCloseTime')} <span>/ 閉店時間</span></label>
+                <input type="time" className="db-input" required
+                  value={restaurant.closeTime || ''}
+                  onChange={(e) => handleInfoChange('closeTime', e.target.value)}
                 />
               </div>
             </div>
@@ -401,31 +411,31 @@ export default function OwnerRestaurantPage() {
               <div className="db-form-field" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 10 }}>
                 <input type="checkbox" style={{ width: 18, height: 18, cursor: 'pointer' }} id="jp-support"
                   checked={restaurant.jpSupport || false}
-                  onChange={(e) => handleInfoChange('jpSupport', e.target.checked)} 
+                  onChange={(e) => handleInfoChange('jpSupport', e.target.checked)}
                 />
-                <label htmlFor="jp-support" style={{ cursor: 'pointer', fontWeight: 700 }}>Hỗ trợ tiếng Nhật / 日本語対応あり</label>
+                <label htmlFor="jp-support" style={{ cursor: 'pointer', fontWeight: 700 }}>{t('owner.restaurant.labelJpSupport')}</label>
               </div>
               <div className="db-form-field">
-                <label>Thông tin hỗ trợ ngôn ngữ <span>/ 対応言語詳細</span></label>
-                <input type="text" className="db-input" placeholder="Ví dụ: Tiếng Việt, Tiếng Nhật, English" 
-                  value={restaurant.jpSupportText || ''} 
-                  onChange={(e) => handleInfoChange('jpSupportText', e.target.value)} 
+                <label>{t('owner.restaurant.labelLanguageSupport')} <span>/ 対応言語詳細</span></label>
+                <input type="text" className="db-input" placeholder={t('owner.restaurant.placeholderLanguageSupport')}
+                  value={restaurant.jpSupportText || ''}
+                  onChange={(e) => handleInfoChange('jpSupportText', e.target.value)}
                 />
               </div>
             </div>
 
             <div className="db-form-row" style={{ marginTop: 12 }}>
               <div className="db-form-field" style={{ gridColumn: 'span 2' }}>
-                <label>Hình ảnh banner (URL) <span>/ カバー写真 (URL)</span></label>
-                <input type="text" className="db-input" placeholder="Nhập link ảnh (để trống sẽ dùng ảnh mặc định)" 
-                  value={restaurant.banner || ''} 
-                  onChange={(e) => handleInfoChange('banner', e.target.value)} 
+                <label>{t('owner.restaurant.labelBanner')} <span>/ カバー写真 (URL)</span></label>
+                <input type="text" className="db-input" placeholder={t('owner.restaurant.placeholderBanner')}
+                  value={restaurant.banner || ''}
+                  onChange={(e) => handleInfoChange('banner', e.target.value)}
                 />
               </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
-              <button type="submit" className="btn btn--primary">Lưu thông tin nhà hàng</button>
+              <button type="submit" className="btn btn--primary">{t('owner.restaurant.btnSaveInfo')}</button>
             </div>
           </form>
         </div>
@@ -433,12 +443,12 @@ export default function OwnerRestaurantPage() {
         {/* Menu Management Card */}
         <div className="db-card">
           <div className="db-card__title">
-            <span>Danh mục thực đơn (Menu Items)</span>
+            <span>{t('owner.restaurant.cardMenu')}</span>
             <button className="btn btn--primary" style={{ padding: '6px 14px', fontSize: 13 }} onClick={() => openMenuModal()}>
-              Thêm món ăn
+              {t('owner.restaurant.btnAddMenu')}
             </button>
           </div>
-          
+
           <div className="db-menu-list">
             {restaurant.menu?.map((item: any, index: number) => (
               <div className="db-menu-card" key={index}>
@@ -449,8 +459,8 @@ export default function OwnerRestaurantPage() {
                   <p className="db-menu-card__desc">{item.desc || ''}</p>
                 </div>
                 <div className="db-menu-card__actions">
-                  <button className="db-icon-btn" title="Sửa món" onClick={() => openMenuModal(index)}>✏️</button>
-                  <button className="db-icon-btn db-icon-btn--danger" title="Xóa món" onClick={() => deleteMenuItem(index)}>🗑️</button>
+                  <button className="db-icon-btn" title={t('owner.restaurant.btnEditTooltip')} onClick={() => openMenuModal(index)}>✏️</button>
+                  <button className="db-icon-btn db-icon-btn--danger" title={t('owner.restaurant.btnDeleteTooltip')} onClick={() => deleteMenuItem(index)}>🗑️</button>
                 </div>
               </div>
             ))}
@@ -462,21 +472,26 @@ export default function OwnerRestaurantPage() {
       {showMenuModal && (
         <div className="db-modal" style={{ display: 'flex' }}>
           <div className="db-modal__box">
-            <h3 className="db-modal__title">{editingIndex !== null ? 'Chỉnh sửa món ăn' : 'Thêm món ăn mới'}</h3>
+            <h3 className="db-modal__title">{editingIndex !== null ? t('owner.restaurant.modalMenuTitleEdit') : t('owner.restaurant.modalMenuTitleAdd')}</h3>
             <form onSubmit={handleMenuSubmit}>
               <div className="db-form-field" style={{ marginBottom: 12 }}>
-                <label>Tên món ăn <span>/ 料理名</span></label>
-                <input type="text" className="db-input" required 
-                  value={menuForm.name} onChange={e => setMenuForm({...menuForm, name: e.target.value})} />
+                <label>{t('owner.restaurant.labelMenuName')} <span>/ 料理名</span></label>
+                <input type="text" className="db-input" required
+                  value={menuForm.name} onChange={e => setMenuForm({ ...menuForm, name: e.target.value })} />
               </div>
               <div className="db-form-field" style={{ marginBottom: 12 }}>
-                <label>Giá món ăn <span>/ 価格</span></label>
-                <input type="text" className="db-input" placeholder="Ví dụ: 150.000đ" required 
-                  value={menuForm.price} onChange={e => setMenuForm({...menuForm, price: e.target.value})} />
+                <label>Tên tiếng Nhật <span>/ 料理名 (日本語)</span></label>
+                <input type="text" className="db-input"
+                  value={menuForm.nameJp} onChange={e => setMenuForm({ ...menuForm, nameJp: e.target.value })} />
               </div>
               <div className="db-form-field" style={{ marginBottom: 12 }}>
-                <label>Phân loại <span>/ カテゴリ</span></label>
-                <select className="db-select" value={menuForm.cat} onChange={e => setMenuForm({...menuForm, cat: e.target.value})}>
+                <label>{t('owner.restaurant.labelMenuPrice')} <span>/ 価格</span></label>
+                <input type="text" className="db-input" placeholder={t('owner.restaurant.placeholderMenuPrice')} required
+                  value={menuForm.price} onChange={e => setMenuForm({ ...menuForm, price: e.target.value })} />
+              </div>
+              <div className="db-form-field" style={{ marginBottom: 12 }}>
+                <label>{t('owner.restaurant.labelMenuCat')} <span>/ カテゴリ</span></label>
+                <select className="db-select" value={menuForm.cat} onChange={e => setMenuForm({ ...menuForm, cat: e.target.value })}>
                   <option value="sashimi">Sashimi</option>
                   <option value="tempura">Tempura</option>
                   <option value="ramen">Ramen</option>
@@ -484,18 +499,23 @@ export default function OwnerRestaurantPage() {
                 </select>
               </div>
               <div className="db-form-field" style={{ marginBottom: 12 }}>
-                <label>Biểu tượng (Emoji) <span>/ 絵文字</span></label>
-                <input type="text" className="db-input" placeholder="Ví dụ: 🍣, 🍥, 🍜" required 
-                  value={menuForm.icon} onChange={e => setMenuForm({...menuForm, icon: e.target.value})} />
+                <label>{t('owner.restaurant.labelMenuIcon')} <span>/ 絵文字</span></label>
+                <input type="text" className="db-input" placeholder={t('owner.restaurant.placeholderMenuIcon')} required
+                  value={menuForm.icon} onChange={e => setMenuForm({ ...menuForm, icon: e.target.value })} />
               </div>
               <div className="db-form-field" style={{ marginBottom: 12 }}>
-                <label>Mô tả chi tiết <span>/ 説明</span></label>
-                <textarea className="db-textarea" required 
-                  value={menuForm.desc} onChange={e => setMenuForm({...menuForm, desc: e.target.value})} />
+                <label>{t('owner.restaurant.labelMenuDesc')} <span>/ 説明</span></label>
+                <textarea className="db-textarea" required
+                  value={menuForm.desc} onChange={e => setMenuForm({ ...menuForm, desc: e.target.value })} />
+              </div>
+              <div className="db-form-field" style={{ marginBottom: 12 }}>
+                <label>Mô tả tiếng Nhật <span>/ 説明 (日本語)</span></label>
+                <textarea className="db-textarea"
+                  value={menuForm.descJp} onChange={e => setMenuForm({ ...menuForm, descJp: e.target.value })} />
               </div>
               <div className="db-modal__actions">
-                <button type="button" className="modal__cancel" onClick={() => setShowMenuModal(false)}>Hủy</button>
-                <button type="submit" className="modal__submit">Xác nhận</button>
+                <button type="button" className="modal__cancel" onClick={() => setShowMenuModal(false)}>{t('owner.restaurant.btnCancel')}</button>
+                <button type="submit" className="modal__submit">{t('owner.restaurant.btnSubmit')}</button>
               </div>
             </form>
           </div>

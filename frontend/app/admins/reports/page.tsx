@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import AdminHeader from '../components/AdminHeader';
 import Cookies from 'js-cookie';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminReportsPage() {
   const [allReviews, setAllReviews] = useState<any[]>([]);
   const [reportedReviews, setReportedReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [alertMsg, setAlertMsg] = useState<{ msg: string; type: string } | null>(null);
+  const { t } = useTranslation();
 
   const fetchReviews = async () => {
     const token = Cookies.get('access_token');
@@ -57,7 +59,7 @@ export default function AdminReportsPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Bạn có chắc chắn muốn XÓA VĨNH VIỄN đánh giá này khỏi hệ thống? Điểm đánh giá trung bình của nhà hàng tương ứng sẽ được cập nhật lại.')) {
+    if (window.confirm(t('admin.reports.confirmDelete'))) {
       const token = Cookies.get('access_token');
       if (!token) {
         showAlert('Vui lòng đăng nhập lại.', 'warning');
@@ -81,7 +83,7 @@ export default function AdminReportsPage() {
           throw new Error('Lỗi từ hệ thống khi xóa đánh giá');
         }
 
-        showAlert('Đã xóa đánh giá vĩnh viễn và cập nhật lại điểm nhà hàng.');
+        showAlert(t('admin.reports.alertDeleteSuccess'));
         fetchReviews();
       } catch (err: any) {
         console.error(err);
@@ -91,7 +93,7 @@ export default function AdminReportsPage() {
   };
 
   const handleDismissReport = async (id: number) => {
-    if (window.confirm('Bỏ qua báo cáo vi phạm đối với đánh giá này? Đánh giá vẫn sẽ được giữ lại và hiển thị bình thường.')) {
+    if (window.confirm(t('admin.reports.confirmDismiss'))) {
       const token = Cookies.get('access_token');
       if (!token) {
         showAlert('Vui lòng đăng nhập lại.', 'warning');
@@ -115,7 +117,7 @@ export default function AdminReportsPage() {
           throw new Error('Lỗi từ hệ thống khi bỏ qua báo cáo');
         }
 
-        showAlert('Đã bỏ qua báo cáo vi phạm thành công.');
+        showAlert(t('admin.reports.alertDismissSuccess'));
         fetchReviews();
       } catch (err: any) {
         console.error(err);
@@ -126,7 +128,7 @@ export default function AdminReportsPage() {
 
   return (
     <>
-      <AdminHeader title="Quản lý đánh giá & Báo cáo" />
+      <AdminHeader title={t('admin.reports.title')} />
       <div className="db-content">
         {alertMsg && (
           <div className={`db-alert db-alert--${alertMsg.type}`}>
@@ -137,16 +139,16 @@ export default function AdminReportsPage() {
 
         {loading && (
           <div style={{ textAlign: 'center', padding: '20px', color: 'var(--clr-muted)', fontWeight: 500 }}>
-            Đang tải dữ liệu đánh giá...
+            {t('admin.reports.loading')}
           </div>
         )}
 
         {/* 1. Đánh giá bị báo cáo vi phạm */}
         <div className="db-card" style={{ marginBottom: '30px' }}>
           <h2 className="db-card__title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>Đánh giá bị báo cáo vi phạm</span>
+            <span>{t('admin.reports.reportedTitle')}</span>
             <span style={{ fontSize: '14px', background: '#fee2e2', color: '#c53030', padding: '3px 8px', borderRadius: '12px', fontWeight: 600 }}>
-              {reportedReviews.length} báo cáo
+              {t('admin.reports.reportedCount', { count: reportedReviews.length })}
             </span>
           </h2>
           
@@ -154,19 +156,19 @@ export default function AdminReportsPage() {
             <table className="db-table">
               <thead>
                 <tr>
-                  <th>Nhà hàng</th>
-                  <th>Người đánh giá</th>
-                  <th>Nội dung đánh giá</th>
-                  <th>Sao</th>
-                  <th>Lý do báo cáo</th>
-                  <th>Thao tác</th>
+                  <th>{t('admin.reports.thRestaurant')}</th>
+                  <th>{t('admin.reports.thReviewer')}</th>
+                  <th>{t('admin.reports.thContent')}</th>
+                  <th>{t('admin.reports.thStars')}</th>
+                  <th>{t('admin.reports.thReason')}</th>
+                  <th>{t('admin.reports.thAction')}</th>
                 </tr>
               </thead>
               <tbody>
                 {reportedReviews.length === 0 && (
                   <tr>
                     <td colSpan={6} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>
-                      Không có đánh giá nào bị báo cáo vi phạm.
+                      {t('admin.reports.noReportedReviews')}
                     </td>
                   </tr>
                 )}
@@ -193,14 +195,14 @@ export default function AdminReportsPage() {
                           style={{ padding: '4px 10px', fontSize: 12, background: '#dc2626' }} 
                           onClick={() => handleDelete(rev.id)}
                         >
-                          Ẩn/Xóa đánh giá
+                          {t('admin.reports.btnDeleteReview')}
                         </button>
                         <button 
                           className="btn btn--dark" 
                           style={{ padding: '4px 10px', fontSize: 12, background: 'var(--clr-muted)' }} 
                           onClick={() => handleDismissReport(rev.id)}
                         >
-                          Bỏ qua
+                          {t('admin.reports.btnDismiss')}
                         </button>
                       </div>
                     </td>
@@ -214,9 +216,9 @@ export default function AdminReportsPage() {
         {/* 2. Quản lý toàn bộ đánh giá trong hệ thống */}
         <div className="db-card">
           <h2 className="db-card__title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>Quản lý toàn bộ đánh giá & Phản hồi</span>
+            <span>{t('admin.reports.allReviewsTitle')}</span>
             <span style={{ fontSize: '14px', background: 'var(--clr-cream)', color: 'var(--clr-medium)', padding: '3px 8px', borderRadius: '12px', fontWeight: 600 }}>
-              Tổng cộng: {allReviews.length} đánh giá
+              {t('admin.reports.allReviewsCount', { count: allReviews.length })}
             </span>
           </h2>
           
@@ -224,20 +226,20 @@ export default function AdminReportsPage() {
             <table className="db-table">
               <thead>
                 <tr>
-                  <th>Nhà hàng</th>
-                  <th>Người đánh giá</th>
-                  <th>Nội dung đánh giá</th>
-                  <th>Phản hồi của chủ nhà hàng</th>
-                  <th>Sao</th>
-                  <th>Ngày tạo</th>
-                  <th>Thao tác</th>
+                  <th>{t('admin.reports.thRestaurant')}</th>
+                  <th>{t('admin.reports.thReviewer')}</th>
+                  <th>{t('admin.reports.thContent')}</th>
+                  <th>{t('admin.reports.thOwnerReply')}</th>
+                  <th>{t('admin.reports.thStars')}</th>
+                  <th>{t('admin.reports.thCreatedDate')}</th>
+                  <th>{t('admin.reports.thAction')}</th>
                 </tr>
               </thead>
               <tbody>
                 {allReviews.length === 0 && (
                   <tr>
                     <td colSpan={7} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>
-                      Chưa có đánh giá nào được lưu trong hệ thống.
+                      {t('admin.reports.noReviews')}
                     </td>
                   </tr>
                 )}
@@ -258,7 +260,7 @@ export default function AdminReportsPage() {
                       {rev.ownerReply ? (
                         <span style={{ color: '#059669', fontWeight: 500 }}>"{rev.ownerReply}"</span>
                       ) : (
-                        <span style={{ color: 'var(--clr-muted)', fontStyle: 'italic', fontSize: 13 }}>Chưa phản hồi</span>
+                        <span style={{ color: 'var(--clr-muted)', fontStyle: 'italic', fontSize: 13 }}>{t('admin.reports.noOwnerReply')}</span>
                       )}
                     </td>
                     <td style={{ color: 'var(--clr-yellow)' }}>
@@ -273,7 +275,7 @@ export default function AdminReportsPage() {
                         style={{ padding: '4px 10px', fontSize: 12, background: '#dc2626' }} 
                         onClick={() => handleDelete(rev.id)}
                       >
-                        Xóa
+                        {t('admin.reports.btnDelete')}
                       </button>
                     </td>
                   </tr>

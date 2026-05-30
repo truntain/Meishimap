@@ -85,26 +85,31 @@ function normalizeRestaurantDetail(raw: Partial<ApiRestaurant> & { menuItems?: a
 
   const rawMenuItems = raw.menuItems || [];
   const menuItems = rawMenuItems.map((item: any) => {
-    const name = String(item.name).trim();
+    // 1. Áp dụng logic dịch tên món ăn
+    const displayName = (isJa && item.nameJp) ? String(item.nameJp).trim() : String(item.name || '').trim();
+    
     const rawItemImageUrl = item.imageUrl || item.image_url;
 
     // Case-insensitive lookup in MENU_ITEM_IMAGES
     const fallbackImageKey = Object.keys(MENU_ITEM_IMAGES).find(
-      key => key.toLowerCase() === name.toLowerCase()
+      key => key.toLowerCase() === displayName.toLowerCase()
     );
 
     const itemImageUrl = (rawItemImageUrl && rawItemImageUrl !== 'null' && rawItemImageUrl !== 'undefined')
       ? rawItemImageUrl
       : (fallbackImageKey ? MENU_ITEM_IMAGES[fallbackImageKey] : null);
 
+    // 2. Áp dụng logic dịch mô tả món ăn
+    const displayDesc = (isJa && item.descJp) ? item.descJp : (item.desc || item.description || '');
+
     return {
       id: Number(item.id),
       cat: item.category || 'other',
       emoji: MENU_ITEM_EMOJIS[item.category] || '🍽️',
       imageUrl: itemImageUrl,
-      name: name,
-      price: new Intl.NumberFormat('vi-VN').format(item.price || 0) + 'đ',
-      desc: item.description || '',
+      name: displayName, // ➔ Sử dụng tên đã được xử lý dịch
+      price: item.price || '0đ',
+      desc: displayDesc, // ➔ Sử dụng mô tả đã được xử lý dịch
       badge: item.badge || '',
     };
   });
@@ -133,13 +138,13 @@ function normalizeRestaurantDetail(raw: Partial<ApiRestaurant> & { menuItems?: a
     hours: (typeof raw.hours === 'object' && raw.hours !== null)
       ? `${Object.values(raw.hours)[0]} ${isJa ? '(毎日)' : '(Hàng ngày)'}`
       : (raw.hours || (isJa ? '未登録' : 'Chưa cập nhật')),
-    languages: raw.languages || (hasJapaneseSupport 
+    languages: raw.languages || (hasJapaneseSupport
       ? (isJa ? 'ベトナム語、日本語、英語' : 'Tiếng Việt, Tiếng Nhật, English')
       : (isJa ? 'ベトナム語、英語' : 'Tiếng Việt, English')),
     tags: [
       categoryLabel,
-      hasJapaneseSupport 
-        ? (isJa ? '日本語対応' : 'Japanese Speaking') 
+      hasJapaneseSupport
+        ? (isJa ? '日本語対応' : 'Japanese Speaking')
         : (isJa ? '和食スタイル' : 'Japanese Style'),
     ],
     amenities: isJa ? ['📶 無料Wi-Fi', '💳 カード支払い可'] : ['📶 Free Wifi', '💳 Cards Accepted'],
@@ -293,8 +298,8 @@ export default function RestaurantDetailClient() {
           setRestaurantError(
             error instanceof Error
               ? (language === 'ja'
-                  ? `Không tải được chi tiết nhà hàng (${error.message}).`
-                  : `Không tải được chi tiết nhà hàng (${error.message}).`)
+                ? `Không tải được chi tiết nhà hàng (${error.message}).`
+                : `Không tải được chi tiết nhà hàng (${error.message}).`)
               : 'Không tải được chi tiết nhà hàng.',
           );
         }
@@ -455,8 +460,10 @@ export default function RestaurantDetailClient() {
                 </span>
               ))}
             </div>
-            <h1 className="detail-name">{restaurant.name}</h1>
-            {restaurant.nameJp && (
+            <h1 className="detail-name">
+              {language === 'ja' && restaurant.nameJp ? restaurant.nameJp : restaurant.name}
+            </h1>
+            {restaurant.nameJp && language !== 'ja' && (
               <p style={{ fontSize: '13px', color: 'var(--clr-muted)', marginBottom: '6px' }}>{restaurant.nameJp}</p>
             )}
             <div className="detail-meta">
@@ -555,9 +562,13 @@ export default function RestaurantDetailClient() {
                     )}
                   </div>
                   <div className="menu-item__body">
-                    <div className="menu-item__name">{item.name}</div>
+                    <div className="menu-item__name">
+                      {item.name}
+                    </div>
                     <div className="menu-item__price">{item.price}</div>
-                    <p style={{ fontSize: '12px', color: 'var(--clr-muted)', lineHeight: 1.5 }}>{item.desc}</p>
+                    <p style={{ fontSize: '12px', color: 'var(--clr-muted)', lineHeight: 1.5 }}>
+                      {item.desc}
+                    </p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#2f7d32', marginTop: '4px' }}>{item.badge}</div>
                   </div>
                 </div>

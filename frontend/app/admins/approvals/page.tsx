@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import AdminHeader from '../components/AdminHeader';
 import Cookies from 'js-cookie';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminApprovalsPage() {
   const [restaurants, setRestaurants] = useState<any[]>([]);
@@ -11,6 +12,7 @@ export default function AdminApprovalsPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [alertMsg, setAlertMsg] = useState<{msg: string, type: string} | null>(null);
+  const { t } = useTranslation();
 
   const fetchApprovals = async () => {
     const token = Cookies.get('access_token');
@@ -74,7 +76,7 @@ export default function AdminApprovalsPage() {
   const handleApprove = async (id: number) => {
     const token = Cookies.get('access_token');
     if (!token) {
-      showAlert('Vui lòng đăng nhập lại.', 'warning');
+      showAlert(t('admin.approvals.alertLogin'), 'warning');
       return;
     }
 
@@ -98,7 +100,7 @@ export default function AdminApprovalsPage() {
       }
 
       setShowDetailModal(false);
-      showAlert('Đã phê duyệt nhà hàng thành công!');
+      showAlert(t('admin.approvals.alertSuccess'));
       fetchApprovals();
     } catch (err: any) {
       console.error(err);
@@ -112,7 +114,7 @@ export default function AdminApprovalsPage() {
 
     const token = Cookies.get('access_token');
     if (!token) {
-      showAlert('Vui lòng đăng nhập lại.', 'warning');
+      showAlert(t('admin.approvals.alertLogin'), 'warning');
       return;
     }
 
@@ -140,7 +142,7 @@ export default function AdminApprovalsPage() {
       setShowRejectModal(false);
       setShowDetailModal(false);
       setRejectReason('');
-      showAlert('Đã từ chối đăng ký nhà hàng.', 'warning');
+      showAlert(t('admin.approvals.alertReject'), 'warning');
       fetchApprovals();
     } catch (err: any) {
       console.error(err);
@@ -162,7 +164,7 @@ export default function AdminApprovalsPage() {
 
   return (
     <>
-      <AdminHeader title="Kiểm duyệt nhà hàng" />
+      <AdminHeader title={t('admin.approvals.title')} />
       <div className="db-content">
         {alertMsg && (
           <div className={`db-alert db-alert--${alertMsg.type}`}>
@@ -172,25 +174,25 @@ export default function AdminApprovalsPage() {
         )}
 
         <div className="db-card">
-          <h2 className="db-card__title">Yêu cầu đăng ký nhà hàng chờ phê duyệt</h2>
+          <h2 className="db-card__title">{t('admin.approvals.cardTitle')}</h2>
           <div className="db-table-responsive">
             <table className="db-table">
               <thead>
                 <tr>
-                  <th>Tên nhà hàng</th>
-                  <th>Email liên hệ</th>
-                  <th>Địa chỉ</th>
-                  <th>Ngày gửi yêu cầu</th>
-                  <th>Trạng thái</th>
-                  <th>Chi tiết</th>
-                  <th>Thao tác</th>
+                  <th>{t('admin.approvals.thResName')}</th>
+                  <th>{t('admin.approvals.thEmail')}</th>
+                  <th>{t('admin.approvals.thAddress')}</th>
+                  <th>{t('admin.approvals.thDate')}</th>
+                  <th>{t('admin.approvals.thStatus')}</th>
+                  <th>{t('admin.approvals.thDetail')}</th>
+                  <th>{t('admin.approvals.thAction')}</th>
                 </tr>
               </thead>
               <tbody>
                 {restaurants.length === 0 && (
                   <tr>
                     <td colSpan={7} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>
-                      Không có yêu cầu phê duyệt nhà hàng nào.
+                      {t('admin.approvals.noRequests')}
                     </td>
                   </tr>
                 )}
@@ -203,13 +205,13 @@ export default function AdminApprovalsPage() {
                     </td>
                     <td>{res.date}</td>
                     <td>
-                      {res.status === 'pending' && <span className="db-badge db-badge--pending">Chờ duyệt</span>}
-                      {res.status === 'approved' && <span className="db-badge db-badge--approved">Đã duyệt</span>}
-                      {res.status === 'rejected' && <span className="db-badge db-badge--rejected">Từ chối</span>}
+                      {res.status === 'pending' && <span className="db-badge db-badge--pending">{t('admin.approvals.statusPending')}</span>}
+                      {res.status === 'approved' && <span className="db-badge db-badge--approved">{t('admin.approvals.statusApproved')}</span>}
+                      {res.status === 'rejected' && <span className="db-badge db-badge--rejected">{t('admin.approvals.statusRejected')}</span>}
                     </td>
                     <td>
                       <button className="db-icon-btn" onClick={() => openDetail(res.id)}>
-                        🔍 Xem
+                        {t('admin.approvals.btnView')}
                       </button>
                     </td>
                     <td>
@@ -221,18 +223,18 @@ export default function AdminApprovalsPage() {
                               style={{ padding: '4px 10px', fontSize: 12, background: '#059669' }} 
                               onClick={() => handleApprove(res.id)}
                             >
-                              Duyệt
+                              {t('admin.approvals.btnApprove')}
                             </button>
                             <button 
                               className="btn btn--dark" 
                               style={{ padding: '4px 10px', fontSize: 12, background: '#dc2626' }} 
                               onClick={() => openReject(res.id)}
                             >
-                              Từ chối
+                              {t('admin.approvals.btnReject')}
                             </button>
                           </>
                         ) : (
-                          <span style={{ fontSize: 12, color: 'var(--clr-muted)' }}>Hoàn tất</span>
+                          <span style={{ fontSize: 12, color: 'var(--clr-muted)' }}>{t('admin.approvals.btnDone')}</span>
                         )}
                       </div>
                     </td>
@@ -248,23 +250,23 @@ export default function AdminApprovalsPage() {
       {showDetailModal && selectedRes && (
         <div className="db-modal" style={{ display: 'flex' }}>
           <div className="db-modal__box" style={{ maxWidth: 500 }}>
-            <h3 className="db-modal__title">Chi tiết hồ sơ đăng ký nhà hàng</h3>
+            <h3 className="db-modal__title">{t('admin.approvals.modalDetailTitle')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
-              <div><strong>Tên nhà hàng:</strong> {selectedRes.name}</div>
-              <div><strong>Ẩm thực:</strong> <span className="badge badge--sm">{selectedRes.cuisine}</span></div>
-              <div><strong>Địa chỉ:</strong> {selectedRes.address}</div>
-              <div><strong>Số điện thoại:</strong> {selectedRes.phone}</div>
-              <div><strong>Email:</strong> {selectedRes.email}</div>
-              <div><strong>Ngày gửi yêu cầu:</strong> {selectedRes.date}</div>
+              <div><strong>{t('admin.approvals.modalResName')}</strong> {selectedRes.name}</div>
+              <div><strong>{t('admin.approvals.modalCuisine')}</strong> <span className="badge badge--sm">{selectedRes.cuisine}</span></div>
+              <div><strong>{t('admin.approvals.modalAddress')}</strong> {selectedRes.address}</div>
+              <div><strong>{t('admin.approvals.modalPhone')}</strong> {selectedRes.phone}</div>
+              <div><strong>{t('admin.approvals.modalEmail')}</strong> {selectedRes.email}</div>
+              <div><strong>{t('admin.approvals.modalDate')}</strong> {selectedRes.date}</div>
               {selectedRes.status === 'rejected' && selectedRes.rejectReason && (
-                <div style={{ color: '#dc2626' }}><strong>Lý do từ chối:</strong> {selectedRes.rejectReason}</div>
+                <div style={{ color: '#dc2626' }}><strong>{t('admin.approvals.modalRejectReason')}</strong> {selectedRes.rejectReason}</div>
               )}
               <p style={{ background: 'var(--clr-cream)', padding: 10, borderRadius: 6, fontStyle: 'italic', lineHeight: 1.5, color: 'var(--clr-medium)' }}>
                 "{selectedRes.description}"
               </p>
               {selectedRes.documents && (
                 <div style={{ marginTop: 8, borderTop: '1px solid var(--clr-border)', paddingTop: 12 }}>
-                  <strong style={{ display: 'block', marginBottom: 8 }}>Giấy tờ minh chứng pháp lý:</strong>
+                  <strong style={{ display: 'block', marginBottom: 8 }}>{t('admin.approvals.modalDocTitle')}</strong>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     {selectedRes.documents.japaneseProof && (
                       <a 
@@ -274,7 +276,7 @@ export default function AdminApprovalsPage() {
                         className="btn btn--outline"
                         style={{ padding: '8px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textAlign: 'center', minHeight: '38px' }}
                       >
-                        🇯🇵 Minh chứng tiếng Nhật
+                        {t('admin.approvals.docJa')}
                       </a>
                     )}
                     {selectedRes.documents.businessLicense && (
@@ -285,7 +287,7 @@ export default function AdminApprovalsPage() {
                         className="btn btn--outline"
                         style={{ padding: '8px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textAlign: 'center', minHeight: '38px' }}
                       >
-                        📄 Giấy phép kinh doanh
+                        {t('admin.approvals.docLicense')}
                       </a>
                     )}
                     {selectedRes.documents.foodSafetyCert && (
@@ -296,7 +298,7 @@ export default function AdminApprovalsPage() {
                         className="btn btn--outline"
                         style={{ padding: '8px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textAlign: 'center', minHeight: '38px' }}
                       >
-                        🛡️ Giấy chứng nhận ATTP
+                        {t('admin.approvals.docSafety')}
                       </a>
                     )}
                     {selectedRes.documents.identityCard && (
@@ -307,7 +309,7 @@ export default function AdminApprovalsPage() {
                         className="btn btn--outline"
                         style={{ padding: '8px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textAlign: 'center', minHeight: '38px' }}
                       >
-                        🪪 CMND/CCCD chủ quán
+                        {t('admin.approvals.docId')}
                       </a>
                     )}
                   </div>
@@ -315,11 +317,11 @@ export default function AdminApprovalsPage() {
               )}
             </div>
             <div className="db-modal__actions" style={{ marginTop: 24 }}>
-              <button type="button" className="modal__cancel" onClick={() => setShowDetailModal(false)}>Đóng</button>
+              <button type="button" className="modal__cancel" onClick={() => setShowDetailModal(false)}>{t('admin.approvals.btnClose')}</button>
               {selectedRes.status === 'pending' && (
                 <>
-                  <button type="button" className="btn btn--dark" style={{ background: '#dc2626' }} onClick={() => {setShowDetailModal(false); setShowRejectModal(true);}}>Từ chối</button>
-                  <button type="button" className="btn btn--primary" style={{ background: '#059669' }} onClick={() => handleApprove(selectedRes.id)}>Phê duyệt</button>
+                  <button type="button" className="btn btn--dark" style={{ background: '#dc2626' }} onClick={() => {setShowDetailModal(false); setShowRejectModal(true);}}>{t('admin.approvals.btnReject')}</button>
+                  <button type="button" className="btn btn--primary" style={{ background: '#059669' }} onClick={() => handleApprove(selectedRes.id)}>{t('admin.approvals.btnApprove')}</button>
                 </>
               )}
             </div>
@@ -331,21 +333,21 @@ export default function AdminApprovalsPage() {
       {showRejectModal && (
         <div className="db-modal" style={{ display: 'flex' }}>
           <div className="db-modal__box">
-            <h3 className="db-modal__title">Lý do từ chối hồ sơ đăng ký</h3>
+            <h3 className="db-modal__title">{t('admin.approvals.modalRejectTitle')}</h3>
             <form onSubmit={handleRejectSubmit}>
               <div className="db-form-field">
-                <label>Lý do từ chối phê duyệt <span>/ 却下理由</span></label>
+                <label>{t('admin.approvals.labelRejectReason')}</label>
                 <textarea 
                   className="db-textarea" 
-                  placeholder="Nhập lý do cụ thể..." 
+                  placeholder={t('admin.approvals.placeholderRejectReason')} 
                   required
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                 />
               </div>
               <div className="db-modal__actions">
-                <button type="button" className="modal__cancel" onClick={() => setShowRejectModal(false)}>Hủy</button>
-                <button type="submit" className="modal__submit" style={{ background: '#dc2626' }}>Từ chối phê duyệt</button>
+                <button type="button" className="modal__cancel" onClick={() => setShowRejectModal(false)}>{t('admin.approvals.btnCancel')}</button>
+                <button type="submit" className="modal__submit" style={{ background: '#dc2626' }}>{t('admin.approvals.btnRejectSubmit')}</button>
               </div>
             </form>
           </div>
