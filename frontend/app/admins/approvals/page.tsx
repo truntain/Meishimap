@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import AdminHeader from '../components/AdminHeader';
 import Cookies from 'js-cookie';
+import { useAppLanguage, adminCopy } from '@/config/i18n';
 
 export default function AdminApprovalsPage() {
   const [restaurants, setRestaurants] = useState<any[]>([]);
@@ -11,6 +12,8 @@ export default function AdminApprovalsPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [alertMsg, setAlertMsg] = useState<{msg: string, type: string} | null>(null);
+  const { language } = useAppLanguage();
+  const copy = adminCopy[language];
 
   const fetchApprovals = async () => {
     const token = Cookies.get('access_token');
@@ -34,31 +37,27 @@ export default function AdminApprovalsPage() {
       }
 
       if (!res.ok) {
-        throw new Error('Lỗi lấy danh sách phê duyệt từ backend');
+        throw new Error('alertFetchApprovalsError');
       }
 
       const data = await res.json();
       const mapped = data.map((item: any) => ({
         id: item.id,
         name: item.name,
-        email: item.owner?.email || 'Chưa liên kết chủ',
+        email: item.owner?.email || 'ownerNotLinked',
         address: item.address,
-        phone: item.phone || 'Chưa cập nhật',
-        date: new Date(item.created_at || item.createdAt).toLocaleDateString('vi-VN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        }),
+        phone: item.phone || 'notUpdated',
+        createdAt: item.created_at || item.createdAt,
         cuisine: (item.category || 'sushi').toUpperCase(),
         status: item.status, // 'pending' | 'approved' | 'rejected'
-        description: item.description || 'Không có mô tả giới thiệu.',
+        description: item.description || 'defaultNoDesc',
         rejectReason: item.rejectReason || '',
         documents: item.documents || null
       }));
       setRestaurants(mapped);
     } catch (err: any) {
       console.error(err);
-      showAlert(`Lỗi: ${err.message || 'Không thể lấy dữ liệu'}`, 'warning');
+      showAlert(err.message === 'alertFetchApprovalsError' ? copy.alertFetchApprovalsError : copy.alertFetchApprovalsErrorFallback, 'warning');
     }
   };
 
@@ -74,7 +73,7 @@ export default function AdminApprovalsPage() {
   const handleApprove = async (id: number) => {
     const token = Cookies.get('access_token');
     if (!token) {
-      showAlert('Vui lòng đăng nhập lại.', 'warning');
+      showAlert(copy.alertSessionExpired, 'warning');
       return;
     }
 
@@ -94,15 +93,15 @@ export default function AdminApprovalsPage() {
       }
 
       if (!res.ok) {
-        throw new Error('Lỗi phê duyệt nhà hàng');
+        throw new Error('alertApproveError');
       }
 
       setShowDetailModal(false);
-      showAlert('Đã phê duyệt nhà hàng thành công!');
+      showAlert(copy.alertApproveSuccess);
       fetchApprovals();
     } catch (err: any) {
       console.error(err);
-      showAlert(`Lỗi: ${err.message}`, 'warning');
+      showAlert(err.message === 'alertApproveError' ? copy.alertApproveError : `Lỗi: ${err.message}`, 'warning');
     }
   };
 
@@ -112,7 +111,7 @@ export default function AdminApprovalsPage() {
 
     const token = Cookies.get('access_token');
     if (!token) {
-      showAlert('Vui lòng đăng nhập lại.', 'warning');
+      showAlert(copy.alertSessionExpired, 'warning');
       return;
     }
 
@@ -134,17 +133,17 @@ export default function AdminApprovalsPage() {
       }
 
       if (!res.ok) {
-        throw new Error('Lỗi từ chối phê duyệt');
+        throw new Error('alertRejectError');
       }
 
       setShowRejectModal(false);
       setShowDetailModal(false);
       setRejectReason('');
-      showAlert('Đã từ chối đăng ký nhà hàng.', 'warning');
+      showAlert(copy.alertRejectSuccess, 'warning');
       fetchApprovals();
     } catch (err: any) {
       console.error(err);
-      showAlert(`Lỗi: ${err.message}`, 'warning');
+      showAlert(err.message === 'alertRejectError' ? copy.alertRejectError : `Lỗi: ${err.message}`, 'warning');
     }
   };
 
@@ -160,9 +159,21 @@ export default function AdminApprovalsPage() {
 
   const selectedRes = restaurants.find(r => r.id === selectedResId);
 
+  const formatDate = (dateStr: string) => {
+    try {
+      return new Date(dateStr).toLocaleDateString(language === 'ja' ? 'ja-JP' : 'vi-VN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
   return (
     <>
-      <AdminHeader title="Kiểm duyệt nhà hàng" />
+      <AdminHeader title={copy.approvalsTitle} />
       <div className="db-content">
         {alertMsg && (
           <div className={`db-alert db-alert--${alertMsg.type}`}>
@@ -172,44 +183,44 @@ export default function AdminApprovalsPage() {
         )}
 
         <div className="db-card">
-          <h2 className="db-card__title">Yêu cầu đăng ký nhà hàng chờ phê duyệt</h2>
+          <h2 className="db-card__title">{copy.pendingRequestsTitle}</h2>
           <div className="db-table-responsive">
             <table className="db-table">
               <thead>
                 <tr>
                   <th>Tên nhà hàng</th>
-                  <th>Email liên hệ</th>
-                  <th>Địa chỉ</th>
-                  <th>Ngày gửi yêu cầu</th>
-                  <th>Trạng thái</th>
-                  <th>Chi tiết</th>
-                  <th>Thao tác</th>
+                  <th>{copy.colEmail}</th>
+                  <th>{copy.colAddress}</th>
+                  <th>{copy.colRequestDate}</th>
+                  <th>{copy.colStatus}</th>
+                  <th>{copy.colDetail}</th>
+                  <th>{copy.colActions}</th>
                 </tr>
               </thead>
               <tbody>
                 {restaurants.length === 0 && (
                   <tr>
                     <td colSpan={7} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>
-                      Không có yêu cầu phê duyệt nhà hàng nào.
+                      {copy.noApprovalRequests}
                     </td>
                   </tr>
                 )}
                 {restaurants.map(res => (
                   <tr key={res.id}>
                     <td style={{ fontWeight: 600 }}>{res.name}</td>
-                    <td>{res.email}</td>
+                    <td>{res.email === 'ownerNotLinked' ? copy.ownerNotLinked : res.email}</td>
                     <td style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {res.address}
                     </td>
-                    <td>{res.date}</td>
+                    <td>{formatDate(res.createdAt)}</td>
                     <td>
-                      {res.status === 'pending' && <span className="db-badge db-badge--pending">Chờ duyệt</span>}
-                      {res.status === 'approved' && <span className="db-badge db-badge--approved">Đã duyệt</span>}
-                      {res.status === 'rejected' && <span className="db-badge db-badge--rejected">Từ chối</span>}
+                      {res.status === 'pending' && <span className="db-badge db-badge--pending">{copy.statusPending}</span>}
+                      {res.status === 'approved' && <span className="db-badge db-badge--approved">{copy.statusApproved}</span>}
+                      {res.status === 'rejected' && <span className="db-badge db-badge--rejected">{copy.statusRejected}</span>}
                     </td>
                     <td>
                       <button className="db-icon-btn" onClick={() => openDetail(res.id)}>
-                        🔍 Xem
+                        {copy.btnView}
                       </button>
                     </td>
                     <td>
@@ -221,18 +232,18 @@ export default function AdminApprovalsPage() {
                               style={{ padding: '4px 10px', fontSize: 12, background: '#059669' }} 
                               onClick={() => handleApprove(res.id)}
                             >
-                              Duyệt
+                              {copy.btnApprove}
                             </button>
                             <button 
                               className="btn btn--dark" 
                               style={{ padding: '4px 10px', fontSize: 12, background: '#dc2626' }} 
                               onClick={() => openReject(res.id)}
                             >
-                              Từ chối
+                              {copy.btnReject}
                             </button>
                           </>
                         ) : (
-                          <span style={{ fontSize: 12, color: 'var(--clr-muted)' }}>Hoàn tất</span>
+                          <span style={{ fontSize: 12, color: 'var(--clr-muted)' }}>{copy.statusCompleted}</span>
                         )}
                       </div>
                     </td>
@@ -248,23 +259,23 @@ export default function AdminApprovalsPage() {
       {showDetailModal && selectedRes && (
         <div className="db-modal" style={{ display: 'flex' }}>
           <div className="db-modal__box" style={{ maxWidth: 500 }}>
-            <h3 className="db-modal__title">Chi tiết hồ sơ đăng ký nhà hàng</h3>
+            <h3 className="db-modal__title">{copy.modalDetailTitle}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
-              <div><strong>Tên nhà hàng:</strong> {selectedRes.name}</div>
-              <div><strong>Ẩm thực:</strong> <span className="badge badge--sm">{selectedRes.cuisine}</span></div>
-              <div><strong>Địa chỉ:</strong> {selectedRes.address}</div>
-              <div><strong>Số điện thoại:</strong> {selectedRes.phone}</div>
-              <div><strong>Email:</strong> {selectedRes.email}</div>
-              <div><strong>Ngày gửi yêu cầu:</strong> {selectedRes.date}</div>
+              <div><strong>{copy.labelRestaurantName}</strong> {selectedRes.name}</div>
+              <div><strong>{copy.labelCuisine}</strong> <span className="badge badge--sm">{selectedRes.cuisine}</span></div>
+              <div><strong>{copy.labelAddress}</strong> {selectedRes.address}</div>
+              <div><strong>{copy.labelPhone}</strong> {selectedRes.phone === 'notUpdated' ? copy.notUpdated : selectedRes.phone}</div>
+              <div><strong>{copy.labelEmail}</strong> {selectedRes.email === 'ownerNotLinked' ? copy.ownerNotLinked : selectedRes.email}</div>
+              <div><strong>{copy.labelRequestDate}</strong> {formatDate(selectedRes.createdAt)}</div>
               {selectedRes.status === 'rejected' && selectedRes.rejectReason && (
-                <div style={{ color: '#dc2626' }}><strong>Lý do từ chối:</strong> {selectedRes.rejectReason}</div>
+                <div style={{ color: '#dc2626' }}><strong>{copy.labelRejectReason}</strong> {selectedRes.rejectReason}</div>
               )}
               <p style={{ background: 'var(--clr-cream)', padding: 10, borderRadius: 6, fontStyle: 'italic', lineHeight: 1.5, color: 'var(--clr-medium)' }}>
-                "{selectedRes.description}"
+                "{selectedRes.description === 'defaultNoDesc' ? copy.defaultNoDesc : selectedRes.description}"
               </p>
               {selectedRes.documents && (
                 <div style={{ marginTop: 8, borderTop: '1px solid var(--clr-border)', paddingTop: 12 }}>
-                  <strong style={{ display: 'block', marginBottom: 8 }}>Giấy tờ minh chứng pháp lý:</strong>
+                  <strong style={{ display: 'block', marginBottom: 8 }}>{copy.documentsSectionTitle}</strong>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     {selectedRes.documents.japaneseProof && (
                       <a 
@@ -274,7 +285,7 @@ export default function AdminApprovalsPage() {
                         className="btn btn--outline"
                         style={{ padding: '8px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textAlign: 'center', minHeight: '38px' }}
                       >
-                        🇯🇵 Minh chứng tiếng Nhật
+                        {copy.docJapaneseProof}
                       </a>
                     )}
                     {selectedRes.documents.businessLicense && (
@@ -285,7 +296,7 @@ export default function AdminApprovalsPage() {
                         className="btn btn--outline"
                         style={{ padding: '8px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textAlign: 'center', minHeight: '38px' }}
                       >
-                        📄 Giấy phép kinh doanh
+                        {copy.docBusinessLicense}
                       </a>
                     )}
                     {selectedRes.documents.foodSafetyCert && (
@@ -296,7 +307,7 @@ export default function AdminApprovalsPage() {
                         className="btn btn--outline"
                         style={{ padding: '8px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textAlign: 'center', minHeight: '38px' }}
                       >
-                        🛡️ Giấy chứng nhận ATTP
+                        {copy.docFoodSafetyCert}
                       </a>
                     )}
                     {selectedRes.documents.identityCard && (
@@ -307,7 +318,7 @@ export default function AdminApprovalsPage() {
                         className="btn btn--outline"
                         style={{ padding: '8px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textAlign: 'center', minHeight: '38px' }}
                       >
-                        🪪 CMND/CCCD chủ quán
+                        {copy.docIdentityCard}
                       </a>
                     )}
                   </div>
@@ -315,11 +326,11 @@ export default function AdminApprovalsPage() {
               )}
             </div>
             <div className="db-modal__actions" style={{ marginTop: 24 }}>
-              <button type="button" className="modal__cancel" onClick={() => setShowDetailModal(false)}>Đóng</button>
+              <button type="button" className="modal__cancel" onClick={() => setShowDetailModal(false)}>{copy.btnClose}</button>
               {selectedRes.status === 'pending' && (
                 <>
-                  <button type="button" className="btn btn--dark" style={{ background: '#dc2626' }} onClick={() => {setShowDetailModal(false); setShowRejectModal(true);}}>Từ chối</button>
-                  <button type="button" className="btn btn--primary" style={{ background: '#059669' }} onClick={() => handleApprove(selectedRes.id)}>Phê duyệt</button>
+                  <button type="button" className="btn btn--dark" style={{ background: '#dc2626' }} onClick={() => {setShowDetailModal(false); setShowRejectModal(true);}}>{copy.btnReject}</button>
+                  <button type="button" className="btn btn--primary" style={{ background: '#059669' }} onClick={() => handleApprove(selectedRes.id)}>{copy.btnApprove}</button>
                 </>
               )}
             </div>
@@ -331,21 +342,21 @@ export default function AdminApprovalsPage() {
       {showRejectModal && (
         <div className="db-modal" style={{ display: 'flex' }}>
           <div className="db-modal__box">
-            <h3 className="db-modal__title">Lý do từ chối hồ sơ đăng ký</h3>
+            <h3 className="db-modal__title">{copy.modalRejectTitle}</h3>
             <form onSubmit={handleRejectSubmit}>
               <div className="db-form-field">
-                <label>Lý do từ chối phê duyệt <span>/ 却下理由</span></label>
+                <label>{copy.labelRejectReasonInput}</label>
                 <textarea 
                   className="db-textarea" 
-                  placeholder="Nhập lý do cụ thể..." 
+                  placeholder={copy.placeholderRejectReason} 
                   required
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                 />
               </div>
               <div className="db-modal__actions">
-                <button type="button" className="modal__cancel" onClick={() => setShowRejectModal(false)}>Hủy</button>
-                <button type="submit" className="modal__submit" style={{ background: '#dc2626' }}>Từ chối phê duyệt</button>
+                <button type="button" className="modal__cancel" onClick={() => setShowRejectModal(false)}>{copy.btnCancel}</button>
+                <button type="submit" className="modal__submit" style={{ background: '#dc2626' }}>{copy.btnSubmitReject}</button>
               </div>
             </form>
           </div>
@@ -354,3 +365,4 @@ export default function AdminApprovalsPage() {
     </>
   );
 }
+

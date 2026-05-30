@@ -5,10 +5,14 @@ import OwnerHeader from '../components/OwnerHeader';
 import Cookies from 'js-cookie';
 import { io } from 'socket.io-client';
 import { toast } from 'react-hot-toast';
+import { useAppLanguage, ownerCopy } from '@/config/i18n';
 
 const API_BASE_URL = 'http://localhost:3001';
 
 export default function OwnerBookingsPage() {
+  const { language } = useAppLanguage();
+  const copy = ownerCopy[language];
+
   const [restaurantId, setRestaurantId] = useState<number | null>(null);
   const [bookings, setBookings] = useState<any[]>([]);
   const [filter, setFilter] = useState('all');
@@ -51,19 +55,19 @@ export default function OwnerBookingsPage() {
           return;
         }
         if (!res.ok) {
-          throw new Error('Không thể tải thông tin nhà hàng sở hữu');
+          throw new Error(copy.alertLoadRestaurantError);
         }
         const data = await res.json();
         setRestaurantId(data.id);
       } catch (err: any) {
         console.error(err);
-        showAlert('Lỗi: ' + (err.message || 'Không thể kết nối tới máy chủ'), 'warning');
+        showAlert(err.message || 'Error', 'warning');
         setLoading(false);
       }
     };
 
     fetchRestaurant();
-  }, []);
+  }, [copy.alertLoadRestaurantError]);
 
   // Step 2: Load bookings và thiết lập socket khi đã có restaurantId
   useEffect(() => {
@@ -77,7 +81,7 @@ export default function OwnerBookingsPage() {
             'Authorization': `Bearer ${token}`
           }
         });
-        if (!res.ok) throw new Error('Không thể lấy danh sách đặt bàn');
+        if (!res.ok) throw new Error(copy.alertLoadBookingsError);
         const data = await res.json();
 
         // Map dữ liệu DB sang giao diện
@@ -87,7 +91,7 @@ export default function OwnerBookingsPage() {
           phone: b.user?.email || 'Chưa cập nhật', // email làm thông tin liên hệ
           date: b.bookingDate,
           time: b.bookingTime?.substring(0, 5) || b.bookingTime,
-          guests: b.guests + ' người',
+          guests: b.guests + ' ' + (language === 'vi' ? 'người' : '人'),
           note: b.note || '',
           status: b.status === 'confirmed' ? 'approved' : b.status === 'cancelled' ? 'rejected' : 'pending',
           rejectReason: b.rejectReason || '',
@@ -96,7 +100,7 @@ export default function OwnerBookingsPage() {
         setBookings(mapped);
       } catch (err: any) {
         console.error(err);
-        showAlert('Lỗi tải đặt bàn: ' + err.message, 'warning');
+        showAlert(err.message || 'Error', 'warning');
       } finally {
         setLoading(false);
       }
@@ -137,10 +141,13 @@ export default function OwnerBookingsPage() {
               </div>
               <div className="ml-3 flex-1">
                 <p className="text-sm font-bold text-gray-900">
-                  Yêu Cầu Đặt Bàn Mới!
+                  {copy.toastNewBooking}
                 </p>
                 <p className="mt-1 text-xs text-gray-500">
-                  Giờ hẹn lúc {newBooking.time} ngày {newBooking.date} cho {newBooking.guests}.
+                  {copy.toastNewBookingDesc
+                    .replace('{{time}}', newBooking.time)
+                    .replace('{{date}}', newBooking.date)
+                    .replace('{{guests}}', String(newBooking.guests))}
                 </p>
               </div>
             </div>
@@ -162,7 +169,7 @@ export default function OwnerBookingsPage() {
     return () => {
       socket.disconnect();
     };
-  }, [restaurantId]);
+  }, [restaurantId, copy.alertLoadBookingsError, copy.toastNewBooking, copy.toastNewBookingDesc, language]);
 
   const handleApprove = async (id: any) => {
     const token = Cookies.get('access_token');
@@ -176,13 +183,13 @@ export default function OwnerBookingsPage() {
         body: JSON.stringify({ status: 'confirmed' })
       });
 
-      if (!res.ok) throw new Error('Không thể duyệt đặt bàn');
+      if (!res.ok) throw new Error('Error');
 
       const updated = bookings.map(b => String(b.id) === String(id) ? { ...b, status: 'approved' } : b);
       setBookings(updated);
-      showAlert('Đã duyệt chấp nhận đặt bàn!');
+      showAlert(copy.alertApproveSuccess);
     } catch (err: any) {
-      showAlert('Lỗi: ' + err.message, 'warning');
+      showAlert(err.message || 'Error', 'warning');
     }
   };
 
@@ -207,14 +214,14 @@ export default function OwnerBookingsPage() {
         body: JSON.stringify({ status: 'cancelled', rejectReason })
       });
 
-      if (!res.ok) throw new Error('Không thể từ chối đặt bàn');
+      if (!res.ok) throw new Error('Error');
 
       const updated = bookings.map(b => String(b.id) === String(selectedBookingId) ? { ...b, status: 'rejected', rejectReason } : b);
       setBookings(updated);
       setShowRejectModal(false);
-      showAlert('Đã từ chối đơn đặt bàn này.', 'warning');
+      showAlert(copy.alertRejectSuccess, 'warning');
     } catch (err: any) {
-      showAlert('Lỗi: ' + err.message, 'warning');
+      showAlert(err.message || 'Error', 'warning');
     }
   };
 
@@ -224,19 +231,17 @@ export default function OwnerBookingsPage() {
 
   return (
     <>
-      <OwnerHeader title="Quản lý đặt bàn" />
+      <OwnerHeader title={copy.bookingsTitle} />
       <div className="db-content">
-
-
         <div className="db-card">
           <div className="db-card__title">
-            <span>Danh sách yêu cầu đặt bàn</span>
+            <span>{copy.bookingsCardTitle}</span>
             <div style={{ display: 'flex', gap: 10 }}>
               <select className="db-select" style={{ padding: '6px 12px', fontSize: 13 }} value={filter} onChange={e => setFilter(e.target.value)}>
-                <option value="all">Tất cả trạng thái</option>
-                <option value="pending">Chờ duyệt (Pending)</option>
-                <option value="approved">Đã chấp nhận (Approved)</option>
-                <option value="rejected">Đã từ chối (Rejected)</option>
+                <option value="all">{copy.filterStatusAll}</option>
+                <option value="pending">{copy.filterStatusPending}</option>
+                <option value="approved">{copy.filterStatusApproved}</option>
+                <option value="rejected">{copy.filterStatusRejected}</option>
               </select>
             </div>
           </div>
@@ -245,23 +250,23 @@ export default function OwnerBookingsPage() {
             <table className="db-table">
               <thead>
                 <tr>
-                  <th>Email liên hệ</th>
-                  <th>Ngày đặt</th>
-                  <th>Thời gian</th>
-                  <th>Số người</th>
-                  <th>Ghi chú</th>
-                  <th>Trạng thái</th>
-                  <th>Thao tác</th>
+                  <th>{copy.colEmail}</th>
+                  <th>{copy.colDate}</th>
+                  <th>{copy.colTime}</th>
+                  <th>{copy.colGuests}</th>
+                  <th>{copy.colNote}</th>
+                  <th>{copy.colStatus}</th>
+                  <th>{copy.colActions}</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>Đang tải danh sách đặt bàn...</td>
+                    <td colSpan={7} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>{copy.loadingBookings}</td>
                   </tr>
                 ) : filteredBookings.length === 0 ? (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>Không tìm thấy lượt đặt bàn nào.</td>
+                    <td colSpan={7} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>{copy.noBookings}</td>
                   </tr>
                 ) : (
                   filteredBookings.map((b) => (
@@ -274,19 +279,19 @@ export default function OwnerBookingsPage() {
                         {b.note || '-'}
                       </td>
                       <td>
-                        {b.status === 'pending' && <span className="db-badge db-badge--pending">Chờ duyệt</span>}
-                        {b.status === 'approved' && <span className="db-badge db-badge--approved">Đã nhận</span>}
-                        {b.status === 'rejected' && <span className="db-badge db-badge--rejected" title={`Lý do: ${b.rejectReason || ''}`}>Đã từ chối</span>}
+                        {b.status === 'pending' && <span className="db-badge db-badge--pending">{copy.statusPending}</span>}
+                        {b.status === 'approved' && <span className="db-badge db-badge--approved">{copy.statusApproved}</span>}
+                        {b.status === 'rejected' && <span className="db-badge db-badge--rejected" title={`${language === 'vi' ? 'Lý do' : '理由'}: ${b.rejectReason || ''}`}>{copy.statusRejected}</span>}
                       </td>
                       <td>
                         <div style={{ display: 'flex', gap: 6 }}>
                           {b.status === 'pending' ? (
                             <>
-                              <button className="btn btn--dark" style={{ padding: '4px 10px', fontSize: 12, background: '#059669' }} onClick={() => handleApprove(b.id)}>Duyệt</button>
-                              <button className="btn btn--dark" style={{ padding: '4px 10px', fontSize: 12, background: '#dc2626' }} onClick={() => openRejectModal(b.id)}>Từ chối</button>
+                              <button className="btn btn--dark" style={{ padding: '4px 10px', fontSize: 12, background: '#059669' }} onClick={() => handleApprove(b.id)}>{copy.actionApprove}</button>
+                              <button className="btn btn--dark" style={{ padding: '4px 10px', fontSize: 12, background: '#dc2626' }} onClick={() => openRejectModal(b.id)}>{copy.actionReject}</button>
                             </>
                           ) : (
-                            <span style={{ fontSize: 12, color: 'var(--clr-muted)' }}>Đã xử lý</span>
+                            <span style={{ fontSize: 12, color: 'var(--clr-muted)' }}>{copy.actionProcessed}</span>
                           )}
                         </div>
                       </td>
@@ -302,16 +307,16 @@ export default function OwnerBookingsPage() {
       {showRejectModal && (
         <div className="db-modal" style={{ display: 'flex' }}>
           <div className="db-modal__box">
-            <h3 className="db-modal__title">Từ chối yêu cầu đặt bàn</h3>
+            <h3 className="db-modal__title">{copy.rejectModalTitle}</h3>
             <form onSubmit={handleRejectSubmit}>
               <div className="db-form-field">
-                <label>Lý do từ chối <span>/ 却下の理由</span></label>
-                <textarea className="db-textarea" placeholder="Nhập lý do từ chối (vd: Hết bàn giờ này...)" required
+                <label>{copy.rejectReasonLabel}</label>
+                <textarea className="db-textarea" placeholder={copy.rejectReasonPlaceholder} required
                   value={rejectReason} onChange={e => setRejectReason(e.target.value)} />
               </div>
               <div className="db-modal__actions">
-                <button type="button" className="modal__cancel" onClick={() => setShowRejectModal(false)}>Hủy</button>
-                <button type="submit" className="modal__submit" style={{ background: '#dc2626' }}>Từ chối đặt bàn</button>
+                <button type="button" className="modal__cancel" onClick={() => setShowRejectModal(false)}>{copy.cancel}</button>
+                <button type="submit" className="modal__submit" style={{ background: '#dc2626' }}>{copy.rejectSubmit}</button>
               </div>
             </form>
           </div>

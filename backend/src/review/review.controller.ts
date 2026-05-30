@@ -60,6 +60,20 @@ export class ReviewController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Patch(':id/admin-clear')
+  adminClear(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req,
+    @Body('clearContent') clearContent?: boolean,
+    @Body('clearReply') clearReply?: boolean,
+  ) {
+    if (req.user?.role !== 'admin') {
+      throw new ForbiddenException('Chỉ admin mới có quyền thực hiện hành động này');
+    }
+    return this.reviewService.adminClear(id, clearContent, clearReply);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   delete(
     @Param('id', ParseIntPipe) id: number,

@@ -3,12 +3,15 @@
 import { useEffect, useState } from 'react';
 import AdminHeader from '../components/AdminHeader';
 import Cookies from 'js-cookie';
+import { useAppLanguage, adminCopy } from '@/config/i18n';
 
 export default function AdminReportsPage() {
   const [allReviews, setAllReviews] = useState<any[]>([]);
   const [reportedReviews, setReportedReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [alertMsg, setAlertMsg] = useState<{ msg: string; type: string } | null>(null);
+  const { language } = useAppLanguage();
+  const copy = adminCopy[language];
 
   const fetchReviews = async () => {
     const token = Cookies.get('access_token');
@@ -33,7 +36,7 @@ export default function AdminReportsPage() {
       }
 
       if (!res.ok) {
-        throw new Error('Lỗi lấy danh sách đánh giá từ server');
+        throw new Error('alertLoadReviewsError');
       }
 
       const data = await res.json();
@@ -41,7 +44,7 @@ export default function AdminReportsPage() {
       setReportedReviews(data.filter((r: any) => r.isReported));
     } catch (err: any) {
       console.error(err);
-      showAlert(err.message || 'Không thể tải danh sách đánh giá', 'warning');
+      showAlert(err.message === 'alertLoadReviewsError' ? copy.alertLoadReviewsError : copy.alertLoadReviewsErrorFallback, 'warning');
     } finally {
       setLoading(false);
     }
@@ -56,20 +59,22 @@ export default function AdminReportsPage() {
     setTimeout(() => setAlertMsg(null), 3500);
   };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm('Bạn có chắc chắn muốn XÓA VĨNH VIỄN đánh giá này khỏi hệ thống? Điểm đánh giá trung bình của nhà hàng tương ứng sẽ được cập nhật lại.')) {
+  const handleClearContent = async (id: number) => {
+    if (window.confirm(copy.confirmClearContent)) {
       const token = Cookies.get('access_token');
       if (!token) {
-        showAlert('Vui lòng đăng nhập lại.', 'warning');
+        showAlert(copy.alertSessionExpired, 'warning');
         return;
       }
 
       try {
-        const res = await fetch(`http://localhost:3001/review/${id}`, {
-          method: 'DELETE',
+        const res = await fetch(`http://localhost:3001/review/${id}/admin-clear`, {
+          method: 'PATCH',
           headers: {
+            'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
-          }
+          },
+          body: JSON.stringify({ clearContent: true })
         });
 
         if (res.status === 401) {
@@ -78,23 +83,59 @@ export default function AdminReportsPage() {
         }
 
         if (!res.ok) {
-          throw new Error('Lỗi từ hệ thống khi xóa đánh giá');
+          throw new Error('alertClearError');
         }
 
-        showAlert('Đã xóa đánh giá vĩnh viễn và cập nhật lại điểm nhà hàng.');
+        showAlert(copy.alertClearSuccess);
         fetchReviews();
       } catch (err: any) {
         console.error(err);
-        showAlert(err.message || 'Không thể xóa đánh giá', 'warning');
+        showAlert(copy.alertClearError, 'warning');
+      }
+    }
+  };
+
+  const handleClearReply = async (id: number) => {
+    if (window.confirm(copy.confirmClearReply)) {
+      const token = Cookies.get('access_token');
+      if (!token) {
+        showAlert(copy.alertSessionExpired, 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:3001/review/${id}/admin-clear`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ clearReply: true })
+        });
+
+        if (res.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+
+        if (!res.ok) {
+          throw new Error('alertClearError');
+        }
+
+        showAlert(copy.alertClearSuccess);
+        fetchReviews();
+      } catch (err: any) {
+        console.error(err);
+        showAlert(copy.alertClearError, 'warning');
       }
     }
   };
 
   const handleDismissReport = async (id: number) => {
-    if (window.confirm('Bỏ qua báo cáo vi phạm đối với đánh giá này? Đánh giá vẫn sẽ được giữ lại và hiển thị bình thường.')) {
+    if (window.confirm(copy.confirmDismissReport)) {
       const token = Cookies.get('access_token');
       if (!token) {
-        showAlert('Vui lòng đăng nhập lại.', 'warning');
+        showAlert(copy.alertSessionExpired, 'warning');
         return;
       }
 
@@ -112,21 +153,21 @@ export default function AdminReportsPage() {
         }
 
         if (!res.ok) {
-          throw new Error('Lỗi từ hệ thống khi bỏ qua báo cáo');
+          throw new Error('alertDismissError');
         }
 
-        showAlert('Đã bỏ qua báo cáo vi phạm thành công.');
+        showAlert(copy.alertDismissSuccess);
         fetchReviews();
       } catch (err: any) {
         console.error(err);
-        showAlert(err.message || 'Không thể bỏ qua báo cáo', 'warning');
+        showAlert(err.message === 'alertDismissError' ? copy.alertDismissError : copy.alertDismissErrorFallback, 'warning');
       }
     }
   };
 
   return (
     <>
-      <AdminHeader title="Quản lý đánh giá & Báo cáo" />
+      <AdminHeader title={copy.reportsTitle} />
       <div className="db-content">
         {alertMsg && (
           <div className={`db-alert db-alert--${alertMsg.type}`}>
@@ -137,16 +178,16 @@ export default function AdminReportsPage() {
 
         {loading && (
           <div style={{ textAlign: 'center', padding: '20px', color: 'var(--clr-muted)', fontWeight: 500 }}>
-            Đang tải dữ liệu đánh giá...
+            {copy.loadingReviews}
           </div>
         )}
 
         {/* 1. Đánh giá bị báo cáo vi phạm */}
         <div className="db-card" style={{ marginBottom: '30px' }}>
           <h2 className="db-card__title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>Đánh giá bị báo cáo vi phạm</span>
+            <span>{copy.reportedReviewsTitle}</span>
             <span style={{ fontSize: '14px', background: '#fee2e2', color: '#c53030', padding: '3px 8px', borderRadius: '12px', fontWeight: 600 }}>
-              {reportedReviews.length} báo cáo
+              {copy.reportsCount.replace('{{count}}', String(reportedReviews.length))}
             </span>
           </h2>
           
@@ -154,53 +195,93 @@ export default function AdminReportsPage() {
             <table className="db-table">
               <thead>
                 <tr>
-                  <th>Nhà hàng</th>
-                  <th>Người đánh giá</th>
-                  <th>Nội dung đánh giá</th>
-                  <th>Sao</th>
-                  <th>Lý do báo cáo</th>
-                  <th>Thao tác</th>
+                  <th>{copy.colRestaurant}</th>
+                  <th>{copy.colReviewer}</th>
+                  <th>{copy.colReviewContent}</th>
+                  <th>{copy.colStars}</th>
+                  <th>{copy.colReportReason}</th>
                 </tr>
               </thead>
               <tbody>
                 {reportedReviews.length === 0 && (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>
-                      Không có đánh giá nào bị báo cáo vi phạm.
+                    <td colSpan={5} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>
+                      {copy.noReportedReviews}
                     </td>
                   </tr>
                 )}
                 {reportedReviews.map((rev) => (
                   <tr key={rev.id}>
-                    <td style={{ fontWeight: 600 }}>{rev.restaurant?.name || 'Chưa xác định'}</td>
-                    <td style={{ fontWeight: 600 }}>{rev.user?.name || rev.user?.email || 'Khách vãng lai'}</td>
-                    <td 
-                      style={{ maxWidth: 240, fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
-                      title={rev.content}
-                    >
-                      "{rev.content}"
+                    <td style={{ fontWeight: 600 }}>{rev.restaurant?.name || copy.unknownRestaurant}</td>
+                    <td style={{ fontWeight: 600 }}>{rev.user?.name || rev.user?.email || copy.anonymousUser}</td>
+                    <td style={{ maxWidth: 240 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                        {rev.content ? (
+                          <>
+                            <span 
+                              style={{ fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
+                              title={rev.content}
+                            >
+                              "{rev.content}"
+                            </span>
+                            <button 
+                              onClick={() => handleClearContent(rev.id)} 
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#ef4444',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                transition: 'all 0.2s',
+                              }}
+                              onMouseOver={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                              }}
+                              onMouseOut={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                              title="Xóa nội dung"
+                            >
+                              🗑️
+                            </button>
+                          </>
+                        ) : (
+                          <span style={{ color: 'var(--clr-muted)', fontSize: 13, fontStyle: 'italic' }}>
+                            {copy.contentCleared}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td style={{ color: 'var(--clr-yellow)' }}>
                       {'⭐'.repeat(rev.stars)}
                     </td>
                     <td style={{ color: '#c53030', fontSize: 13, fontWeight: 500 }}>
-                      {rev.reportReason || 'Báo cáo vi phạm'}
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                        <span>{rev.reportReason || copy.defaultReportReason}</span>
                         <button 
-                          className="btn btn--dark" 
-                          style={{ padding: '4px 10px', fontSize: 12, background: '#dc2626' }} 
-                          onClick={() => handleDelete(rev.id)}
-                        >
-                          Ẩn/Xóa đánh giá
-                        </button>
-                        <button 
-                          className="btn btn--dark" 
-                          style={{ padding: '4px 10px', fontSize: 12, background: 'var(--clr-muted)' }} 
+                          className="btn" 
+                          style={{
+                            padding: '3px 8px',
+                            fontSize: '11px',
+                            background: 'var(--clr-muted)',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            marginLeft: '8px'
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.filter = 'brightness(0.9)';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.filter = 'none';
+                          }}
                           onClick={() => handleDismissReport(rev.id)}
                         >
-                          Bỏ qua
+                          {copy.btnDismiss}
                         </button>
                       </div>
                     </td>
@@ -214,9 +295,9 @@ export default function AdminReportsPage() {
         {/* 2. Quản lý toàn bộ đánh giá trong hệ thống */}
         <div className="db-card">
           <h2 className="db-card__title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>Quản lý toàn bộ đánh giá & Phản hồi</span>
+            <span>{copy.allReviewsTitle}</span>
             <span style={{ fontSize: '14px', background: 'var(--clr-cream)', color: 'var(--clr-medium)', padding: '3px 8px', borderRadius: '12px', fontWeight: 600 }}>
-              Tổng cộng: {allReviews.length} đánh giá
+              {copy.totalReviewsCount.replace('{{count}}', String(allReviews.length))}
             </span>
           </h2>
           
@@ -224,57 +305,106 @@ export default function AdminReportsPage() {
             <table className="db-table">
               <thead>
                 <tr>
-                  <th>Nhà hàng</th>
-                  <th>Người đánh giá</th>
-                  <th>Nội dung đánh giá</th>
-                  <th>Phản hồi của chủ nhà hàng</th>
-                  <th>Sao</th>
-                  <th>Ngày tạo</th>
-                  <th>Thao tác</th>
+                  <th>{copy.colRestaurant}</th>
+                  <th>{copy.colReviewer}</th>
+                  <th>{copy.colReviewContent}</th>
+                  <th>{copy.colOwnerReply}</th>
+                  <th>{copy.colStars}</th>
+                  <th>{copy.colCreatedDate}</th>
                 </tr>
               </thead>
               <tbody>
                 {allReviews.length === 0 && (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>
-                      Chưa có đánh giá nào được lưu trong hệ thống.
+                    <td colSpan={6} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>
+                      {copy.noReviewsSystem}
                     </td>
                   </tr>
                 )}
                 {allReviews.map((rev) => (
                   <tr key={rev.id}>
-                    <td style={{ fontWeight: 600 }}>{rev.restaurant?.name || 'Chưa xác định'}</td>
-                    <td style={{ fontWeight: 600 }}>{rev.user?.name || rev.user?.email || 'Khách vãng lai'}</td>
-                    <td 
-                      style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
-                      title={rev.content}
-                    >
-                      "{rev.content}"
+                    <td style={{ fontWeight: 600 }}>{rev.restaurant?.name || copy.unknownRestaurant}</td>
+                    <td style={{ fontWeight: 600 }}>{rev.user?.name || rev.user?.email || copy.anonymousUser}</td>
+                    <td style={{ maxWidth: 200 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                        {rev.content ? (
+                          <>
+                            <span 
+                              style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
+                              title={rev.content}
+                            >
+                              "{rev.content}"
+                            </span>
+                            <button 
+                              onClick={() => handleClearContent(rev.id)} 
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#ef4444',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                transition: 'all 0.2s',
+                              }}
+                              onMouseOver={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                              }}
+                              onMouseOut={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                              title="Xóa nội dung"
+                            >
+                              🗑️
+                            </button>
+                          </>
+                        ) : (
+                          <span style={{ color: 'var(--clr-muted)', fontSize: 13, fontStyle: 'italic' }}>
+                            {copy.contentCleared}
+                          </span>
+                        )}
+                      </div>
                     </td>
-                    <td 
-                      style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                      title={rev.ownerReply}
-                    >
-                      {rev.ownerReply ? (
-                        <span style={{ color: '#059669', fontWeight: 500 }}>"{rev.ownerReply}"</span>
-                      ) : (
-                        <span style={{ color: 'var(--clr-muted)', fontStyle: 'italic', fontSize: 13 }}>Chưa phản hồi</span>
-                      )}
+                    <td style={{ maxWidth: 200 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                        {rev.ownerReply ? (
+                          <>
+                            <span style={{ color: '#059669', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={rev.ownerReply}>
+                              "{rev.ownerReply}"
+                            </span>
+                            <button 
+                              onClick={() => handleClearReply(rev.id)} 
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#ef4444',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                transition: 'all 0.2s',
+                              }}
+                              onMouseOver={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                              }}
+                              onMouseOut={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                              title="Xóa phản hồi"
+                            >
+                              🗑️
+                            </button>
+                          </>
+                        ) : (
+                          <span style={{ color: 'var(--clr-muted)', fontStyle: 'italic', fontSize: 13 }}>{copy.noReplyYet}</span>
+                        )}
+                      </div>
                     </td>
                     <td style={{ color: 'var(--clr-yellow)' }}>
                       {'⭐'.repeat(rev.stars)}
                     </td>
                     <td style={{ fontSize: 13 }}>
-                      {new Date(rev.createdAt).toLocaleDateString('vi-VN')}
-                    </td>
-                    <td>
-                      <button 
-                        className="btn btn--dark" 
-                        style={{ padding: '4px 10px', fontSize: 12, background: '#dc2626' }} 
-                        onClick={() => handleDelete(rev.id)}
-                      >
-                        Xóa
-                      </button>
+                      {new Date(rev.createdAt).toLocaleDateString(language === 'ja' ? 'ja-JP' : 'vi-VN')}
                     </td>
                   </tr>
                 ))}
@@ -286,3 +416,4 @@ export default function AdminReportsPage() {
     </>
   );
 }
+

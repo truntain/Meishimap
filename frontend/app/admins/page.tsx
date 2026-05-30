@@ -16,6 +16,7 @@ import {
 import { Line, Bar } from 'react-chartjs-2';
 import AdminHeader from './components/AdminHeader';
 import Cookies from 'js-cookie';
+import { useAppLanguage, adminCopy } from '@/config/i18n';
 
 // Register Chart.js components
 ChartJS.register(
@@ -34,6 +35,8 @@ export default function AdminStatsPage() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { language } = useAppLanguage();
+  const copy = adminCopy[language];
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -58,14 +61,14 @@ export default function AdminStatsPage() {
         }
 
         if (!res.ok) {
-          throw new Error('Không thể lấy dữ liệu thống kê từ backend');
+          throw new Error('errorStatsFetch');
         }
 
         const data = await res.json();
         setStats(data);
       } catch (err: any) {
         console.error(err);
-        setError(err.message || 'Lỗi kết nối dữ liệu');
+        setError(err.message === 'errorStatsFetch' ? 'errorStatsFetch' : 'errorConnection');
       } finally {
         setLoading(false);
       }
@@ -74,11 +77,22 @@ export default function AdminStatsPage() {
     fetchStats();
   }, []);
 
+  const rawLabels = stats?.charts?.labels || ['Tháng 12', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5'];
+  const chartLabels = rawLabels.map((l: string) => {
+    if (language === 'ja') {
+      const match = l.match(/Th\u00e1ng\s+(\d+)/i);
+      if (match) {
+        return `${match[1]}月`;
+      }
+    }
+    return l;
+  });
+
   const restaurantData = {
-    labels: stats?.charts?.labels || ['Tháng 12', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5'],
+    labels: chartLabels,
     datasets: [
       {
-        label: 'Nhà hàng mới đăng ký',
+        label: copy.chartRestaurantLabel,
         data: stats?.charts?.restaurantRegistrations || [1, 2, 1, 3, 2, 4],
         borderColor: '#FD8A3E',
         backgroundColor: 'rgba(253, 138, 62, 0.1)',
@@ -109,10 +123,10 @@ export default function AdminStatsPage() {
   };
 
   const userData = {
-    labels: stats?.charts?.labels || ['Tháng 12', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5'],
+    labels: chartLabels,
     datasets: [
       {
-        label: 'Đăng ký mới',
+        label: copy.chartUserLabel,
         data: stats?.charts?.userRegistrations || [42, 65, 58, 89, 72, 98],
         backgroundColor: '#6C2F00',
         hoverBackgroundColor: '#FD8A3E',
@@ -141,40 +155,46 @@ export default function AdminStatsPage() {
 
   return (
     <>
-      <AdminHeader title="Thống kê & Tổng quan" />
+      <AdminHeader title={copy.overviewTitle} />
       <div className="db-content">
         {loading && (
           <div style={{ textAlign: 'center', padding: 20, color: 'var(--clr-muted)' }}>
-            Đang tải dữ liệu thống kê...
+            {copy.loadingStats}
           </div>
         )}
         {error && (
           <div className="db-alert db-alert--warning" style={{ marginBottom: 20 }}>
             <span>⚠️</span>
-            <span>{error}</span>
+            <span>{(copy as any)[error] || copy.errorConnection}</span>
           </div>
         )}
         
         <div className="db-stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
           <div className="db-stat-card">
             <div className="db-stat-card__info">
-              <span className="db-stat-card__label">Tổng số nhà hàng đã duyệt</span>
+              <span className="db-stat-card__label">{copy.totalApprovedRestaurants}</span>
               <span className="db-stat-card__value">{stats?.summary?.totalRestaurants ?? '...'}</span>
-              <span className="db-stat-card__trend db-stat-card__trend--up">▲ +{stats?.summary?.totalRestaurantsTrend ?? 100}% tháng này</span>
+              <span className="db-stat-card__trend db-stat-card__trend--up">
+                {copy.trendMonth.replace('{{trend}}', String(stats?.summary?.totalRestaurantsTrend ?? 100))}
+              </span>
             </div>
           </div>
           <div className="db-stat-card">
             <div className="db-stat-card__info">
-              <span className="db-stat-card__label">Số lượng thành viên</span>
+              <span className="db-stat-card__label">{copy.totalMembers}</span>
               <span className="db-stat-card__value">{stats?.summary?.totalMembers ?? '...'}</span>
-              <span className="db-stat-card__trend db-stat-card__trend--up">▲ +{stats?.summary?.totalMembersTrend ?? 100}% tháng này</span>
+              <span className="db-stat-card__trend db-stat-card__trend--up">
+                {copy.trendMonth.replace('{{trend}}', String(stats?.summary?.totalMembersTrend ?? 100))}
+              </span>
             </div>
           </div>
           <div className="db-stat-card" style={{ borderColor: 'rgba(239, 68, 68, 0.3)' }}>
             <div className="db-stat-card__info">
-              <span className="db-stat-card__label">Yêu cầu chờ duyệt</span>
+              <span className="db-stat-card__label">{copy.pendingApprovals}</span>
               <span className="db-stat-card__value" style={{ color: '#ef4444' }}>{stats?.summary?.pendingRestaurants ?? '...'}</span>
-              <span className="db-stat-card__trend db-stat-card__trend--up" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>▲ Mới</span>
+              <span className="db-stat-card__trend db-stat-card__trend--up" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>
+                {copy.trendNew}
+              </span>
             </div>
           </div>
         </div>
@@ -182,7 +202,7 @@ export default function AdminStatsPage() {
         <div className="db-charts-grid">
           <div className="db-card">
             <h3 className="db-card__title" style={{ marginBottom: 20 }}>
-              Tăng trưởng nhà hàng mới (Hàng tháng)
+              {copy.chartRestaurantGrowth}
             </h3>
             <div style={{ position: 'relative', height: 300, width: '100%' }}>
               <Line data={restaurantData} options={restaurantOptions} />
@@ -190,7 +210,7 @@ export default function AdminStatsPage() {
           </div>
           <div className="db-card">
             <h3 className="db-card__title" style={{ marginBottom: 20 }}>
-              Tăng trưởng người dùng mới
+              {copy.chartUserGrowth}
             </h3>
             <div style={{ position: 'relative', height: 300, width: '100%' }}>
               <Bar data={userData} options={userOptions} />
@@ -201,3 +221,4 @@ export default function AdminStatsPage() {
     </>
   );
 }
+

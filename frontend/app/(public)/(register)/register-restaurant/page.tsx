@@ -3,8 +3,11 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAppLanguage, registerRestaurantCopy } from '@/config/i18n';
 
 export default function RegisterRestaurantPage() {
+  const { language } = useAppLanguage();
+  const copy = registerRestaurantCopy[language];
   const router = useRouter();
 
   // Owner state
@@ -43,7 +46,7 @@ export default function RegisterRestaurantPage() {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('Kích thước file quá lớn (tối đa 5MB).');
+      alert(copy.fileSizeError);
       return;
     }
 
@@ -63,12 +66,12 @@ export default function RegisterRestaurantPage() {
 
     // Validations
     if (!name || !email || !restaurantName || !category || !address || !city) {
-      setErrorMsg('Vui lòng điền đầy đủ các thông tin bắt buộc (*).');
+      setErrorMsg(copy.validationFieldsError);
       return;
     }
 
     if (!japaneseProof || !businessLicense || !foodSafetyCert || !identityCard) {
-      setErrorMsg('Vui lòng tải lên đầy đủ các giấy tờ pháp lý yêu cầu.');
+      setErrorMsg(copy.validationDocsError);
       return;
     }
 
@@ -104,10 +107,10 @@ export default function RegisterRestaurantPage() {
         if (Array.isArray(data.message)) {
           throw new Error(data.message.join(', '));
         }
-        throw new Error(data.message || 'Đăng ký đối tác thất bại. Vui lòng thử lại.');
+        throw new Error(data.message || (language === 'vi' ? 'Đăng ký đối tác thất bại. Vui lòng thử lại.' : 'パートナー加盟店登録に失敗しました。もう一度お試しください。'));
       }
 
-      alert('Đăng ký tài khoản đối tác thành công! Đơn đăng ký của bạn đang chờ quản trị viên phê duyệt.');
+      alert(copy.successAlert);
       router.push('/login');
       
     } catch (error: any) {
@@ -121,18 +124,18 @@ export default function RegisterRestaurantPage() {
     <section className="auth-hero" id="register-partner-hero">
       <div className="auth-hero__text">
         <div>
-          <h1 className="auth-hero__title">Trở thành đối tác ẩm thực</h1>
-          <p className="auth-hero__title-jp">Meshimap パートナー登録</p>
+          <h1 className="auth-hero__title">{copy.heroTitle}</h1>
+          <p className="auth-hero__title-jp">{language === 'vi' ? 'Meshimap パートナー登録' : 'Meshimap Partner Registration'}</p>
         </div>
         <p className="auth-hero__subtitle">
-          Mở rộng phạm vi tiếp cận của bạn tới hàng ngàn khách hàng yêu thích ẩm thực Nhật Bản và Việt Nam. Quản lý đặt bàn chuyên nghiệp, tăng trưởng doanh thu vượt trội.
+          {copy.heroSubtitle}
         </p>
       </div>
 
       <div className="auth-card" role="main" style={{ width: '100%', maxWidth: '680px' }}>
         <div className="auth-card__header">
-          <h2 className="auth-card__title">Đăng ký đối tác</h2>
-          <p className="auth-card__subtitle">Tạo tài khoản chủ nhà hàng và đăng ký cửa hàng mới</p>
+          <h2 className="auth-card__title">{copy.cardTitle}</h2>
+          <p className="auth-card__subtitle">{copy.cardSubtitle}</p>
         </div>
 
         {errorMsg && (
@@ -144,19 +147,19 @@ export default function RegisterRestaurantPage() {
         <form id="register-partner-form" className="auth-form" onSubmit={handleSubmit} noValidate>
           
           <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--clr-primary)', borderBottom: '1px solid var(--clr-border)', paddingBottom: '6px', marginBottom: '4px' }}>
-            1. Thông tin tài khoản chủ nhà hàng
+            {copy.sectionAccount}
           </h3>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
             {/* Tên chủ nhà hàng */}
             <div className="auth-field">
-              <label className="auth-label" htmlFor="partner-name">Họ và tên chủ nhà hàng *</label>
+              <label className="auth-label" htmlFor="partner-name">{copy.ownerName}</label>
               <div className="auth-input-wrap">
                 <input 
                   type="text" 
                   id="partner-name" 
                   className="auth-input" 
-                  placeholder="Nguyễn Văn A" 
+                  placeholder={copy.ownerNamePlaceholder} 
                   required 
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -166,13 +169,13 @@ export default function RegisterRestaurantPage() {
 
             {/* Email */}
             <div className="auth-field">
-              <label className="auth-label" htmlFor="partner-email">Email đăng nhập *</label>
+              <label className="auth-label" htmlFor="partner-email">{copy.ownerEmail}</label>
               <div className="auth-input-wrap">
                 <input 
                   type="email" 
                   id="partner-email" 
                   className="auth-input" 
-                  placeholder="partner@example.com" 
+                  placeholder={copy.ownerEmailPlaceholder} 
                   required 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -182,19 +185,19 @@ export default function RegisterRestaurantPage() {
           </div>
 
           <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--clr-primary)', borderBottom: '1px solid var(--clr-border)', paddingBottom: '6px', marginTop: '12px', marginBottom: '4px' }}>
-            2. Thông tin nhà hàng đăng ký tuyển dụng đối tác
+            {copy.sectionRestaurant}
           </h3>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
             {/* Tên nhà hàng */}
             <div className="auth-field">
-              <label className="auth-label" htmlFor="restaurant-name">Tên nhà hàng (Tiếng Việt) *</label>
+              <label className="auth-label" htmlFor="restaurant-name">{copy.restaurantName}</label>
               <div className="auth-input-wrap">
                 <input 
                   type="text" 
                   id="restaurant-name" 
                   className="auth-input" 
-                  placeholder="Nhà hàng Sushi Sakura" 
+                  placeholder={copy.restaurantNamePlaceholder} 
                   required 
                   value={restaurantName}
                   onChange={(e) => setRestaurantName(e.target.value)}
@@ -204,13 +207,13 @@ export default function RegisterRestaurantPage() {
 
             {/* Tên tiếng Nhật */}
             <div className="auth-field">
-              <label className="auth-label" htmlFor="restaurant-name-jp">Tên nhà hàng (Tiếng Nhật - Optional)</label>
+              <label className="auth-label" htmlFor="restaurant-name-jp">{copy.restaurantNameJp}</label>
               <div className="auth-input-wrap">
                 <input 
                   type="text" 
                   id="restaurant-name-jp" 
                   className="auth-input" 
-                  placeholder="さくら寿司" 
+                  placeholder={copy.restaurantNameJpPlaceholder} 
                   value={restaurantNameJp}
                   onChange={(e) => setRestaurantNameJp(e.target.value)}
                 />
@@ -221,7 +224,7 @@ export default function RegisterRestaurantPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
             {/* Loại hình ẩm thực */}
             <div className="auth-field">
-              <label className="auth-label" htmlFor="restaurant-category">Loại hình ẩm thực *</label>
+              <label className="auth-label" htmlFor="restaurant-category">{copy.cuisineType}</label>
               <div className="auth-input-wrap">
                 <select 
                   id="restaurant-category" 
@@ -232,26 +235,26 @@ export default function RegisterRestaurantPage() {
                 >
                   <option value="Sushi">Sushi & Sashimi</option>
                   <option value="Ramen">Ramen & Udon</option>
-                  <option value="Nướng">Yakiniku (Món nướng)</option>
-                  <option value="Izakaya">Izakaya (Quán nhậu kiểu Nhật)</option>
-                  <option value="Phở">Phở</option>
-                  <option value="Bún chả">Bún chả</option>
-                  <option value="Bánh mì">Bánh mì</option>
-                  <option value="Món Việt">Món ăn Việt Nam</option>
-                  <option value="Khác">Khác</option>
+                  <option value="Nướng">{language === 'vi' ? 'Yakiniku (Món nướng)' : '焼肉 (Yakiniku)'}</option>
+                  <option value="Izakaya">{language === 'vi' ? 'Izakaya (Quán nhậu kiểu Nhật)' : '居酒屋 (Izakaya)'}</option>
+                  <option value="Phở">{language === 'vi' ? 'Phở' : 'フォー (Phở)'}</option>
+                  <option value="Bún chả">{language === 'vi' ? 'Bún chả' : 'ブンチャー (Bún chả)'}</option>
+                  <option value="Bánh mì">{language === 'vi' ? 'Bánh mì' : 'バインミー (Bánh mì)'}</option>
+                  <option value="Món Việt">{language === 'vi' ? 'Món ăn Việt Nam' : 'ベトナム料理'}</option>
+                  <option value="Khác">{language === 'vi' ? 'Khác' : 'その他'}</option>
                 </select>
               </div>
             </div>
 
             {/* Số điện thoại */}
             <div className="auth-field">
-              <label className="auth-label" htmlFor="restaurant-phone">Số điện thoại liên hệ *</label>
+              <label className="auth-label" htmlFor="restaurant-phone">{copy.phone}</label>
               <div className="auth-input-wrap">
                 <input 
                   type="tel" 
                   id="restaurant-phone" 
                   className="auth-input" 
-                  placeholder="0987654321" 
+                  placeholder={copy.phonePlaceholder} 
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
@@ -262,13 +265,13 @@ export default function RegisterRestaurantPage() {
 
           {/* Địa chỉ */}
           <div className="auth-field">
-            <label className="auth-label" htmlFor="restaurant-address">Địa chỉ chi tiết (Số nhà, tên đường...) *</label>
+            <label className="auth-label" htmlFor="restaurant-address">{copy.address}</label>
             <div className="auth-input-wrap">
               <input 
                 type="text" 
                 id="restaurant-address" 
                 className="auth-input" 
-                placeholder="Số 15 Kim Mã" 
+                placeholder={copy.addressPlaceholder} 
                 required 
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
@@ -279,13 +282,13 @@ export default function RegisterRestaurantPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
             {/* Quận/Huyện */}
             <div className="auth-field">
-              <label className="auth-label" htmlFor="restaurant-district">Quận / Huyện</label>
+              <label className="auth-label" htmlFor="restaurant-district">{copy.district}</label>
               <div className="auth-input-wrap">
                 <input 
                   type="text" 
                   id="restaurant-district" 
                   className="auth-input" 
-                  placeholder="Ba Đình" 
+                  placeholder={copy.districtPlaceholder} 
                   value={district}
                   onChange={(e) => setDistrict(e.target.value)}
                 />
@@ -294,13 +297,13 @@ export default function RegisterRestaurantPage() {
 
             {/* Tỉnh/Thành phố */}
             <div className="auth-field">
-              <label className="auth-label" htmlFor="restaurant-city">Tỉnh / Thành phố *</label>
+              <label className="auth-label" htmlFor="restaurant-city">{copy.city}</label>
               <div className="auth-input-wrap">
                 <input 
                   type="text" 
                   id="restaurant-city" 
                   className="auth-input" 
-                  placeholder="Hà Nội" 
+                  placeholder={copy.cityPlaceholder} 
                   required 
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
@@ -311,13 +314,13 @@ export default function RegisterRestaurantPage() {
 
           {/* Mô tả */}
           <div className="auth-field">
-            <label className="auth-label" htmlFor="restaurant-description">Mô tả ngắn gọn về nhà hàng</label>
+            <label className="auth-label" htmlFor="restaurant-description">{copy.description}</label>
             <div className="auth-input-wrap">
               <textarea 
                 id="restaurant-description" 
                 className="auth-input" 
                 style={{ height: '80px', resize: 'vertical' }}
-                placeholder="Giới thiệu không gian, hương vị nổi bật..." 
+                placeholder={copy.descriptionPlaceholder} 
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -325,16 +328,16 @@ export default function RegisterRestaurantPage() {
           </div>
 
           <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--clr-primary)', borderBottom: '1px solid var(--clr-border)', paddingBottom: '6px', marginTop: '16px', marginBottom: '4px' }}>
-            3. Hồ sơ và giấy tờ pháp lý của nhà hàng
+            {copy.sectionDocuments}
           </h3>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
             {/* Bằng chứng tiếng Nhật */}
             <div className="auth-field">
-              <label className="auth-label">Bằng chứng tiếng Nhật (Menu, hình ảnh) *</label>
+              <label className="auth-label">{copy.jpProof}</label>
               <div className="auth-input-wrap" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
                 <label className="btn btn--outline" style={{ cursor: 'pointer', padding: '8px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', width: 'auto' }}>
-                  <span>📁 Chọn tệp...</span>
+                  <span>{copy.chooseFile}</span>
                   <input 
                     type="file" 
                     accept="image/*,application/pdf"
@@ -353,10 +356,10 @@ export default function RegisterRestaurantPage() {
 
             {/* Giấy phép kinh doanh */}
             <div className="auth-field">
-              <label className="auth-label">Giấy phép kinh doanh *</label>
+              <label className="auth-label">{copy.businessLicense}</label>
               <div className="auth-input-wrap" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
                 <label className="btn btn--outline" style={{ cursor: 'pointer', padding: '8px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', width: 'auto' }}>
-                  <span>📁 Chọn tệp...</span>
+                  <span>{copy.chooseFile}</span>
                   <input 
                     type="file" 
                     accept="image/*,application/pdf"
@@ -377,10 +380,10 @@ export default function RegisterRestaurantPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
             {/* Giấy Vệ sinh ATTP */}
             <div className="auth-field">
-              <label className="auth-label">Giấy chứng nhận vệ sinh ATTP *</label>
+              <label className="auth-label">{copy.foodSafetyCert}</label>
               <div className="auth-input-wrap" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
                 <label className="btn btn--outline" style={{ cursor: 'pointer', padding: '8px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', width: 'auto' }}>
-                  <span>📁 Chọn tệp...</span>
+                  <span>{copy.chooseFile}</span>
                   <input 
                     type="file" 
                     accept="image/*,application/pdf"
@@ -399,10 +402,10 @@ export default function RegisterRestaurantPage() {
 
             {/* CMND/CCCD */}
             <div className="auth-field">
-              <label className="auth-label">CMND/CCCD của chủ quán *</label>
+              <label className="auth-label">{copy.identityCard}</label>
               <div className="auth-input-wrap" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
                 <label className="btn btn--outline" style={{ cursor: 'pointer', padding: '8px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', width: 'auto' }}>
-                  <span>📁 Chọn tệp...</span>
+                  <span>{copy.chooseFile}</span>
                   <input 
                     type="file" 
                     accept="image/*,application/pdf"
@@ -421,12 +424,12 @@ export default function RegisterRestaurantPage() {
           </div>
 
           <button type="submit" className="auth-btn" id="btn-register-partner-submit" style={{ marginTop: '20px' }} disabled={isLoading}>
-            {isLoading ? 'Đang gửi đăng ký...' : 'Gửi đơn đăng ký đối tác'}
+            {isLoading ? copy.submittingBtn : copy.submitBtn}
           </button>
         </form>
 
         <p className="auth-card__footer">
-          Đã có tài khoản? <Link href="/login" id="link-to-login">Đăng nhập</Link>
+          {copy.hasAccount} <Link href="/login" id="link-to-login">{copy.loginLink}</Link>
         </p>
       </div>
     </section>

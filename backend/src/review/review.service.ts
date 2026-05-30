@@ -153,4 +153,23 @@ export class ReviewService {
     }
     return { success: true };
   }
+
+  async adminClear(reviewId: number, clearContent?: boolean, clearReply?: boolean) {
+    const review = await this.reviewRepository.findOne({
+      where: { id: reviewId },
+      relations: ['restaurant'],
+    });
+    if (!review) {
+      throw new NotFoundException('Không tìm thấy đánh giá');
+    }
+    if (clearContent) {
+      review.content = '';
+      review.isReported = false;
+      review.reportReason = null;
+    }
+    if (clearReply) {
+      review.ownerReply = null;
+    }
+    return this.reviewRepository.save(review);
+  }
 }

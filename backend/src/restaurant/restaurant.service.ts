@@ -306,6 +306,10 @@ export class RestaurantService {
     if (dto.name !== undefined) restaurant.name = dto.name;
     if (dto.phone !== undefined) restaurant.phone = dto.phone;
     if (dto.address !== undefined) restaurant.address = dto.address;
+    if (dto.district !== undefined) restaurant.district = dto.district;
+    if (dto.city !== undefined) restaurant.city = dto.city;
+    if (dto.latitude !== undefined) restaurant.latitude = dto.latitude;
+    if (dto.longitude !== undefined) restaurant.longitude = dto.longitude;
     if (dto.image_url !== undefined) {
       const saved = this.saveBase64File(dto.image_url, 'restaurants');
       restaurant.image_url = saved || dto.image_url;

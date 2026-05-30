@@ -3,10 +3,13 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
+import { useAppLanguage, ownerCopy } from '@/config/i18n';
 
 export default function OwnerSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { language } = useAppLanguage();
+  const copy = ownerCopy[language];
 
   const handleLogout = () => {
     Cookies.remove('user');
@@ -18,7 +21,7 @@ export default function OwnerSidebar() {
     <aside className="db-sidebar">
       <div className="db-sidebar__brand">
         <div className="db-sidebar__brand-logo">MESHI<span>MAP</span></div>
-        <div className="db-sidebar__role">Chủ nhà hàng / Owner</div>
+        <div className="db-sidebar__role">{copy.sidebarRole}</div>
       </div>
 
       <nav className="db-sidebar__nav">
@@ -26,19 +29,19 @@ export default function OwnerSidebar() {
           href="/owners"
           className={`db-sidebar__link ${pathname === '/owners' ? 'is-active' : ''}`}
         >
-          <span>Quản lý nhà hàng</span>
+          <span>{copy.navInfo}</span>
         </Link>
         <Link
           href="/owners/bookings"
           className={`db-sidebar__link ${pathname === '/owners/bookings' ? 'is-active' : ''}`}
         >
-          <span>Quản lý đặt bàn</span>
+          <span>{copy.navBookings}</span>
         </Link>
         <Link
           href="/owners/reviews"
           className={`db-sidebar__link ${pathname === '/owners/reviews' ? 'is-active' : ''}`}
         >
-          <span>Xem đánh giá</span>
+          <span>{copy.navReviews}</span>
         </Link>
         {/* <Link 
           href="/owners/preview" 
@@ -50,7 +53,7 @@ export default function OwnerSidebar() {
 
       <div className="db-sidebar__footer">
         <button className="db-sidebar__link" onClick={handleLogout}>
-          <span>Đăng xuất</span>
+          <span>{copy.logout}</span>
         </button>
       </div>
     </aside>

@@ -75,11 +75,13 @@ export default function Header() {
           <span>MESHI<span className="header__logo-accent">MAP</span></span>
         </Link>
 
-        <nav className="header__nav" id="desktop-nav">
-          <Link href="/" className="header__nav-link" data-page="home">Trang chủ</Link>
-          <Link href="/search" className="header__nav-link" data-page="search">Tìm kiếm</Link>
-          <Link href="/restaurant/1" className="header__nav-link" data-page="booking">Đặt bàn</Link>
-        </nav>
+        {pathname && !pathname.startsWith('/owners') && !pathname.startsWith('/admins') && (
+          <nav className="header__nav" id="desktop-nav">
+            <Link href="/" className="header__nav-link" data-page="home">Trang chủ</Link>
+            <Link href="/search" className="header__nav-link" data-page="search">Tìm kiếm</Link>
+            <Link href="/restaurant/1" className="header__nav-link" data-page="booking">Đặt bàn</Link>
+          </nav>
+        )}
 
         <div className="header__actions">
           <button className="header__lang btn" aria-label="Chuyển ngôn ngữ">
@@ -106,12 +108,14 @@ export default function Header() {
         <span>MESHI<span className="header__logo-accent">MAP</span></span>
       </Link>
 
-      <nav className="header__nav" id="desktop-nav">
-        <Link href="/" className="header__nav-link" data-page="home">{t('header.home')}</Link>
-        <Link href="/search" className="header__nav-link" data-page="search">{t('header.search')}</Link>
-        {/* Đặt bàn → tới trang chi tiết nhà hàng (có modal đặt bàn) */}
-        <Link href="/restaurant/1" className="header__nav-link" data-page="booking">{t('header.booking')}</Link>
-      </nav>
+      {pathname && !pathname.startsWith('/owners') && !pathname.startsWith('/admins') && (
+        <nav className="header__nav" id="desktop-nav">
+          <Link href="/" className="header__nav-link" data-page="home">{t('header.home')}</Link>
+          <Link href="/search" className="header__nav-link" data-page="search">{t('header.search')}</Link>
+          {/* Đặt bàn → tới trang chi tiết nhà hàng (có modal đặt bàn) */}
+          <Link href="/restaurant/1" className="header__nav-link" data-page="booking">{t('header.booking')}</Link>
+        </nav>
+      )}
 
       <div className="header__actions">
         <button onClick={toggleLanguage} className="header__lang btn" aria-label={t('header.languageLabel')}>
@@ -194,10 +198,14 @@ export default function Header() {
 
       <div className={`header__mobile-menu ${isMobileMenuOpen ? 'is-open' : ''}`} id="mobile-menu">
         {/* Thêm onClick để tự đóng menu khi chọn trang */}
-        <Link href="/" className="header__nav-link" onClick={() => setIsMobileMenuOpen(false)}>{t('header.home')}</Link>
-        <Link href="/search" className="header__nav-link" onClick={() => setIsMobileMenuOpen(false)}>{t('header.search')}</Link>
-        {/* Đặt bàn → tới trang chi tiết nhà hàng */}
-        <Link href="/restaurant/1" className="header__nav-link" onClick={() => setIsMobileMenuOpen(false)}>{t('header.booking')}</Link>
+        {pathname && !pathname.startsWith('/owners') && !pathname.startsWith('/admins') && (
+          <>
+            <Link href="/" className="header__nav-link" onClick={() => setIsMobileMenuOpen(false)}>{t('header.home')}</Link>
+            <Link href="/search" className="header__nav-link" onClick={() => setIsMobileMenuOpen(false)}>{t('header.search')}</Link>
+            {/* Đặt bàn → tới trang chi tiết nhà hàng */}
+            <Link href="/restaurant/1" className="header__nav-link" onClick={() => setIsMobileMenuOpen(false)}>{t('header.booking')}</Link>
+          </>
+        )}
 
         {isMounted && user ? (
           <button className="btn btn--login" style={{ marginTop: '8px' }} onClick={handleLogout}>{t('header.logout')}</button>
