@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import maplibregl from 'maplibre-gl';
 import type { ExpressionSpecification } from '@maplibre/maplibre-gl-style-spec';
 import { searchCopy, useAppLanguage, type AppLanguage } from '@/config/i18n';
+import { getBeautifulImage } from '@/utils/image';
 
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
@@ -79,12 +80,11 @@ type CategoryStyle = {
 };
 
 const CATEGORY_STYLES: Record<string, CategoryStyle> = {
-  sushi: { label: 'Sushi & Grill', color: '#EA4335', stroke: '#B3261E', dot: '#FFE8E5', shortLabel: 'S' },
-  ramen: { label: 'Ramen', color: '#FBBC04', stroke: '#B06000', dot: '#FFF4CC', shortLabel: 'R' },
-  kaiseki: { label: 'Kaiseki', color: '#A142F4', stroke: '#681DA8', dot: '#F3E8FF', shortLabel: 'K' },
+  sushi_sashimi: { label: 'Sushi & Sashimi', color: '#EA4335', stroke: '#B3261E', dot: '#FFE8E5', shortLabel: 'S' },
+  ramen_udon_soba: { label: 'Ramen & Udon & Soba', color: '#FBBC04', stroke: '#B06000', dot: '#FFF4CC', shortLabel: 'R' },
+  yakiniku_bbq: { label: 'Yakiniku (BBQ)', color: '#FF6D01', stroke: '#B74400', dot: '#FFE6D1', shortLabel: 'Y' },
   izakaya: { label: 'Izakaya', color: '#00A878', stroke: '#006B4F', dot: '#DFF8EF', shortLabel: 'I' },
-  bbq: { label: 'Yakiniku', color: '#FF6D01', stroke: '#B74400', dot: '#FFE6D1', shortLabel: 'Y' },
-  soba: { label: 'Soba & Udon', color: '#34A853', stroke: '#1E7E34', dot: '#E6F4EA', shortLabel: 'U' },
+  omakase_kaiseki: { label: 'Omakase & Kaiseki', color: '#A142F4', stroke: '#681DA8', dot: '#F3E8FF', shortLabel: 'K' },
 };
 
 const DEFAULT_CATEGORY_STYLE: CategoryStyle = {
@@ -95,20 +95,28 @@ const DEFAULT_CATEGORY_STYLE: CategoryStyle = {
   shortLabel: 'J',
 };
 
+function getNormalizedCategoryKey(category: string): string {
+  const cat = category ? category.toLowerCase() : '';
+  if (cat.includes('sushi') || cat.includes('sashimi') || cat.includes('seafood')) return 'sushi_sashimi';
+  if (cat.includes('ramen') || cat.includes('udon') || cat.includes('soba') || cat.includes('noodle')) return 'ramen_udon_soba';
+  if (cat.includes('bbq') || cat.includes('yakiniku')) return 'yakiniku_bbq';
+  if (cat.includes('izakaya')) return 'izakaya';
+  if (cat.includes('omakase') || cat.includes('kaiseki')) return 'omakase_kaiseki';
+  return 'other';
+}
+
 const MAP_VIEW_OPTIONS: Array<{ key: MapViewMode; label: string }> = [
   { key: 'map', label: 'Bản đồ' },
   { key: 'satellite', label: 'Vệ tinh' },
 ];
 
-
 const CATEGORIES = [
   { key: 'all', label: 'Tất cả' },
-  { key: 'sushi', label: 'Sushi & Grill' },
-  { key: 'ramen', label: 'Ramen' },
-  { key: 'kaiseki', label: 'Kaiseki' },
+  { key: 'sushi_sashimi', label: 'Sushi & Sashimi' },
+  { key: 'ramen_udon_soba', label: 'Ramen & Udon & Soba' },
+  { key: 'yakiniku_bbq', label: 'Yakiniku (BBQ)' },
   { key: 'izakaya', label: 'Izakaya' },
-  { key: 'bbq', label: 'Yakiniku' },
-  { key: 'soba', label: 'Soba & Udon' },
+  { key: 'omakase_kaiseki', label: 'Omakase & Kaiseki' },
 ];
 
 const LOCATION_OPTIONS = [
@@ -164,19 +172,19 @@ function buildRestaurantsApiUrl({ q, category, location, sort }: SearchUrlOption
 }
 
 function getCategoryStyle(category: string) {
-  return CATEGORY_STYLES[category] || DEFAULT_CATEGORY_STYLE;
+  const norm = getNormalizedCategoryKey(category);
+  return CATEGORY_STYLES[norm] || DEFAULT_CATEGORY_STYLE;
 }
 
 function getCategoryColorExpression(defaultColor = DEFAULT_CATEGORY_STYLE.color): any {
   return [
     'match',
     ['get', 'category'],
-    'sushi', CATEGORY_STYLES.sushi.color,
-    'ramen', CATEGORY_STYLES.ramen.color,
-    'kaiseki', CATEGORY_STYLES.kaiseki.color,
+    'sushi_sashimi', CATEGORY_STYLES.sushi_sashimi.color,
+    'ramen_udon_soba', CATEGORY_STYLES.ramen_udon_soba.color,
+    'yakiniku_bbq', CATEGORY_STYLES.yakiniku_bbq.color,
     'izakaya', CATEGORY_STYLES.izakaya.color,
-    'bbq', CATEGORY_STYLES.bbq.color,
-    'soba', CATEGORY_STYLES.soba.color,
+    'omakase_kaiseki', CATEGORY_STYLES.omakase_kaiseki.color,
     defaultColor,
   ] as any;
 }
@@ -189,12 +197,11 @@ function getCategoryPinExpression(selectedId: number | null): any {
     [
       'match',
       ['get', 'category'],
-      'sushi', 'restaurant-pin-sushi',
-      'ramen', 'restaurant-pin-ramen',
-      'kaiseki', 'restaurant-pin-kaiseki',
+      'sushi_sashimi', 'restaurant-pin-sushi',
+      'ramen_udon_soba', 'restaurant-pin-ramen',
+      'yakiniku_bbq', 'restaurant-pin-bbq',
       'izakaya', 'restaurant-pin-izakaya',
-      'bbq', 'restaurant-pin-bbq',
-      'soba', 'restaurant-pin-soba',
+      'omakase_kaiseki', 'restaurant-pin-kaiseki',
       'restaurant-pin-other',
     ],
   ] as any;
@@ -335,13 +342,11 @@ function createPopupNode(restaurant: Restaurant, copy: typeof searchCopy[AppLang
   node.className = 'map-popup-card';
   node.style.setProperty('--category-color', categoryStyle.color);
 
-  if (restaurant.imageUrl) {
-    const image = document.createElement('img');
-    image.className = 'map-popup-image';
-    image.src = restaurant.imageUrl;
-    image.alt = restaurant.name;
-    node.appendChild(image);
-  }
+  const image = document.createElement('img');
+  image.className = 'map-popup-image';
+  image.src = getBeautifulImage(restaurant.imageUrl, restaurant.name);
+  image.alt = restaurant.name;
+  node.appendChild(image);
 
   const title = document.createElement('div');
   title.className = 'map-popup-title';
@@ -382,12 +387,6 @@ function createPopupNode(restaurant: Restaurant, copy: typeof searchCopy[AppLang
 
   node.appendChild(tagRow);
 
-  const link = document.createElement('a');
-  link.className = 'map-popup-link';
-  link.href = `/restaurant/${restaurant.id}`;
-  link.textContent = copy.book;
-  node.appendChild(link);
-
   return node;
 }
 
@@ -425,18 +424,8 @@ function RestaurantCard({
     >
       <div className="result-card__accent" />
       <div className="result-card__image-wrap">
-        {restaurant.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={restaurant.imageUrl} alt={restaurant.name} className="result-card__image" />
-        ) : (
-          <div className="result-card__image-placeholder">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" opacity="0.4">
-              <rect x="4" y="10" width="40" height="28" rx="4" stroke="#6C2F00" strokeWidth="2" />
-              <circle cx="16" cy="22" r="4" stroke="#6C2F00" strokeWidth="2" />
-              <path d="M4 32l8-8 6 6 8-10 18 14" stroke="#6C2F00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-        )}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={getBeautifulImage(restaurant.imageUrl, restaurant.name)} alt={restaurant.name} className="result-card__image" />
         <div className="result-card__rating-badge">
           <StarIcon /> {restaurant.rating.toFixed(1)}
         </div>
@@ -555,7 +544,13 @@ export default function SearchClient() {
     let results = [...restaurants];
 
     if (activeCategory !== 'all') {
-      results = results.filter((restaurant) => restaurant.category === activeCategory);
+      results = results.filter((restaurant) => {
+        const restCategoryKey = getNormalizedCategoryKey(restaurant.category);
+        if (restCategoryKey === activeCategory) return true;
+        return (restaurant.menuItems || []).some(
+          (item) => getNormalizedCategoryKey(item.category) === activeCategory
+        );
+      });
     }
 
     if (activeLocation !== 'all') {
@@ -604,12 +599,11 @@ export default function SearchClient() {
   const activeLocationLabel = activeLocation === 'all'
     ? copy.hcm
     : LOCATION_LABELS.get(activeLocation) || activeLocation;
-
   const categoryLegend = useMemo(() => CATEGORIES
-    .filter((category) => category.key !== 'all')
     .map((category) => ({
-      ...category,
-      count: filteredResults.filter((restaurant) => restaurant.category === category.key).length,
+      key: category.key,
+      label: category.label,
+      count: filteredResults.filter((restaurant) => getNormalizedCategoryKey(restaurant.category) === category.key).length,
       style: getCategoryStyle(category.key),
     }))
     .filter((category) => category.count > 0), [filteredResults]);
@@ -628,7 +622,7 @@ export default function SearchClient() {
         nameJp: restaurant.nameJp || '',
         rating: restaurant.rating,
         address: restaurant.address,
-        category: restaurant.category,
+        category: getNormalizedCategoryKey(restaurant.category),
         district: restaurant.district || restaurant.city || 'Hà Nội',
         hasJapaneseSupport: restaurant.hasJapaneseSupport,
       },
@@ -1075,18 +1069,31 @@ export default function SearchClient() {
 
           <div className="location-filter">
             <span className="location-filter__label">{copy.area}</span>
-            <select
-              value={activeLocation}
-              onChange={(event) => handleLocationFilter(event.target.value)}
-              className="location-filter__select"
-              aria-label={copy.locationFilterLabel}
-            >
-              {LOCATION_OPTIONS.map((location) => (
-                <option key={location.key} value={location.key}>
-                  {location.key === 'all' ? copy.hcm : location.label}
-                </option>
-              ))}
-            </select>
+            <div className="location-select-wrapper">
+              <span className="location-select-icon">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M7 1.167A3.5 3.5 0 0 1 10.5 4.667C10.5 7.292 7 12.833 7 12.833S3.5 7.292 3.5 4.667A3.5 3.5 0 0 1 7 1.167Z" stroke="currentColor" strokeWidth="1.5" />
+                  <circle cx="7" cy="4.667" r="1.167" stroke="currentColor" strokeWidth="1.5" />
+                </svg>
+              </span>
+              <select
+                value={activeLocation}
+                onChange={(event) => handleLocationFilter(event.target.value)}
+                className="location-filter__select"
+                aria-label={copy.locationFilterLabel}
+              >
+                {LOCATION_OPTIONS.map((location) => (
+                  <option key={location.key} value={location.key}>
+                    {location.key === 'all' ? copy.hcm : location.label}
+                  </option>
+                ))}
+              </select>
+              <span className="location-select-chevron">
+                <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
+                  <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </span>
+            </div>
           </div>
         </div>
 
@@ -1096,15 +1103,22 @@ export default function SearchClient() {
             <span className="sidebar__results-count">
               <span data-results-count>{filteredResults.length}</span> {copy.resultsAt} {activeLocationLabel}
             </span>
-            <select
-              value={sortBy}
-              onChange={(event) => handleSortChange(event.target.value as SearchSort)}
-              className="sidebar-sort"
-              aria-label={copy.sortLabel}
-            >
-              <option value="rating">{copy.sortRating}</option>
-              <option value="name">{copy.sortName}</option>
-            </select>
+            <div className="sort-toggle-group">
+              <button
+                type="button"
+                className={`sort-toggle-btn ${sortBy === 'rating' ? 'is-active' : ''}`}
+                onClick={() => handleSortChange('rating')}
+              >
+                ⭐ {copy.sortRating}
+              </button>
+              <button
+                type="button"
+                className={`sort-toggle-btn ${sortBy === 'name' ? 'is-active' : ''}`}
+                onClick={() => handleSortChange('name')}
+              >
+                🔤 {copy.sortName}
+              </button>
+            </div>
           </div>
         </div>
 

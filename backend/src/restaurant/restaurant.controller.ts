@@ -22,14 +22,16 @@ export class RestaurantController {
   @ApiOperation({ summary: 'Lấy danh sách nhà hàng cho màn tìm kiếm' })
   @ApiQuery({ name: 'q', required: false })
   @ApiQuery({ name: 'category', required: false })
+  @ApiQuery({ name: 'location', required: false })
   @ApiQuery({ name: 'sort', required: false, enum: ['rating', 'name'] })
   @Get()
   findAll(
     @Query('q') q?: string,
     @Query('category') category?: string,
+    @Query('location') location?: string,
     @Query('sort') sort?: 'rating' | 'name',
   ) {
-    return this.restaurantService.findAll({ q, category, sort });
+    return this.restaurantService.findAll({ q, category, location, sort });
   }
 
   @ApiOperation({ summary: 'Lấy thông tin nhà hàng của chủ tài khoản hiện tại' })

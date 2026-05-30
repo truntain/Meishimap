@@ -500,17 +500,52 @@ COPY public.bookings (id, user_id, restaurant_id, booking_date, booking_time, gu
 -- Data for Name: menu_items; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.menu_items (id, restaurant_id, name, name_jp, price, description, category, image_url, badge, emoji, created_at) FROM stdin;
-1	1	Phở Bò Đặc Biệt	牛肉のフォー（特別）	95000.00	Phở bò tái nạm gầu gân bò viên	Main Dish	url_pho_dacbiet.jpg	Signature	🍜	2026-05-24 08:12:04.272656+07
-2	1	Chả Giò Chiên (3 cuốn)	揚げ春巻き（3本）	45000.00	Chả giò tôm thịt chiên giòn	Appetizer	url_chagio.jpg	Popular	🌯	2026-05-24 08:12:04.272656+07
-4	1	Bia Saigon Special	サイゴンビール・スペシャル	25000.00	Bia Sài Gòn xanh	Drink	url_biasg.jpg	Recommend	🍺	2026-05-24 08:12:04.272656+07
-5	2	Bún Chả	ブンチャー（豚肉の炭火焼き秘伝だれ）	70000.00	Bún chả thịt nướng than hoa	Main Dish	url_buncha.jpg	Popular	🍲	2026-05-24 08:12:04.272656+07
-6	2	Nem Cua Bể	蟹の揚げ春巻き	35000.00	Nem cua bể vuông chiên giòn	Side Dish	url_nemcua.jpg	Chef Choice	🦀	2026-05-24 08:12:04.272656+07
-7	2	Bia Hà Nội	ハノイビール	20000.00	Bia chai Hà Nội	Drink	url_biahanoi.jpg	\N	🍻	2026-05-24 08:12:04.272656+07
-8	3	Mực Nướng Sa Tế	イカのサテ焼き	120000.00	Mực nướng cay	BBQ	url_mucnuong.jpg	Spicy	🦑	2026-05-24 08:12:04.272656+07
-9	3	Đậu Phộng Luộc	茹でピーナッツ	20000.00	Món nhắm cơ bản	Snack	url_dauphong.jpg	\N	🥜	2026-05-24 08:12:04.272656+07
-10	1	àasda	\N	100000.00	dfsdfase	sashimi	\N	\N	🍣	2026-05-26 14:40:13.740634+07
-\.
+INSERT INTO public.menu_items (id, restaurant_id, name, name_jp, price, description, category, image_url, badge, emoji, created_at) VALUES
+(1, 1, 'Phở Bò Tái Nạm', '牛肉のフォー (レア＆煮込み)', 60000.00, 'Phở với thịt bò tái ngọt mềm và nạm giòn', 'Main Dish', 'url_pho_tainam.jpg', 'Signature', '🍜', NOW()),
+(2, 1, 'Quẩy Giòn', '揚げパン', 5000.00, 'Quẩy giòn ăn kèm nước dùng phở', 'Side Dish', 'url_quay.jpg', NULL, '🥖', NOW()),
+(3, 2, 'Sashimi Tổng Hợp (Đặc biệt)', '特上刺身盛り合わせ', 450000.00, 'Cá hồi, cá trích, bụng cá ngừ, sò đỏ, bạch tuộc', 'Sashimi', 'url_sashimi.jpg', 'Chef Choice', '🐟', NOW()),
+(4, 2, 'Cơm Cuộn Lươn Nhật', 'うなぎロール', 180000.00, 'Cơm cuộn lươn nướng sốt Kabayaki', 'Maki', 'url_unagi.jpg', 'Popular', '🍣', NOW()),
+(5, 2, 'Rượu Sake Nóng (Bình nhỏ)', '熱燗 (小)', 120000.00, 'Sake hâm nóng, nồng độ cồn nhẹ', 'Drink', 'url_sake.jpg', 'Recommend', '🍶', NOW()),
+(6, 3, 'Suất Chả Cá Lăng', 'ラン魚 của炭火焼きコース', 160000.00, 'Chả cá lăng kèm bún, mắm tôm, lạc rang và rau thơm', 'Main Dish', 'url_chaca_lang.jpg', 'Signature', '🥘', NOW()),
+(7, 3, 'Dạ Dày Cá Bóp Gỏi', '魚の胃袋サラダ', 85000.00, 'Gỏi dạ dày cá giòn sần sật trộn chua ngọt', 'Appetizer', 'url_daday.jpg', NULL, '🥗', NOW()),
+(8, 4, 'Pizza Burrata Parma Ham', 'ブッラータチーズと生ハムのピザ', 290000.00, 'Pizza nướng củi với phô mai Burrata tươi và thịt xông khói', 'Pizza', 'url_burrata.jpg', 'Signature', '🍕', NOW()),
+(9, 4, 'Mì Ý Cua Sốt Cà Chua Kem', '蟹のトマトクリームパスタ', 240000.00, 'Mì Ý với thịt cua biển tươi, sốt kem cà chua béo ngậy', 'Pasta', 'url_crabpasta.jpg', 'Popular', '🍝', NOW()),
+(10, 5, 'Buffet Trưa Tiêu Chuẩn', 'ランチビュッフェ', 350000.00, 'Trải nghiệm hơn 100 món ăn Á Âu và hải sản tươi sống', 'Buffet', 'url_buffet_lunch.jpg', 'Recommend', '🍽️', NOW()),
+(11, 5, 'Hàu Sữa Ăn Sống', '生牡蠣', 0.00, 'Hàu sữa tươi vắt chanh (Nằm trong giá buffet)', 'Seafood', 'url_oyster.jpg', 'Popular', '🦪', NOW()),
+(12, 6, 'Bún Bò Huế Đặc Biệt', '特製ブンボーフエ (全部のせ)', 65000.00, 'Đầy đủ bắp bò, nạm, móng, chả cua và chả bò', 'Main Dish', 'url_bbh_dacbiet.jpg', 'Signature', '🍜', NOW()),
+(13, 6, 'Trà Đá', '冷たいお茶 (チャーダー)', 5000.00, 'Trà đá mát lạnh giải khát', 'Drink', 'url_trada.jpg', NULL, '🥤', NOW()),
+(14, 7, 'Suất Bún Chả', 'ブンチャーセット', 55000.00, 'Bún, thịt nướng than hoa (chả băm và chả miếng), nước chấm chua ngọt', 'Main Dish', 'url_buncha_haha_suat.jpg', 'Popular', '🍲', NOW()),
+(15, 7, 'Nem Rán (1 chiếc)', '揚げ春巻き (1本)', 10000.00, 'Nem thịt rán giòn ăn kèm bún chả', 'Side Dish', 'url_nemran.jpg', NULL, '🌯', NOW()),
+(16, 8, 'Bánh Mì Thập Cẩm', 'ミックスバインミー', 35000.00, 'Pate, xá xíu, chả lụa, ruốc bông, dưa góp và sốt bí truyền', 'Main Dish', 'url_bm_thapcam.jpg', 'Signature', '🥖', NOW()),
+(17, 8, 'Sữa Đậu Nành', '豆乳', 15000.00, 'Sữa đậu nành nguyên chất, ít ngọt', 'Drink', 'url_suadaunanh.jpg', 'Recommend', '🥛', NOW()),
+(18, 9, 'Combo 2 Miếng Gà Giòn Vui Vẻ', 'フライドチキン2ピースセット', 85000.00, 'Gà rán giòn rụm kèm khoai tây chiên và nước ngọt', 'Combo', 'url_jolli_chicken.jpg', 'Popular', '🍗', NOW()),
+(19, 9, 'Mì Ý Sốt Xúc Xích', 'ソーセージトマトスパゲッティ', 45000.00, 'Mì Ý sốt cà chua băm thịt và xúc xích đặc trưng', 'Main Dish', 'url_jolli_spaghetti.jpg', 'Chef Choice', '🍝', NOW()),
+(20, 10, 'Trà Sữa Trân Châu Hoàng Gia', 'ロイヤルタピオカミルクティー', 48000.00, 'Trà sữa đậm vị hồng trà, thêm trân châu đen dẻo dai', 'Drink', 'url_toco_milktea.jpg', 'Signature', '🧋', NOW()),
+(21, 10, 'Trà Đào Cam Sả', 'ピーチオレンジレモングラスティー', 52000.00, 'Trà trái cây thanh mát, giải nhiệt cực tốt', 'Drink', 'url_toco_peach.jpg', 'Recommend', '🍹', NOW()),
+(22, 11, 'Set Sashimi Tổng Hợp Premium', '特上刺身盛り合わせ (プレミアム)', 1250000.00, 'Bụng cá ngừ vây xanh, cá hồi, sò đỏ, nhím biển (Uni)', 'Sashimi', 'url_hato_sashimi.jpg', 'Signature', '🍱', NOW()),
+(23, 11, 'Bò Wagyu A5 Nướng Đá', '和牛A5 石焼き', 1500000.00, 'Thịt bò Wagyu A5 thượng hạng nướng trên đá nóng', 'Main Dish', 'url_hato_wagyu.jpg', 'Chef Choice', '🥩', NOW()),
+(24, 11, 'Sushi Cuộn Lươn Bơ', 'うなぎアボカドロール', 220000.00, 'Cơm cuộn lươn nướng Nhật Bản và quả bơ tươi', 'Sushi', 'url_hato_roll.jpg', 'Popular', '🍣', NOW()),
+(25, 11, 'Mì Udon Nước Sốt Tảo Bẹ', '昆布だしうどん', 150000.00, 'Mì Udon sợi dai với nước dùng thanh tao từ tảo bẹ Kombu', 'Noodle', 'url_hato_udon.jpg', NULL, '🍜', NOW()),
+(26, 12, 'Sashimi Bụng Cá Ngừ Vây Xanh', '本マグロ大トロ刺身', 450000.00, 'Phần bụng cá ngừ cao cấp nhất (Otoro), béo ngậy tan trong miệng', 'Sashimi', 'url_otoro.jpg', 'Signature', '🐟', NOW()),
+(27, 12, 'Sushi Lươn Nướng', 'うなぎ握り', 120000.00, 'Sushi lươn nướng sốt ngọt Kabayaki', 'Sushi', 'url_unagi_sushi.jpg', 'Popular', '🍣', NOW()),
+(28, 13, 'Sườn Bò Mỹ Rút Xương', '牛角カルビ', 220000.00, 'Sườn bò mềm mọng nướng trên than hoa', 'BBQ', 'url_karubi.jpg', 'Signature', '🥩', NOW()),
+(29, 13, 'Lưỡi Bò Nướng Muối Hành', 'ネギ塩牛タン', 180000.00, 'Lưỡi bò giòn sần sật, thái mỏng nướng cùng sốt muối hành', 'BBQ', 'url_gyutan.jpg', 'Popular', '👅', NOW()),
+(30, 14, 'Mì Udon Bò Kake', '肉うどん', 89000.00, 'Mì Udon nước thanh ngọt ăn kèm thịt bò Mỹ', 'Noodle', 'url_niku_udon.jpg', 'Signature', '🍜', NOW()),
+(31, 14, 'Tempura Tôm', 'えび天', 35000.00, 'Tôm tẩm bột chiên xù kiểu Nhật', 'Side Dish', 'url_ebiten.jpg', 'Recommend', '🍤', NOW()),
+(32, 15, 'Cá Ngừ Nướng Rơm', 'かつおの藁焼き', 250000.00, 'Katsuo Tataki - Cá ngừ áp chảo bằng rơm rực lửa thơm mùi khói', 'Main Dish', 'url_katsuo.jpg', 'Signature', '🔥', NOW()),
+(33, 15, 'Cơm Nắm Nướng Tương', '焼きおにぎり', 45000.00, 'Cơm nắm phết nước tương nướng trên than hồng', 'Side Dish', 'url_yaki_onigiri.jpg', NULL, '🍙', NOW()),
+(34, 16, 'Buffet Sakura', '桜ビュッフェ', 450000.00, 'Gói buffet tiêu chuẩn bao gồm Sashimi cá hồi, Sushi và thịt nướng', 'Buffet', 'url_isushi_sakura.jpg', 'Popular', '🍱', NOW()),
+(35, 16, 'Hàu Nướng Phô Mai', '牡蠣のチーズ焼き', 0.00, 'Hàu nướng phô mai bỏ lò (Nằm trong giá buffet)', 'Seafood', 'url_oyster_cheese.jpg', 'Recommend', '🦪', NOW()),
+(36, 17, 'Bánh Xèo Nhật Bản', 'お好み焼き', 120000.00, 'Okonomiyaki nhân hải sản và bắp cải, sốt Mayonnaise đậm đà', 'Main Dish', 'url_okonomiyaki.jpg', 'Popular', '🥞', NOW()),
+(37, 17, 'Rượu Shochu Mugi', '麦焼酎', 80000.00, 'Rượu Shochu lúa mạch (Giá phục vụ theo ly)', 'Drink', 'url_shochu.jpg', NULL, '🍶', NOW()),
+(38, 18, 'Miso Ramen Hokkaido', '北海道味噌ラーメン', 150000.00, 'Ramen với nước dùng tương miso đặc trưng của vùng Hokkaido', 'Noodle', 'url_miso_ramen.jpg', 'Signature', '🍜', NOW()),
+(39, 18, 'Cơm Thịt Heo Nướng', '豚丼 (ぶたどん)', 140000.00, 'Cơm trắng ăn kèm thịt heo nướng sốt ngọt đậm đà', 'Main Dish', 'url_butadon.jpg', 'Recommend', '🍛', NOW()),
+(40, 19, 'Cơm Cuộn California', 'カリフォルニアロール', 110000.00, 'Cơm cuộn bơ, thanh cua và trứng cá chuồn', 'Sushi', 'url_cali_roll.jpg', 'Popular', '🍣', NOW()),
+(41, 19, 'Set Cơm Trưa Cá Hồi Nướng', '鮭塩焼き定食', 160000.00, 'Set Bento trưa gồm cá hồi nướng muối, cơm, súp miso và salad', 'Set Menu', 'url_sake_teishoku.jpg', 'Chef Choice', '🍱', NOW()),
+(42, 20, 'Tonkotsu Ramen Truyền Thống', '豚骨ラーメン', 110000.00, 'Ramen nước hầm xương heo béo ngậy kèm thịt xá xíu (Chashu)', 'Noodle', 'url_tonkotsu.jpg', 'Signature', '🍜', NOW()),
+(43, 20, 'Há Cảo Gyoza (5 chiếc)', '焼き餃子 (5個)', 45000.00, 'Há cảo nhân thịt và bắp cải áp chảo viền giòn', 'Side Dish', 'url_gyoza.jpg', 'Popular', '🥟', NOW()),
+(44, 21, 'Set Omakase Đặc Biệt', 'おまかせ コース', 2500000.00, 'Set ăn cao cấp 12 món do Chef Nhật Bản tự tay lựa chọn nguyên liệu', 'Omakase', 'url_omakase.jpg', 'Signature', '🔪', NOW()),
+(45, 21, 'Kem Matcha Nhật Bản', '抹茶アイスクリーム', 80000.00, 'Kem trà xanh nguyên chất vị đắng nhẹ và thanh mát', 'Dessert', 'url_matcha_ice.jpg', NULL, '🍨', NOW());
 
 
 --
@@ -540,12 +575,28 @@ COPY public.restaurant_documents (id, restaurant_id, japanese_proof, business_li
 -- Data for Name: restaurants; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.restaurants (id, name, name_jp, category, rating, address, district, city, description, phone, has_japanese_support, latitude, longitude, image_url, created_at, updated_at, owner_id, status, reject_reason) FROM stdin;
-3	Quan Nhau 5 Do	居酒屋 5度	Izakaya / Beer	3.9	15B Lê Thánh Tôn	District 1	Ho Chi Minh City	Quán nhậu vỉa hè phong cách Việt Nam.	+84901234567	t	0	0	\N	2026-05-25 03:32:51.92453	2026-05-25 03:32:51.92453	\N	approved	\N
-2	Bún Chả Đắc Kim	ブンチャータッキム	Vietnamese / Local	4.3	45 Tràng Tiền, Quận Hoàn Kiếm, Hà Nội	Hoàn Kiếm	Hà Nội	Bún chả gia truyền phố cổ. Chủ quán có thể giao tiếp tiếng Nhật cơ bản.	+842438285022	t	21.0264	105.8575	\N	2026-05-25 03:32:51.92453	2026-05-25 23:12:42.579748	\N	approved	\N
-1	Phở Hòa Pasteur vinh	フォーホア パスター	Vietnamese / Pho	4.9	123 Kim Mã, Quận Ba Đình, Hà Nội	Ba Đình	Hà Nội	Quán phở truyền thống lâu đời. Không gian rộng rãi, có menu tiếng Nhật.	123456789	t	21.0313	105.8263		2026-05-25 03:32:51.92453	2026-05-26 15:43:44.736686	5	approved	\N
-4	vinhngudubai	vinhsan	Món Việt	0.0	15vietnam	2batrung	Hà Nội	nhà háng bán indomi	123456789	f	0	0	\N	2026-05-27 14:34:22.845458	2026-05-27 15:21:57.963247	10	approved	\N
-\.
+INSERT INTO public.restaurants (id, name, name_jp, category, rating, address, district, city, description, phone, has_japanese_support, latitude, longitude, image_url, created_at, updated_at, owner_id, status, reject_reason) VALUES
+(1, 'Phở Gia Truyền Bát Đàn', 'フォー・ザー・チュエン（バッダン通り）', 'Vietnamese / Pho', 4.8, '49 Bát Đàn, Phường Cửa Đông, Quận Hoàn Kiếm, Hà Nội', 'Hoàn Kiếm', 'Hà Nội', 'Quán phở bò truyền thống nổi tiếng bậc nhất phố cổ Hà Nội. Nước dùng đậm đà, thịt bò tươi ngon.', '+842438287960', true, 21.0318, 105.8471, 'url_pho_batdan.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(2, 'Sushi Kei Lotte Center', '寿司 慶 (Sushi Kei)', 'Japanese / Sushi', 4.6, 'Tầng 3 Lotte Center, 54 Liễu Giai, Quận Ba Đình, Hà Nội', 'Ba Đình', 'Hà Nội', 'Nhà hàng Nhật Bản cao cấp với nguyên liệu tươi nhập khẩu trực tiếp từ chợ Tsukiji. Không gian sang trọng, yên tĩnh.', '+842433332222', true, 21.0317, 105.8123, 'url_sushikei.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(3, 'Chả Cá Thăng Long', 'チャーカータンロン（白身魚のディル炒め）', 'Vietnamese / Local', 4.5, '21 Đường Thành, Phường Cửa Đông, Quận Hoàn Kiếm, Hà Nội', 'Hoàn Kiếm', 'Hà Nội', 'Đặc sản chả cá lăng tẩm ướp đậm đà, xào cùng hành và thì là. Không gian rộng rãi, phù hợp tiếp khách.', '+842438286007', true, 21.0308, 105.8468, 'url_chaca.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(4, 'Pizza 4P''s Tràng Tiền', 'ピザ 4P''s チャンティエン', 'Italian / Fusion', 4.9, '43 Tràng Tiền, Quận Hoàn Kiếm, Hà Nội', 'Hoàn Kiếm', 'Hà Nội', 'Sự kết hợp hoàn hảo giữa ẩm thực Ý và tinh hoa Nhật Bản. Nổi tiếng với phô mai tự làm và không gian bếp mở.', '+8419006043', true, 21.0250, 105.8540, 'url_pizza4ps.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(5, 'Maison Sen Buffet', 'メゾン セン ビュッフェ', 'Buffet / Asian-European', 4.4, '61 Trần Hưng Đạo, Quận Hoàn Kiếm, Hà Nội', 'Hoàn Kiếm', 'Hà Nội', 'Buffet hải sản và các món Á - Âu đẳng cấp trong biệt thự Pháp cổ. Phù hợp cho nhóm đông người và gia đình.', '+842439344186', false, 21.0210, 105.8480, 'url_maisonsen.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(6, 'Bún Bò Huế Anh Quân', 'ブンボーフエ アンクアン', 'Vietnamese / Noodle', 4.5, '15 Thái Hà, Phường Trung Liệt, Quận Đống Đa, Hà Nội', 'Đống Đa', 'Hà Nội', 'Nước dùng đậm đà, thơm mùi mắm ruốc, chả cua tự làm và móng giò giòn sần sật.', '+84987654321', false, 21.0112, 105.8214, 'url_bunbo_anhquan.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(7, 'Bún Chả Ha Ha', 'ブンチャー ハハ', 'Vietnamese / Local', 4.3, '30 Đội Cấn, Phường Đội Cấn, Quận Ba Đình, Hà Nội', 'Ba Đình', 'Hà Nội', 'Quán bún chả với công thức tẩm ướp thịt nướng than hoa truyền thống, chả viên nướng mềm ngọt.', '+84901239876', false, 21.0345, 105.8201, 'url_buncha_haha.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(8, 'Bánh Mì Cô Bình', 'バインミー コービン', 'Vietnamese / Street Food', 4.6, '12 Phố Huế, Quận Hai Bà Trưng, Hà Nội', 'Hai Bà Trưng', 'Hà Nội', 'Bánh mì pate truyền thống với vỏ giòn rụm, pate gan béo ngậy và thịt xá xíu đậm đà.', '+84912345678', false, 21.0150, 105.8500, 'url_banhmi_cobinh.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(9, 'Jollibee - Vincom Phạm Ngọc Thạch', 'ジョリビー ファムゴックタック店', 'Fast Food', 4.4, 'Tầng 5, Vincom Phạm Ngọc Thạch, 2 Phạm Ngọc Thạch, Quận Đống Đa, Hà Nội', 'Đống Đa', 'Hà Nội', 'Gà rán giòn rụm, mì Ý sốt cà chua thịt băm truyền thống và thực đơn phù hợp cho gia đình, trẻ em.', '+8419001533', true, 21.0068, 105.8322, 'url_jollibee.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(10, 'TocoToco Tea - Ngã Tư Sở', 'トコトコ タピオカミルクティー', 'Cafe / Drink', 4.2, 'Số 2 Tôn Thất Tùng, Quận Đống Đa, Hà Nội', 'Đống Đa', 'Hà Nội', 'Thương hiệu trà sữa Việt Nam. Trà sữa trân châu, trà trái cây nhiệt đới với không gian trẻ trung.', '+841900636936', false, 21.0022, 105.8285, 'url_tocotoco.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(11, 'Nhà hàng Hải sản Hatoyama', 'シーフードレストラン ハトヤマ', 'Japanese / Seafood', 4.9, '8 Vạn Phúc, Phường Liễu Giai, Quận Ba Đình, Hà Nội', 'Ba Đình', 'Hà Nội', 'Hải sản cao cấp bay trực tiếp từ Nhật Bản về Hà Nội trong 24h. Phòng riêng VIP sang trọng.', '+84917992288', true, 21.0321, 105.8155, 'url_hatoyama.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(12, 'Asahi Sushi', '朝日寿司', 'Japanese / Sushi', 4.7, '288 Bà Triệu, Phường Lê Đại Hành, Quận Hai Bà Trưng, Hà Nội', 'Hai Bà Trưng', 'Hà Nội', 'Nhà hàng sushi truyền thống lâu đời tại Hà Nội, không gian đậm chất văn hóa Nhật Bản.', '+842439745945', true, 21.0118, 105.8492, 'url_asahi.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(13, 'Gyu-Kaku Japanese BBQ', '牛角 牛肉バーベキュー', 'Japanese / Yakiniku', 4.6, 'Tầng 1, Tòa nhà V-Tower, 649 Kim Mã, Quận Ba Đình, Hà Nội', 'Ba Đình', 'Hà Nội', 'Hệ thống thịt nướng Yakiniku số 1 Nhật Bản, thịt bò mềm mọng với nước sốt độc quyền.', '+842432115405', true, 21.0289, 105.8111, 'url_gyukaku.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(14, 'Marukame Udon', '丸亀製麺', 'Japanese / Noodle', 4.5, 'Tầng 2, Vincom Metropolis, 29 Liễu Giai, Quận Ba Đình, Hà Nội', 'Ba Đình', 'Hà Nội', 'Mì Udon tươi làm thủ công tại chỗ, nước dùng thanh ngọt và các loại tempura chiên giòn.', '+84931234567', true, 21.0315, 105.8128, 'url_marukame.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(15, 'Shamoji Robata Yaki', 'しゃもじ 炉端焼き', 'Japanese / Izakaya', 4.8, '25 Tông Đản, Phường Tràng Tiền, Quận Hoàn Kiếm, Hà Nội', 'Hoàn Kiếm', 'Hà Nội', 'Quán nhậu kiểu ngư dân Nhật Bản. Các món nướng than hoa rực lửa và không khí cực kỳ náo nhiệt.', '+84923456789', true, 21.0261, 105.8569, 'url_shamoji.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(16, 'iSushi Buffet', 'iSushi ビュッフェ', 'Japanese / Buffet', 4.3, '158 Thái Hà, Phường Trung Liệt, Quận Đống Đa, Hà Nội', 'Đống Đa', 'Hà Nội', 'Buffet ẩm thực Nhật Bản với hơn 100 món Sashimi, Sushi, Teppanyaki thỏa thích.', '+8419006622', false, 21.0125, 105.8208, 'url_isushi.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(17, 'Kỷ Y - Kiyi Izakaya', '紀伊 居酒屋', 'Japanese / Izakaya', 4.5, '166 Triệu Việt Vương, Phường Bùi Thị Xuân, Quận Hai Bà Trưng, Hà Nội', 'Hai Bà Trưng', 'Hà Nội', 'Quán nhậu nhỏ mang phong cách gia đình Nhật, nổi tiếng với các món ăn kèm rượu Sake.', '+842439781386', true, 21.0130, 105.8480, 'url_kiyi.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(18, 'Hokkaido Ramen & Butadon Oyama', '北海道ラーメン 大山', 'Japanese / Ramen', 4.7, 'Khu ngoại giao đoàn, Tòa nhà Syrena, 51 Xuân Diệu, Quận Tây Hồ, Hà Nội', 'Tây Hồ', 'Hà Nội', 'Mì Ramen chuẩn vị Hokkaido và Cơm thịt heo nướng Butadon trứ danh.', '+842437188891', true, 21.0633, 105.8245, 'url_hokkaido_ramen.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(19, 'The Sushi Bar', '寿司バー', 'Japanese / Sushi', 4.4, '120 Trung Hòa, Phường Yên Hòa, Quận Cầu Giấy, Hà Nội', 'Cầu Giấy', 'Hà Nội', 'Không gian hiện đại, menu đa dạng từ sushi, sashimi đến các set bento ăn trưa tiện lợi.', '+842437646666', true, 21.0111, 105.7981, 'url_sushibar.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(20, 'Tonchan Ramen', 'とんちゃん ラーメン', 'Japanese / Ramen', 4.2, '76 Bùi Thị Xuân, Quận Hai Bà Trưng, Hà Nội', 'Hai Bà Trưng', 'Hà Nội', 'Mì Tonkotsu Ramen với nước dùng xương heo hầm nhiều giờ béo ngậy, đậm đà.', '+84981239999', false, 21.0145, 105.8490, 'url_tonchan.jpg', NOW(), NOW(), NULL, 'approved', NULL),
+(21, 'Yuzu Omakase', '柚子 おまかせ', 'Japanese / Omakase', 4.9, '34 Lý Thái Tổ, Phường Tràng Tiền, Quận Hoàn Kiếm, Hà Nội', 'Hoàn Kiếm', 'Hà Nội', 'Trải nghiệm ẩm thực cao cấp nghệ thuật, Chef Nhật Bản trực tiếp chế biến theo nguyên liệu tươi trong ngày.', '+84988776655', true, 21.0268, 105.8552, 'url_yuzu.jpg', NOW(), NOW(), NULL, 'approved', NULL);
 
 
 --
@@ -607,7 +658,7 @@ SELECT pg_catalog.setval('public.bookings_id_seq', 1, false);
 -- Name: menu_items_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.menu_items_id_seq', 10, true);
+SELECT pg_catalog.setval('public.menu_items_id_seq', 45, true);
 
 
 --
@@ -634,7 +685,7 @@ SELECT pg_catalog.setval('public.restaurant_documents_id_seq', 1, true);
 -- Name: restaurants_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.restaurants_id_seq', 4, true);
+SELECT pg_catalog.setval('public.restaurants_id_seq', 21, true);
 
 
 --

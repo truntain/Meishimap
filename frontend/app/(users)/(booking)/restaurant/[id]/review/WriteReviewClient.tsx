@@ -4,6 +4,8 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
+import { getBeautifulImage } from '@/utils/image';
+import { writeReviewCopy, useAppLanguage } from '@/config/i18n';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
@@ -12,7 +14,7 @@ function buildRestaurantDetailUrl(id: string) {
   return new URL(`restaurants/${id}`, baseUrl).toString();
 }
 
-const VISIT_TYPES = ['Đi cùng gia đình', 'Đi cùng bạn bè', 'Đi cùng đối tác', 'Đi một mình'];
+const VISIT_TYPES_KEYS = ['family', 'friends', 'partner', 'solo'];
 
 // ── Star Rating component ──
 function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
@@ -39,6 +41,8 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
 export default function WriteReviewClient() {
   const params = useParams();
   const router = useRouter();
+  const { language } = useAppLanguage();
+  const copy = writeReviewCopy[language];
 
   const restaurantIdParam = params?.id;
   const restaurantId = Array.isArray(restaurantIdParam)
@@ -53,8 +57,8 @@ export default function WriteReviewClient() {
     rating: 4.9,
     reviewCount: 240,
     phone: '+84 28 3823 4567',
-    hours: '10:00 - 22:00 (Hàng ngày)',
-    languages: 'Tiếng Việt, Tiếng Nhật, English',
+    hours: language === 'ja' ? '10:00 - 22:00 (毎日)' : '10:00 - 22:00 (Hàng ngày)',
+    languages: language === 'ja' ? 'ベトナム語、日本語、英語' : 'Tiếng Việt, Tiếng Nhật, English',
     amenities: ['📶 Free Wifi', '🅿️ Free Parking', '💳 Cards Accepted', '♿ Accessibility'],
     imageUrl: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80',
   });
@@ -72,23 +76,22 @@ export default function WriteReviewClient() {
         }
         const data = await response.json();
         if (isMounted) {
-          const rawImageUrl = data.imageUrl || data.image_url;
-          const imageUrl = (rawImageUrl && rawImageUrl !== 'null' && rawImageUrl !== 'undefined')
-            ? rawImageUrl
-            : 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80';
+          const imageUrl = getBeautifulImage(data.imageUrl || data.image_url, data.name);
 
           setRestaurant({
             id: data.id,
             name: data.name,
-            address: data.address || 'Chưa cập nhật địa chỉ',
+            address: data.address || (language === 'ja' ? '住所未登録' : 'Chưa cập nhật địa chỉ'),
             rating: Number(data.rating ?? 4.9),
             reviewCount: 240,
-            phone: data.phone || 'Chưa cập nhật',
-            hours: '10:00 - 22:00 (Hàng ngày)',
+            phone: data.phone || (language === 'ja' ? '未登録' : 'Chưa cập nhật'),
+            hours: language === 'ja' ? '10:00 - 22:00 (毎日)' : '10:00 - 22:00 (Hàng ngày)',
             languages: (data.hasJapaneseSupport || data.has_japanese_support)
-              ? 'Tiếng Việt, Tiếng Nhật, English'
-              : 'Tiếng Việt, English',
-            amenities: ['📶 Free Wifi', '🅿️ Free Parking', '💳 Cards Accepted', '♿ Accessibility'],
+              ? (language === 'ja' ? 'ベトナム語、日本語、英語' : 'Tiếng Việt, Tiếng Nhật, English')
+              : (language === 'ja' ? 'ベトナム語、英語' : 'Tiếng Việt, English'),
+            amenities: language === 'ja' 
+              ? ['📶 無料Wi-Fi', '🅿️ 無料駐車場', '💳 カード支払い可']
+              : ['📶 Free Wifi', '🅿️ Free Parking', '💳 Cards Accepted'],
             imageUrl,
           });
         }
@@ -100,14 +103,14 @@ export default function WriteReviewClient() {
     return () => {
       isMounted = false;
     };
-  }, [restaurantId]);
+  }, [restaurantId, language]);
 
   // ── Form state ──
   const [rating, setRating] = useState(0);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [visitDate, setVisitDate] = useState('');
-  const [visitType, setVisitType] = useState(VISIT_TYPES[0]);
+  const [visitType, setVisitType] = useState(VISIT_TYPES_KEYS[0]);
   const [photos, setPhotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -180,16 +183,16 @@ export default function WriteReviewClient() {
     } catch (err) {
       console.error(err);
       setIsSubmitting(false);
-      alert('Đã xảy ra lỗi khi gửi đánh giá. Vui lòng đăng nhập lại và thử lại.');
+      alert(language === 'ja' ? 'レビューの送信中にエラーが発生しました。ログインし直してからもう一度お試しください。' : 'Đã xảy ra lỗi khi gửi đánh giá. Vui lòng đăng nhập lại và thử lại.');
     }
-  }, [rating, title, content, visitDate, restaurantId]);
+  }, [rating, title, content, visitDate, restaurantId, language]);
 
   return (
     <>
       {/* ── Hero ── */}
-      <section className="review-hero" aria-label="Ảnh nhà hàng">
+      <section className="review-hero" aria-label={copy.heroLabel}>
         <div
-          className="review-hero__it;ty6=mg"
+          className="review-hero__img"
           style={{
             background: `url('${restaurant.imageUrl}') center/cover no-repeat`,
           }}
@@ -202,8 +205,8 @@ export default function WriteReviewClient() {
         <div className="review-info-card__inner">
           <div>
             <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-              <span className="detail-tag">Japanese Speaking</span>
-              <span className="detail-tag detail-tag--green">Hygiene Certified</span>
+              <span className="detail-tag">{language === 'ja' ? '日本語対応' : 'Hỗ trợ tiếng Nhật'}</span>
+              <span className="detail-tag detail-tag--green">{language === 'ja' ? '衛生証明済' : 'Chứng nhận vệ sinh'}</span>
             </div>
             <h1 style={{ fontWeight: 700, fontSize: '20px', color: 'var(--clr-dark)', marginBottom: '4px' }}>{restaurant.name}</h1>
             <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
@@ -214,7 +217,7 @@ export default function WriteReviewClient() {
                 {restaurant.address}
               </span>
               <span style={{ fontSize: '13px', color: 'var(--clr-yellow)' }}>
-                ★★★★★ <span style={{ color: 'var(--clr-muted)' }}>({restaurant.rating.toFixed(1)}/5 • {restaurant.reviewCount} reviews)</span>
+                ★★★★★ <span style={{ color: 'var(--clr-muted)' }}>({restaurant.rating.toFixed(1)}/5 • {restaurant.reviewCount} {language === 'ja' ? '件のレビュー' : 'đánh giá'})</span>
               </span>
             </div>
           </div>
@@ -228,7 +231,7 @@ export default function WriteReviewClient() {
               <rect x="2" y="3" width="12" height="11" rx="2" stroke="#fff" strokeWidth="1.3" />
               <path d="M2 7h12M5 1v4M11 1v4" stroke="#fff" strokeWidth="1.3" strokeLinecap="round" />
             </svg>
-            Đặt bàn
+            {language === 'ja' ? '予約' : 'Đặt bàn'}
           </Link>
         </div>
       </div>
@@ -238,15 +241,15 @@ export default function WriteReviewClient() {
         {/* Left sidebar */}
         <aside className="review-sidebar">
           <div className="info-card">
-            <h3 className="info-card__title">Thông tin liên hệ</h3>
+            <h3 className="info-card__title">{copy.contact}</h3>
             <div className="info-card__row">
-              <div><div className="info-card__label">Giờ mở cửa</div><div className="info-card__value">{restaurant.hours}</div></div>
+              <div><div className="info-card__label">{copy.hours}</div><div className="info-card__value">{restaurant.hours}</div></div>
             </div>
             <div className="info-card__row">
-              <div><div className="info-card__label">Điện thoại</div><div className="info-card__value">{restaurant.phone}</div></div>
+              <div><div className="info-card__label">{copy.phone}</div><div className="info-card__value">{restaurant.phone}</div></div>
             </div>
             <div className="info-card__row">
-              <div><div className="info-card__label">Ngôn ngữ hỗ trợ</div><div className="info-card__value">{restaurant.languages}</div></div>
+              <div><div className="info-card__label">{copy.languages}</div><div className="info-card__value">{restaurant.languages}</div></div>
             </div>
             <div style={{ height: '110px', background: 'linear-gradient(135deg,#e0d3cc,#d5c4ba)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', marginTop: '14px' }}>
               <span style={{ fontSize: '28px', opacity: 0.4 }}>🗺</span>
@@ -255,26 +258,18 @@ export default function WriteReviewClient() {
                 id="btn-map"
                 onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(restaurant.address)}`, '_blank')}
               >
-                Xem bản đồ
+                {copy.viewMap}
               </button>
             </div>
           </div>
 
           <div className="info-card">
-            <h3 className="info-card__title">Tiện ích</h3>
+            <h3 className="info-card__title">{copy.amenities}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               {restaurant.amenities.map((a: string) => (
                 <div key={a} style={{ fontSize: '12px', color: 'var(--clr-muted)' }}>{a}</div>
               ))}
             </div>
-          </div>
-
-          <div style={{ background: 'var(--clr-dark)', borderRadius: '12px', padding: '18px' }}>
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginBottom: '4px' }}>Ưu đãi đặc biệt</div>
-            <div style={{ fontWeight: 700, fontSize: '16px', color: '#fff', lineHeight: 1.4, marginBottom: '14px' }}>Giảm 15% cho lần đặt bàn đầu tiên</div>
-            <Link href={`/restaurant/${restaurantId}`} style={{ background: '#fff', color: 'var(--clr-dark)', borderRadius: '8px', padding: '7px 16px', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '12px', textDecoration: 'none', display: 'inline-block' }}>
-              Đặt bàn ngay
-            </Link>
           </div>
         </aside>
 
@@ -283,68 +278,68 @@ export default function WriteReviewClient() {
           {/* Success banner */}
           {showSuccess && (
             <div className="success-banner is-visible" id="success-banner">
-              ✅ Đánh giá đã được gửi thành công! Đang chuyển hướng...
+              ✅ {copy.success}
             </div>
           )}
 
           <form id="review-form" onSubmit={handleSubmit} noValidate>
             {/* Star rating */}
             <div className="review-section">
-              <div className="review-section__title">Trải nghiệm của bạn như thế nào</div>
-              <div className="review-section__sub">Nhấn vào sao để đánh giá</div>
+              <div className="review-section__title">{copy.ratingLabel}</div>
+              <div className="review-section__sub">{copy.starsSub}</div>
               <StarRating value={rating} onChange={setRating} />
               {errors.rating && (
-                <span className="error-msg is-visible" id="star-error">Vui lòng chọn số sao.</span>
+                <span className="error-msg is-visible" id="star-error">{copy.starsError}</span>
               )}
             </div>
 
             {/* Review text */}
             <div className="review-section">
-              <div className="review-section__title">Đánh giá của bạn</div>
-              <div className="review-section__sub">Chia sẻ cảm nhận chi tiết của bạn</div>
+              <div className="review-section__title">{language === 'ja' ? 'あなたのレビュー' : 'Đánh giá của bạn'}</div>
+              <div className="review-section__sub">{language === 'ja' ? '詳細な感想を教えてください' : 'Chia sẻ cảm nhận chi tiết của bạn'}</div>
 
               <div className="review-field">
                 <label className="review-label" htmlFor="review-title">
-                  Tiêu đề đánh giá <span style={{ color: '#e53e3e' }}>*</span>
+                  {copy.titleLabel} <span style={{ color: '#e53e3e' }}>*</span>
                 </label>
                 <input
                   type="text"
                   id="review-title"
                   className={`review-input${errors.title ? ' is-error' : ''}`}
-                  placeholder="Tóm tắt trải nghiệm của bạn..."
+                  placeholder={copy.titlePlaceholder}
                   value={title}
                   onChange={e => { setTitle(e.target.value); setErrors(prev => ({ ...prev, title: false })); }}
                   required
                 />
-                {errors.title && <span className="error-msg is-visible" id="title-error">Vui lòng nhập tiêu đề đánh giá.</span>}
+                {errors.title && <span className="error-msg is-visible" id="title-error">{copy.titleError}</span>}
               </div>
 
               <div className="review-field">
                 <label className="review-label" htmlFor="review-content">
-                  Nội dung <span style={{ color: '#e53e3e' }}>*</span>
+                  {copy.contentLabel} <span style={{ color: '#e53e3e' }}>*</span>
                 </label>
                 <textarea
                   id="review-content"
                   className={`review-textarea${errors.content ? ' is-error' : ''}`}
-                  placeholder="Viết cảm nhận của bạn về nhà hàng, món ăn, phục vụ..."
+                  placeholder={copy.contentPlaceholder}
                   maxLength={500}
                   value={content}
                   onChange={e => { setContent(e.target.value); setErrors(prev => ({ ...prev, content: false })); }}
                   required
                 />
                 <div style={{ fontSize: '12px', color: 'var(--clr-muted)', textAlign: 'right', marginTop: '4px' }}>
-                  {content.length} / 500 ký tự
+                  {copy.contentLimit.replace('{{current}}', String(content.length))}
                 </div>
-                {errors.content && <span className="error-msg is-visible" id="content-error">Vui lòng nhập nội dung đánh giá.</span>}
+                {errors.content && <span className="error-msg is-visible" id="content-error">{copy.contentError}</span>}
               </div>
             </div>
 
             {/* Visit info */}
             <div className="review-section">
-              <div className="review-section__title">Thông tin chuyến đi</div>
+              <div className="review-section__title">{copy.visitInfo}</div>
 
               <div className="review-field">
-                <label className="review-label" htmlFor="visit-date">Ngày đến</label>
+                <label className="review-label" htmlFor="visit-date">{copy.visitDate}</label>
                 <input
                   type="date"
                   id="visit-date"
@@ -356,21 +351,25 @@ export default function WriteReviewClient() {
               </div>
 
               <div className="review-field">
-                <label className="review-label" htmlFor="visit-type">Hình thức</label>
+                <label className="review-label" htmlFor="visit-type">{copy.visitType}</label>
                 <select
                   id="visit-type"
                   className="review-select"
                   value={visitType}
                   onChange={e => setVisitType(e.target.value)}
                 >
-                  {VISIT_TYPES.map(t => <option key={t}>{t}</option>)}
+                  {VISIT_TYPES_KEYS.map(key => (
+                    <option key={key} value={key}>
+                      {copy.visitTypes[key as keyof typeof copy.visitTypes]}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
 
             {/* Photo upload */}
             <div className="review-section">
-              <div className="review-section__title">Hình ảnh</div>
+              <div className="review-section__title">{copy.photos}</div>
               <div
                 className="upload-area"
                 id="upload-area"
@@ -380,8 +379,8 @@ export default function WriteReviewClient() {
                 onKeyDown={e => e.key === 'Enter' && fileInputRef.current?.click()}
               >
                 <div style={{ fontSize: '32px', marginBottom: '8px' }}>📷</div>
-                <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--clr-dark)', marginBottom: '4px' }}>Thêm ảnh của bạn</div>
-                <div style={{ fontSize: '12px', color: 'var(--clr-muted)' }}>PNG, JPG tối đa 5 ảnh</div>
+                <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--clr-dark)', marginBottom: '4px' }}>{copy.addPhoto}</div>
+                <div style={{ fontSize: '12px', color: 'var(--clr-muted)' }}>{copy.photoLimit}</div>
               </div>
               <input
                 ref={fileInputRef}
@@ -399,14 +398,14 @@ export default function WriteReviewClient() {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={src}
-                        alt={`Ảnh ${idx + 1}`}
+                        alt={(language === 'ja' ? '写真' : 'Ảnh') + ' ' + (idx + 1)}
                         style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--clr-border)' }}
                       />
                       <button
                         type="button"
                         onClick={() => removePhoto(idx)}
                         style={{ position: 'absolute', top: '-6px', right: '-6px', width: '20px', height: '20px', background: '#e53e3e', color: '#fff', border: 'none', borderRadius: '50%', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
-                        aria-label="Xóa ảnh"
+                        aria-label={copy.removePhoto}
                       >
                         ×
                       </button>
@@ -425,14 +424,14 @@ export default function WriteReviewClient() {
               {isSubmitting ? (
                 <>
                   <span style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />
-                  Đang gửi...
+                  {copy.submitting}
                 </>
               ) : (
                 <>
                   <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                     <path d="M2 16L16 2M16 2H6M16 2V12" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                  Gửi đánh giá
+                  {copy.submit}
                 </>
               )}
             </button>

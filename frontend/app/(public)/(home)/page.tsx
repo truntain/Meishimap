@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAppLanguage, homeCopy } from '@/config/i18n';
+import { getBeautifulImage } from '@/utils/image';
 
 interface Restaurant {
   id: number;
@@ -111,7 +112,7 @@ export default function HomePage() {
             featuredRestaurants.map((restaurant) => (
               <article className="card" key={restaurant.id} id={`card-${restaurant.id}`}>
                 <div className="card__image-wrap">
-                  <img src={restaurant.imageUrl || '/restaurant-card-13d489.png'} alt={restaurant.name} className="card__image" />
+                  <img src={getBeautifulImage(restaurant.imageUrl, restaurant.name)} alt={restaurant.name} className="card__image" />
                   <div className="card__rating">
                     <svg width="12" height="11" viewBox="0 0 12 11" fill="#EAB308"><path d="M6 .5 7.545 4.185 11.5 4.635 8.75 7.27l.795 3.925L6 9.125 2.455 11.195l.795-3.925L.5 4.635l3.955-.45Z"/></svg>
                     {restaurant.rating.toFixed(1)}

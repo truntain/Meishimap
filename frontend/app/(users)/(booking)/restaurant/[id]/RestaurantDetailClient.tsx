@@ -4,6 +4,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { detailCopy, useAppLanguage } from '@/config/i18n';
+import { getBeautifulImage } from '@/utils/image';
 import Cookies from 'js-cookie';
 import { io } from 'socket.io-client';
 import { toast } from 'react-hot-toast';
@@ -33,6 +34,16 @@ type RestaurantDetail = ApiRestaurant & {
   languages: string;
   tags: string[];
   amenities: string[];
+  menuItems?: Array<{
+    id: number;
+    cat: string;
+    emoji: string;
+    imageUrl: string;
+    name: string;
+    price: string;
+    desc: string;
+    badge: string;
+  }>;
 };
 
 const CATEGORY_LABELS = new Map([
@@ -67,6 +78,25 @@ const MENU_ITEM_EMOJIS: Record<string, string> = {
   'tempura': '🍤',
   'ramen': '🍜',
   'dessert': '🍡',
+  'desserts': '🍡',
+  'drink': '🍹',
+  'drinks': '🍹',
+  'sushi': '🍣',
+  'maki': '🥢',
+  'noodle': '🍜',
+  'noodles': '🍜',
+  'bbq': '🥩',
+  'yakiniku': '🥩',
+  'omakase': '🍱',
+  'kaiseki': '🍱',
+  'main dish': '🍛',
+  'side dish': '🥗',
+  'buffet': '🍽️',
+  'seafood': '🦞',
+  'pizza': '🍕',
+  'pasta': '🍝',
+  'combo': '🍟',
+  'set menu': '🍱',
 };
 
 function normalizeRestaurantDetail(raw: Partial<ApiRestaurant> & { menuItems?: any[], hours?: string, languages?: string, reviewCount?: number }, fallbackId: string, language: string): RestaurantDetail | null {
@@ -88,31 +118,28 @@ function normalizeRestaurantDetail(raw: Partial<ApiRestaurant> & { menuItems?: a
     const name = String(item.name).trim();
     const rawItemImageUrl = item.imageUrl || item.image_url;
 
-    // Case-insensitive lookup in MENU_ITEM_IMAGES
-    const fallbackImageKey = Object.keys(MENU_ITEM_IMAGES).find(
-      key => key.toLowerCase() === name.toLowerCase()
-    );
+    const itemImageUrl = getBeautifulImage(rawItemImageUrl, name);
 
-    const itemImageUrl = (rawItemImageUrl && rawItemImageUrl !== 'null' && rawItemImageUrl !== 'undefined')
-      ? rawItemImageUrl
-      : (fallbackImageKey ? MENU_ITEM_IMAGES[fallbackImageKey] : null);
+    let priceVal = item.price;
+    if (typeof priceVal === 'string') {
+      const numericString = priceVal.replace(/[^\d]/g, '');
+      priceVal = parseInt(numericString, 10) || 0;
+    }
 
     return {
       id: Number(item.id),
-      cat: item.category || 'other',
-      emoji: MENU_ITEM_EMOJIS[item.category] || '🍽️',
+      cat: item.category || item.cat || 'other',
+      emoji: MENU_ITEM_EMOJIS[String(item.category || item.cat || '').toLowerCase()] || item.emoji || item.icon || item.badge || '🍣',
       imageUrl: itemImageUrl,
       name: name,
-      price: new Intl.NumberFormat('vi-VN').format(item.price || 0) + 'đ',
-      desc: item.description || '',
+      price: new Intl.NumberFormat('vi-VN').format(priceVal || 0) + 'đ',
+      desc: item.description || item.desc || '',
       badge: item.badge || '',
     };
   });
 
-  const rawImageUrl = raw.imageUrl || raw.imageUrl;
-  const imageUrl = (rawImageUrl && rawImageUrl !== 'null' && rawImageUrl !== 'undefined')
-    ? rawImageUrl
-    : 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80';
+  const rawImageUrl = raw.imageUrl || (raw as any).image_url;
+  const imageUrl = getBeautifulImage(rawImageUrl, raw.name);
 
   return {
     id,
@@ -186,13 +213,6 @@ export default function RestaurantDetailClient() {
   const router = useRouter();
   const { language } = useAppLanguage();
   const copy = detailCopy[language];
-  const menuCats = [
-    { key: 'all', label: language === 'ja' ? 'すべて' : 'Tất cả' },
-    { key: 'sashimi', label: 'Sashimi' },
-    { key: 'tempura', label: 'Tempura' },
-    { key: 'ramen', label: 'Ramen' },
-    { key: 'dessert', label: language === 'ja' ? 'デザート' : 'Tráng miệng' },
-  ];
   const restaurantIdParam = params?.id;
   const restaurantId = Array.isArray(restaurantIdParam)
     ? restaurantIdParam[0]
@@ -201,6 +221,53 @@ export default function RestaurantDetailClient() {
   const [restaurant, setRestaurant] = useState<RestaurantDetail | null>(null);
   const [restaurantLoading, setRestaurantLoading] = useState(true);
   const [restaurantError, setRestaurantError] = useState('');
+
+  const menuCats = React.useMemo(() => {
+    const categoriesSet = new Set<string>();
+    const items = restaurant?.menuItems || [];
+    items.forEach((item: any) => {
+      if (item.cat) {
+        categoriesSet.add(item.cat);
+      }
+    });
+
+    const list = Array.from(categoriesSet).map((catName) => {
+      let label = catName;
+      const lower = catName.toLowerCase();
+      if (lower === 'sashimi') label = 'Sashimi';
+      else if (lower === 'tempura') label = 'Tempura';
+      else if (lower === 'ramen') label = 'Ramen';
+      else if (lower === 'dessert' || lower === 'desserts') label = language === 'ja' ? 'デザート' : 'Tráng miệng';
+      else if (lower === 'drink' || lower === 'drinks') label = language === 'ja' ? '飲み物' : 'Đồ uống';
+      else if (lower === 'sushi') label = 'Sushi';
+      else if (lower === 'maki') label = 'Maki';
+      else if (lower === 'noodle' || lower === 'noodles') label = language === 'ja' ? '麺類' : 'Mì';
+      else if (lower === 'bbq' || lower === 'yakiniku') label = 'Yakiniku (BBQ)';
+      else if (lower === 'omakase') label = 'Omakase';
+      else if (lower === 'kaiseki') label = 'Kaiseki';
+      else if (lower === 'main dish') label = language === 'ja' ? 'メインディッシュ' : 'Món chính';
+      else if (lower === 'side dish') label = language === 'ja' ? 'サイドディッシュ' : 'Món phụ';
+      else if (lower === 'buffet') label = 'Buffet';
+      else if (lower === 'seafood') label = language === 'ja' ? 'シーフード' : 'Hải sản';
+      else if (lower === 'pizza') label = 'Pizza';
+      else if (lower === 'pasta') label = 'Pasta';
+      else if (lower === 'combo') label = 'Combo';
+      else if (lower === 'set menu') label = language === 'ja' ? 'セットメニュー' : 'Set Menu';
+      else {
+        label = catName.charAt(0).toUpperCase() + catName.slice(1);
+      }
+
+      return {
+        key: catName,
+        label: label,
+      };
+    });
+
+    return [
+      { key: 'all', label: language === 'ja' ? 'すべて' : 'Tất cả' },
+      ...list,
+    ];
+  }, [restaurant?.menuItems, language]);
 
   // ── Reviews state ──
   const [reviews, setReviews] = useState<any[]>([]);
@@ -652,19 +719,6 @@ export default function RestaurantDetailClient() {
                 <div key={a} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--clr-muted)' }}>{a}</div>
               ))}
             </div>
-          </div>
-
-          {/* Promo */}
-          <div style={{ background: 'var(--clr-dark)', borderRadius: '12px', padding: '20px', boxShadow: '0 4px 16px rgba(108,47,0,0.2)', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginBottom: '6px' }}>{copy.promoLabel}</div>
-            <div style={{ fontWeight: 700, fontSize: '18px', color: '#fff', lineHeight: 1.4, marginBottom: '16px' }}>{copy.promoText}</div>
-            <button
-              style={{ background: '#fff', color: 'var(--clr-dark)', border: 'none', borderRadius: '10px', padding: '8px 18px', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '13px', cursor: 'pointer', transition: 'opacity 0.2s' }}
-              id="btn-get-promo"
-              onClick={handleGetPromo}
-            >
-              {promoCopied ? `✅ ${copy.promoCopied}` : copy.promoButton}
-            </button>
           </div>
         </aside>
       </div>

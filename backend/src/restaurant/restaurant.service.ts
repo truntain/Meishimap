@@ -63,21 +63,89 @@ export class RestaurantService {
   async findAll(options: {
     q?: string;
     category?: string;
+    location?: string;
     sort?: 'rating' | 'name';
   }): Promise<RestaurantResponse[]> {
     const query = this.restaurantRepository.createQueryBuilder('restaurant');
+
+    // Always load menuItems so that they are present in the response
+    query.leftJoinAndSelect('restaurant.menuItems', 'menuItems');
 
     query.andWhere('restaurant.status = :status', {
       status: ApprovalStatus.APPROVED,
     });
 
+    let hasFilterMenuItemJoin = false;
+    const ensureFilterMenuItemJoin = () => {
+      if (!hasFilterMenuItemJoin) {
+        query.leftJoin('restaurant.menuItems', 'filterMenuItem');
+        hasFilterMenuItemJoin = true;
+      }
+    };
+
     if (options.category && options.category !== 'all') {
-      query.andWhere('restaurant.category = :category', {
-        category: options.category,
+      const cat = options.category.toLowerCase();
+      ensureFilterMenuItemJoin();
+
+      if (cat === 'sushi_sashimi') {
+        query.andWhere(
+          `(restaurant.category ILIKE :sushi OR restaurant.category ILIKE :sashimi OR restaurant.category ILIKE :seafood OR restaurant.category ILIKE :maki OR
+            filterMenuItem.category ILIKE :sushi OR filterMenuItem.category ILIKE :sashimi OR filterMenuItem.category ILIKE :seafood OR filterMenuItem.category ILIKE :maki OR
+            filterMenuItem.name ILIKE :sushi OR filterMenuItem.name ILIKE :sashimi OR filterMenuItem.name ILIKE :seafood OR filterMenuItem.name ILIKE :maki OR
+            filterMenuItem.name_jp ILIKE :sushi OR filterMenuItem.name_jp ILIKE :sashimi OR filterMenuItem.name_jp ILIKE :seafood OR filterMenuItem.name_jp ILIKE :maki)`,
+          { sushi: '%sushi%', sashimi: '%sashimi%', seafood: '%seafood%', maki: '%maki%' }
+        );
+      } else if (cat === 'ramen_udon_soba') {
+        query.andWhere(
+          `(restaurant.category ILIKE :ramen OR restaurant.category ILIKE :udon OR restaurant.category ILIKE :soba OR restaurant.category ILIKE :noodle OR
+            filterMenuItem.category ILIKE :ramen OR filterMenuItem.category ILIKE :udon OR filterMenuItem.category ILIKE :soba OR filterMenuItem.category ILIKE :noodle OR
+            filterMenuItem.name ILIKE :ramen OR filterMenuItem.name ILIKE :udon OR filterMenuItem.name ILIKE :soba OR filterMenuItem.name ILIKE :noodle OR
+            filterMenuItem.name_jp ILIKE :ramen OR filterMenuItem.name_jp ILIKE :udon OR filterMenuItem.name_jp ILIKE :soba OR filterMenuItem.name_jp ILIKE :noodle)`,
+          { ramen: '%ramen%', udon: '%udon%', soba: '%soba%', noodle: '%noodle%' }
+        );
+      } else if (cat === 'yakiniku_bbq') {
+        query.andWhere(
+          `(restaurant.category ILIKE :bbq OR restaurant.category ILIKE :yakiniku OR restaurant.category ILIKE :grill OR
+            filterMenuItem.category ILIKE :bbq OR filterMenuItem.category ILIKE :yakiniku OR filterMenuItem.category ILIKE :grill OR
+            filterMenuItem.name ILIKE :bbq OR filterMenuItem.name ILIKE :yakiniku OR filterMenuItem.name ILIKE :grill OR
+            filterMenuItem.name_jp ILIKE :bbq OR filterMenuItem.name_jp ILIKE :yakiniku OR filterMenuItem.name_jp ILIKE :grill)`,
+          { bbq: '%bbq%', yakiniku: '%yakiniku%', grill: '%grill%' }
+        );
+      } else if (cat === 'izakaya') {
+        query.andWhere(
+          `(restaurant.category ILIKE :izakaya OR restaurant.category ILIKE :nhau OR
+            filterMenuItem.category ILIKE :izakaya OR filterMenuItem.category ILIKE :nhau OR
+            filterMenuItem.name ILIKE :izakaya OR filterMenuItem.name ILIKE :nhau OR
+            filterMenuItem.name_jp ILIKE :izakaya OR filterMenuItem.name_jp ILIKE :nhau)`,
+          { izakaya: '%izakaya%', nhau: '%nhậu%' }
+        );
+      } else if (cat === 'omakase_kaiseki') {
+        query.andWhere(
+          `(restaurant.category ILIKE :omakase OR restaurant.category ILIKE :kaiseki OR
+            filterMenuItem.category ILIKE :omakase OR filterMenuItem.category ILIKE :kaiseki OR
+            filterMenuItem.name ILIKE :omakase OR filterMenuItem.name ILIKE :kaiseki OR
+            filterMenuItem.name_jp ILIKE :omakase OR filterMenuItem.name_jp ILIKE :kaiseki)`,
+          { omakase: '%omakase%', kaiseki: '%kaiseki%' }
+        );
+      } else {
+        query.andWhere(
+          `(restaurant.category ILIKE :category OR
+            filterMenuItem.category ILIKE :category OR
+            filterMenuItem.name ILIKE :category OR
+            filterMenuItem.name_jp ILIKE :category)`,
+          { category: `%${options.category}%` }
+        );
+      }
+    }
+
+    if (options.location && options.location !== 'all') {
+      query.andWhere('restaurant.district ILIKE :location', {
+        location: `%${options.location.trim()}%`,
       });
     }
 
     if (options.q?.trim()) {
+      ensureFilterMenuItemJoin();
       query.andWhere(
         `(
           restaurant.name ILIKE :q OR
@@ -85,7 +153,10 @@ export class RestaurantService {
           restaurant.address ILIKE :q OR
           restaurant.district ILIKE :q OR
           restaurant.city ILIKE :q OR
-          restaurant.category ILIKE :q
+          restaurant.category ILIKE :q OR
+          filterMenuItem.name ILIKE :q OR
+          filterMenuItem.name_jp ILIKE :q OR
+          filterMenuItem.description ILIKE :q
         )`,
         { q: `%${options.q.trim()}%` },
       );
@@ -102,14 +173,20 @@ export class RestaurantService {
   }
 
   async findFeatured(): Promise<RestaurantResponse[]> {
-    const restaurants = await this.restaurantRepository.find({
-      where: { status: ApprovalStatus.APPROVED },
-      order: {
-        rating: 'DESC',
-        name: 'ASC',
-      },
-      take: 6,
+    const query = this.restaurantRepository.createQueryBuilder('restaurant');
+    
+    query.andWhere('restaurant.status = :status', {
+      status: ApprovalStatus.APPROVED,
     });
+    
+    query.andWhere('restaurant.category ILIKE :category', {
+      category: '%japanese%',
+    });
+    
+    query.orderBy('restaurant.rating', 'DESC').addOrderBy('restaurant.name', 'ASC');
+    query.take(4);
+    
+    const restaurants = await query.getMany();
     return restaurants.map((restaurant) => this.toResponse(restaurant));
   }
 
@@ -273,7 +350,7 @@ export class RestaurantService {
 
 
   private toResponse(restaurant: Restaurant): RestaurantResponse {
-    return {
+    const response: RestaurantResponse = {
       id: restaurant.id,
       name: restaurant.name,
       nameJp: restaurant.name_jp,
@@ -302,5 +379,18 @@ export class RestaurantService {
       status: restaurant.status,
       rejectReason: restaurant.rejectReason,
     };
+
+    if (restaurant.menuItems) {
+      response.menuItems = restaurant.menuItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        nameJp: item.name_jp,
+        price: Number(item.price),
+        description: item.description,
+        category: item.category,
+      }));
+    }
+
+    return response;
   }
 }

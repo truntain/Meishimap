@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import RestaurantDetailClient from './RestaurantDetailClient';
+import style from 'styled-jsx/style';
 
 export const metadata: Metadata = {
   title: 'Chi tiết nhà hàng — MESHIMAP',
