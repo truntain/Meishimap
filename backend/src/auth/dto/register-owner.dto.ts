@@ -73,4 +73,18 @@ export class RegisterOwnerDto {
   @IsString()
   @IsOptional()
   identityCard?: string;
+
+  @ApiProperty({ example: '123456', description: 'Mật khẩu đăng nhập của chủ nhà hàng' })
+  @IsString()
+  @IsNotEmpty({ message: 'Mật khẩu không được để trống!' })
+  @MinLength(6, { message: 'Mật khẩu phải dài tối thiểu 6 ký tự!' })
+  password!: string;
+
+  @ApiProperty({ example: 21.03, description: 'Vĩ độ', required: false })
+  @IsOptional()
+  latitude?: number;
+
+  @ApiProperty({ example: 105.85, description: 'Kinh độ', required: false })
+  @IsOptional()
+  longitude?: number;
 }

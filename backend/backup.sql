@@ -1281,6 +1281,38 @@ INSERT INTO public.bookings (user_id, restaurant_id, booking_date, booking_time,
 -- ==============================================================================
 SELECT pg_catalog.setval('public.bookings_id_seq', (SELECT MAX(id) FROM public.bookings), true);
 
+-- ==============================================================================
+-- 1. THÊM CỘT GIỜ ĐÓNG/MỞ CỬA VÀO BẢNG RESTAURANTS
+-- ==============================================================================
+ALTER TABLE public.restaurants 
+ADD COLUMN opening_time TIME WITHOUT TIME ZONE DEFAULT '08:00:00',
+ADD COLUMN closing_time TIME WITHOUT TIME ZONE DEFAULT '22:00:00';
 
+-- ==============================================================================
+-- 2. CẬP NHẬT GIỜ HOẠT ĐỘNG THỰC TẾ CHO TỪNG NHÀ HÀNG
+-- Tùy chỉnh theo mô hình: Ăn sáng (mở sớm), Izakaya/Quán nhậu (mở muộn, đóng muộn), 
+-- Nhà hàng TTTM (theo giờ TTTM),...
+-- ==============================================================================
+
+-- Các quán ăn sáng / truyền thống (Phở, Bún, Bánh Mì...)
+UPDATE public.restaurants SET opening_time = '06:00:00', closing_time = '21:00:00' WHERE id IN (1, 6, 8, 22); -- Phở Bát Đàn, Bún Bò Huế, Bánh Mì, Lươn Nghệ An
+UPDATE public.restaurants SET opening_time = '10:00:00', closing_time = '21:30:00' WHERE id IN (3, 7); -- Chả Cá, Bún Chả
+
+-- Các nhà hàng trong Trung Tâm Thương Mại (Vincom, Lotte...) hoặc Fastfood, Trà sữa
+UPDATE public.restaurants SET opening_time = '10:00:00', closing_time = '22:00:00' WHERE id IN (2, 9, 14); -- Sushi Kei, Jollibee, Marukame Udon
+UPDATE public.restaurants SET opening_time = '08:30:00', closing_time = '22:30:00' WHERE id = 10; -- TocoToco Tea
+
+-- Các nhà hàng Nhật Bản / Ý / Buffet / Hải sản thông thường
+UPDATE public.restaurants SET opening_time = '10:30:00', closing_time = '22:30:00' WHERE id IN (4, 5, 11, 12, 13, 16, 18, 19, 20); 
+
+-- Các quán Izakaya / Quán Nhậu / Omakase (Thường chỉ mở buổi tối hoặc đóng rất muộn)
+UPDATE public.restaurants SET opening_time = '17:00:00', closing_time = '23:30:00' WHERE id IN (15, 17, 21); -- Shamoji Robata, Kỷ Y Izakaya, Yuzu Omakase
+
+-- ==============================================================================
+-- 3. KIỂM TRA LẠI DỮ LIỆU ĐÃ CẬP NHẬT
+-- ==============================================================================
+SELECT id, name, opening_time, closing_time 
+FROM public.restaurants 
+ORDER BY id;
 
 

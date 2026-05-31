@@ -1367,6 +1367,7 @@ img {
 .detail-info-card {
   position: relative;
   z-index: 10;
+  width: 100%;
   max-width: 1248px;
   margin: -80px auto 0;
   padding: 0 var(--sp-page-x);
@@ -1453,6 +1454,7 @@ img {
 }
 
 .detail-main {
+  width: 100%;
   max-width: 1248px;
   margin: 32px auto 64px;
   padding: 0 var(--sp-page-x);
@@ -1728,6 +1730,7 @@ img {
 .review-info-card {
   position: relative;
   z-index: 10;
+  width: 100%;
   max-width: 1248px;
   margin: -64px auto 0;
   padding: 0 var(--sp-page-x);
@@ -1746,6 +1749,7 @@ img {
 }
 
 .review-main {
+  width: 100%;
   max-width: 1248px;
   margin: 28px auto 64px;
   padding: 0 var(--sp-page-x);

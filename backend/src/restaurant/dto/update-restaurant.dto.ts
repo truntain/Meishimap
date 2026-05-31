@@ -48,4 +48,20 @@ export class UpdateRestaurantDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsString()
+  @IsOptional()
+  openingTime?: string;
+
+  @IsString()
+  @IsOptional()
+  closingTime?: string;
+
+  @IsString()
+  @IsOptional()
+  opening_time?: string;
+
+  @IsString()
+  @IsOptional()
+  closing_time?: string;
 }

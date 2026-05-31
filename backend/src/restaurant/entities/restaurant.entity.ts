@@ -61,6 +61,12 @@ export class Restaurant {
   @Column({ type: 'boolean', default: false })
   has_japanese_support!: boolean;
 
+  @Column({ type: 'time', nullable: true, name: 'opening_time', default: '08:00:00' })
+  opening_time!: string;
+
+  @Column({ type: 'time', nullable: true, name: 'closing_time', default: '22:00:00' })
+  closing_time!: string;
+
   @Column({
     type: 'enum',
     enum: ApprovalStatus,

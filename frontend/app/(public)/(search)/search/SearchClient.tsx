@@ -3,8 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import maplibregl from 'maplibre-gl';
-import type { ExpressionSpecification } from '@maplibre/maplibre-gl-style-spec';
+import maplibregl, { type ExpressionSpecification } from 'maplibre-gl';
 import { searchCopy, useAppLanguage, type AppLanguage } from '@/config/i18n';
 import { getBeautifulImage } from '@/utils/image';
 
@@ -33,6 +32,8 @@ type Restaurant = {
   phone: string | null;
   imageUrl: string | null;
   hasJapaneseSupport: boolean;
+  openingTime?: string | null;
+  closingTime?: string | null;
   menuItems?: Array<{
     id: number;
     name: string;
@@ -176,7 +177,7 @@ function getCategoryStyle(category: string) {
   return CATEGORY_STYLES[norm] || DEFAULT_CATEGORY_STYLE;
 }
 
-function getCategoryColorExpression(defaultColor = DEFAULT_CATEGORY_STYLE.color): any {
+function getCategoryColorExpression(defaultColor = DEFAULT_CATEGORY_STYLE.color): ExpressionSpecification {
   return [
     'match',
     ['get', 'category'],
@@ -186,10 +187,10 @@ function getCategoryColorExpression(defaultColor = DEFAULT_CATEGORY_STYLE.color)
     'izakaya', CATEGORY_STYLES.izakaya.color,
     'omakase_kaiseki', CATEGORY_STYLES.omakase_kaiseki.color,
     defaultColor,
-  ] as any;
+  ] as ExpressionSpecification;
 }
 
-function getCategoryPinExpression(selectedId: number | null): any {
+function getCategoryPinExpression(selectedId: number | null): ExpressionSpecification {
   return [
     'case',
     ['==', ['get', 'id'], selectedId ?? -1],
@@ -204,7 +205,7 @@ function getCategoryPinExpression(selectedId: number | null): any {
       'omakase_kaiseki', 'restaurant-pin-kaiseki',
       'restaurant-pin-other',
     ],
-  ] as any;
+  ] as ExpressionSpecification;
 }
 
 function addSatelliteLayer(map: maplibregl.Map, mode: MapViewMode) {
@@ -294,6 +295,8 @@ function normalizeRestaurant(raw: Partial<Restaurant>): Restaurant | null {
     phone: raw.phone ?? null,
     imageUrl: raw.imageUrl ?? null,
     hasJapaneseSupport: Boolean(raw.hasJapaneseSupport),
+    openingTime: raw.openingTime ?? null,
+    closingTime: raw.closingTime ?? null,
     menuItems: raw.menuItems ? raw.menuItems.map(item => ({
       id: Number(item.id),
       name: String(item.name),
@@ -370,6 +373,19 @@ function createPopupNode(restaurant: Restaurant, copy: typeof searchCopy[AppLang
   address.textContent = restaurant.address;
   node.appendChild(address);
 
+  if (restaurant.openingTime && restaurant.closingTime) {
+    const hoursRow = document.createElement('div');
+    hoursRow.className = 'map-popup-address';
+    hoursRow.style.marginTop = '4px';
+    hoursRow.style.color = 'var(--clr-muted)';
+    hoursRow.style.fontSize = '11px';
+    hoursRow.style.display = 'flex';
+    hoursRow.style.alignItems = 'center';
+    hoursRow.style.gap = '4px';
+    hoursRow.textContent = `🕐 ${restaurant.openingTime} - ${restaurant.closingTime}`;
+    node.appendChild(hoursRow);
+  }
+
   const tagRow = document.createElement('div');
   tagRow.className = 'map-popup-tags';
 
@@ -390,6 +406,32 @@ function createPopupNode(restaurant: Restaurant, copy: typeof searchCopy[AppLang
   return node;
 }
 
+function isRestaurantOpen(openingTime: string | null | undefined, closingTime: string | null | undefined): boolean {
+  if (!openingTime || !closingTime) return false;
+
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+  const parseTimeToMinutes = (timeStr: string) => {
+    const parts = timeStr.split(':');
+    if (parts.length >= 2) {
+      return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    }
+    return 0;
+  };
+
+  const openTimeMinutes = parseTimeToMinutes(openingTime);
+  const closeTimeMinutes = parseTimeToMinutes(closingTime);
+
+  if (closeTimeMinutes > openTimeMinutes) {
+    return currentTimeInMinutes >= openTimeMinutes && currentTimeInMinutes <= closeTimeMinutes;
+  } else {
+    return currentTimeInMinutes >= openTimeMinutes || currentTimeInMinutes <= closeTimeMinutes;
+  }
+}
+
 function RestaurantCard({
   restaurant,
   isActive,
@@ -408,6 +450,7 @@ function RestaurantCard({
   const categoryLabel = CATEGORY_LABELS.get(restaurant.category) || restaurant.category;
   const categoryStyle = getCategoryStyle(restaurant.category);
   const supportLabel = restaurant.hasJapaneseSupport ? copy.supportJapanese : copy.japaneseStyle;
+  const { language } = useAppLanguage();
 
   return (
     <div
@@ -443,7 +486,27 @@ function RestaurantCard({
             {categoryLabel}
           </span>
           <span className="result-card__tag">{supportLabel}</span>
+          {restaurant.openingTime && restaurant.closingTime && (() => {
+            const isOpen = isRestaurantOpen(restaurant.openingTime, restaurant.closingTime);
+            const text = isOpen
+              ? (language === 'ja' ? '営業中' : 'Đang mở cửa')
+              : (language === 'ja' ? '準備中' : 'Đã đóng cửa');
+            const color = isOpen ? '#2f7d32' : '#c62828';
+            const bg = isOpen ? '#f0faf0' : '#ffebee';
+            return (
+              <span className="result-card__tag" style={{ color, background: bg, borderColor: color + '20', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: color }} />
+                {text}
+              </span>
+            );
+          })()}
         </div>
+        {restaurant.openingTime && restaurant.closingTime && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--clr-muted)', marginTop: '8px' }}>
+            <span>🕐</span>
+            <span>{restaurant.openingTime} - {restaurant.closingTime}</span>
+          </div>
+        )}
       </div>
       <div className="result-card__footer">
         <span className="result-card__location">
@@ -534,36 +597,36 @@ export default function SearchClient() {
     if (Math.abs(diffY) > 5) {
       setHasMoved(true);
     }
-    
+
     const rect = sheetRef.current.getBoundingClientRect();
     const sheetHeight = rect.height;
     const collapsedTranslate = Math.max(0, sheetHeight - 220); // 220px is visible height when collapsed
-    
+
     const baseTranslate = sheetState === 'collapsed' ? collapsedTranslate : 0;
     let newTranslate = baseTranslate + diffY;
-    
+
     if (newTranslate < 0) newTranslate = 0;
     if (newTranslate > collapsedTranslate) newTranslate = collapsedTranslate;
-    
+
     setCurrentTranslateY(newTranslate);
   }, [isDragging, startY, sheetState]);
 
   const handleDragEnd = useCallback(() => {
     if (!isDragging) return;
     setIsDragging(false);
-    
+
     if (!hasMoved) {
       // Toggle state on click/tap
       setSheetState(prev => prev === 'collapsed' ? 'expanded' : 'collapsed');
       setCurrentTranslateY(0);
       return;
     }
-    
+
     if (!sheetRef.current) return;
     const rect = sheetRef.current.getBoundingClientRect();
     const sheetHeight = rect.height;
     const collapsedTranslate = Math.max(0, sheetHeight - 220);
-    
+
     if (sheetState === 'collapsed') {
       if (currentTranslateY < collapsedTranslate * 0.7) {
         setSheetState('expanded');
@@ -614,14 +677,14 @@ export default function SearchClient() {
 
   const sheetStyle = useMemo(() => {
     if (!isMobile) return {};
-    
+
     let translateYStr = '0px';
     if (isDragging) {
       translateYStr = `${currentTranslateY}px`;
     } else {
       translateYStr = sheetState === 'collapsed' ? 'calc(100% - 220px)' : '0px';
     }
-    
+
     return {
       transform: `translateY(${translateYStr})`,
       transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -1230,19 +1293,19 @@ export default function SearchClient() {
               </select>
               <span className="location-select-chevron">
                 <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-                  <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </span>
             </div>
           </div>
         </div>
 
-        <div 
+        <div
           ref={sheetRef}
           className={`sidebar__results-sheet ${sheetState}`}
           style={sheetStyle}
         >
-          <div 
+          <div
             className="sidebar__results-sheet-header-wrapper"
             onMouseDown={(e) => handleDragStart(e, e.clientY)}
             onTouchStart={(e) => {

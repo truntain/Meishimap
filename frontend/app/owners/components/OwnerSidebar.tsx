@@ -1,21 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
+import { usePathname } from 'next/navigation';
 import { useAppLanguage, ownerCopy } from '@/config/i18n';
 
 export default function OwnerSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const { language } = useAppLanguage();
   const copy = ownerCopy[language];
-
-  const handleLogout = () => {
-    Cookies.remove('user');
-    localStorage.removeItem('meshimap_user');
-    router.push('/login');
-  };
 
   return (
     <aside className="db-sidebar">
@@ -43,19 +35,7 @@ export default function OwnerSidebar() {
         >
           <span>{copy.navReviews}</span>
         </Link>
-        {/* <Link 
-          href="/owners/preview" 
-          className={`db-sidebar__link ${pathname === '/owners/preview' ? 'is-active' : ''}`}
-        >
-          <span>Xem trước (Preview)</span>
-        </Link> */}
       </nav>
-
-      <div className="db-sidebar__footer">
-        <button className="db-sidebar__link" onClick={handleLogout}>
-          <span>{copy.logout}</span>
-        </button>
-      </div>
     </aside>
   );
 }

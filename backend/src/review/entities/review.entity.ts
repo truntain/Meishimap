@@ -30,7 +30,7 @@ export class Review {
   content: string;
 
   @Column({ type: 'text', name: 'owner_reply', nullable: true })
-  ownerReply: string;
+  ownerReply: string | null;
 
   @Column({ type: 'date', name: 'visit_date', nullable: true })
   visitDate: string;

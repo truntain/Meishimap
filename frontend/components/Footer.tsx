@@ -2,11 +2,17 @@
 
 import Link from 'next/link';
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import { useAppLanguage, footerCopy } from '@/config/i18n';
 
 export default function Footer() {
+  const pathname = usePathname();
   const { language } = useAppLanguage();
   const copy = footerCopy[language];
+
+  if (pathname?.startsWith('/owners') || pathname?.startsWith('/admins')) {
+    return null;
+  }
 
   return (
     <footer className="footer" id="main-footer">

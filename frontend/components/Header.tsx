@@ -12,14 +12,13 @@ export default function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  const router = useRouter(); // Sử dụng router để chuyển trang
+  const router = useRouter();
   const pathname = usePathname();
-  const userMenuRef = useRef<HTMLDivElement>(null); // Ref để theo dõi click ra ngoài menu
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const { t, i18n } = useTranslation();
 
   const toggleLanguage = () => {
-    // Chuyển đổi ngôn ngữ và tự động lưu vào localStorage
     const currentLang = (i18n.language || 'vi').split('-')[0];
     const nextLang = currentLang === 'vi' ? 'ja' : 'vi';
     i18n.changeLanguage(nextLang);
@@ -59,14 +58,19 @@ export default function Header() {
     if (window.confirm(t('header.logoutConfirm'))) {
       Cookies.remove('user');
       Cookies.remove('access_token');
-      setUser(null); // Xóa state user để cập nhật UI ngay lập tức
+      setUser(null);
       setIsUserMenuOpen(false);
       setIsMobileMenuOpen(false);
-      router.push('/login'); // Chuyển trang không cần reload
+      router.push('/login');
     }
   };
 
   const displayName = user?.name || user?.email || 'U';
+
+  // Hide global header on dashboard pages (admin/owner have their own header)
+  if (pathname?.startsWith('/owners') || pathname?.startsWith('/admins')) {
+    return null;
+  }
 
   if (!isMounted) {
     return (
@@ -75,13 +79,11 @@ export default function Header() {
           <span>MESHI<span className="header__logo-accent">MAP</span></span>
         </Link>
 
-        {pathname && !pathname.startsWith('/owners') && !pathname.startsWith('/admins') && (
-          <nav className="header__nav" id="desktop-nav">
-            <Link href="/" className="header__nav-link" data-page="home">Trang chủ</Link>
-            <Link href="/search" className="header__nav-link" data-page="search">Tìm kiếm</Link>
-            <Link href="/restaurant/1" className="header__nav-link" data-page="booking">Đặt bàn</Link>
-          </nav>
-        )}
+        <nav className="header__nav" id="desktop-nav">
+          <Link href="/" className="header__nav-link" data-page="home">Trang chủ</Link>
+          <Link href="/search" className="header__nav-link" data-page="search">Tìm kiếm</Link>
+          <Link href="/restaurant/1" className="header__nav-link" data-page="booking">Đặt bàn</Link>
+        </nav>
 
         <div className="header__actions">
           <button className="header__lang btn" aria-label="Chuyển ngôn ngữ">
@@ -102,17 +104,18 @@ export default function Header() {
     );
   }
 
+
   return (
     <header className="header" id="main-header">
       <Link href="/" className="header__logo" data-action="go-home">
         <span>MESHI<span className="header__logo-accent">MAP</span></span>
       </Link>
 
-      {pathname && !pathname.startsWith('/owners') && !pathname.startsWith('/admins') && (
+      {/* Nav links — hidden on /profile route */}
+      {pathname && !pathname.startsWith('/profile') && (
         <nav className="header__nav" id="desktop-nav">
           <Link href="/" className="header__nav-link" data-page="home">{t('header.home')}</Link>
           <Link href="/search" className="header__nav-link" data-page="search">{t('header.search')}</Link>
-          {/* Đặt bàn → tới trang chi tiết nhà hàng (có modal đặt bàn) */}
           <Link href="/restaurant/1" className="header__nav-link" data-page="booking">{t('header.booking')}</Link>
         </nav>
       )}
@@ -165,6 +168,24 @@ export default function Header() {
                 overflow: 'hidden',
                 zIndex: 100
               }}>
+                {user && (user.role === 'admin' || user.role === 'quản lý') && (
+                  <Link
+                    href="/admins"
+                    style={{ padding: '12px 16px', color: '#333', textDecoration: 'none', fontSize: '14px', borderBottom: '1px solid #eee' }}
+                    onClick={() => setIsUserMenuOpen(false)}
+                  >
+                    {i18n.language?.startsWith('ja') ? '管理者画面' : 'Trang quản trị'}
+                  </Link>
+                )}
+                {user && (user.role === 'restaurant_owner' || user.role === 'owner' || user.role === 'chủ nhà hàng') && (
+                  <Link
+                    href="/owners"
+                    style={{ padding: '12px 16px', color: '#333', textDecoration: 'none', fontSize: '14px', borderBottom: '1px solid #eee' }}
+                    onClick={() => setIsUserMenuOpen(false)}
+                  >
+                    {i18n.language?.startsWith('ja') ? '店舗管理画面' : 'Trang nhà hàng'}
+                  </Link>
+                )}
                 <Link
                   href="/profile"
                   style={{ padding: '12px 16px', color: '#333', textDecoration: 'none', fontSize: '14px', borderBottom: '1px solid #eee' }}

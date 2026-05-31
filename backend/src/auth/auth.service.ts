@@ -91,6 +91,7 @@ export class AuthService {
     const {
       name,
       email,
+      password,
       restaurantName,
       restaurantNameJp,
       category,
@@ -103,6 +104,8 @@ export class AuthService {
       businessLicense,
       foodSafetyCert,
       identityCard,
+      latitude,
+      longitude,
     } = registerOwnerDto;
 
     // 1. Kiểm tra email đã tồn tại chưa
@@ -111,10 +114,9 @@ export class AuthService {
       throw new ConflictException('Email này đã được sử dụng!');
     }
 
-    // 2. Tự động tạo mật khẩu ngẫu nhiên cho chủ quán (sẽ được gửi qua mail khi admin duyệt)
-    const tempPassword = Math.random().toString(36).slice(-8);
+    // 2. Mã hóa mật khẩu đối tác tự chọn
     const salt = await bcrypt.genSalt();
-    const hashedPassword = await bcrypt.hash(tempPassword, salt);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
     // 3. Tạo user mới với vai trò là RESTAURANT_OWNER
     const newUser = await this.usersService.create({
@@ -140,8 +142,8 @@ export class AuthService {
       city: city || null,
       phone: phone || null,
       description: description || null,
-      latitude: 0,
-      longitude: 0,
+      latitude: latitude ?? 0,
+      longitude: longitude ?? 0,
       status: ApprovalStatus.PENDING,
       owner: newUser,
       documents: {
@@ -183,6 +185,18 @@ export class AuthService {
 
     if (!isMatch) {
       throw new UnauthorizedException('Mật khẩu không chính xác!');
+    }
+
+    // 3. Nếu là đối tác (RESTAURANT_OWNER), kiểm tra xem nhà hàng đã được phê duyệt chưa
+    if (user.role === UserRole.RESTAURANT_OWNER) {
+      const restaurant = await this.restaurantRepository.findOne({
+        where: { owner: { id: user.id } },
+      });
+      if (!restaurant || restaurant.status !== ApprovalStatus.APPROVED) {
+        throw new UnauthorizedException(
+          'Tài khoản đối tác đang chờ phê duyệt bởi Admin hoặc đã bị từ chối!'
+        );
+      }
     }
 
     // 3. Tạo Payload và Token

@@ -32,6 +32,8 @@ export type RestaurantResponse = {
   menuItems?: any[];
   status?: string;
   rejectReason?: string | null;
+  openingTime?: string;
+  closingTime?: string;
 };
 
 const MOCK_MENU_ITEMS: Record<string, any[]> = {
@@ -321,6 +323,10 @@ export class RestaurantService {
     if (dto.has_japanese_support !== undefined) restaurant.has_japanese_support = dto.has_japanese_support;
     if (dto.hasJapaneseSupport !== undefined) restaurant.has_japanese_support = dto.hasJapaneseSupport;
     if (dto.description !== undefined) restaurant.description = dto.description;
+    if (dto.openingTime !== undefined) restaurant.opening_time = dto.openingTime;
+    if (dto.opening_time !== undefined) restaurant.opening_time = dto.opening_time;
+    if (dto.closingTime !== undefined) restaurant.closing_time = dto.closingTime;
+    if (dto.closing_time !== undefined) restaurant.closing_time = dto.closing_time;
 
     const updatedRestaurant = await this.restaurantRepository.save(restaurant);
     return this.findOne(updatedRestaurant.id);
@@ -411,7 +417,19 @@ export class RestaurantService {
   }
 
 
+  private formatTime(timeStr: string | null | undefined, defaultTime: string): string {
+    if (!timeStr) return defaultTime;
+    const parts = timeStr.split(':');
+    if (parts.length >= 2) {
+      return `${parts[0]}:${parts[1]}`;
+    }
+    return timeStr;
+  }
+
   private toResponse(restaurant: Restaurant): RestaurantResponse {
+    const formattedOpen = this.formatTime(restaurant.opening_time, '08:00');
+    const formattedClose = this.formatTime(restaurant.closing_time, '22:00');
+
     const response: RestaurantResponse = {
       id: restaurant.id,
       name: restaurant.name,
@@ -428,18 +446,20 @@ export class RestaurantService {
       imageUrl: restaurant.image_url,
       hasJapaneseSupport: restaurant.has_japanese_support,
       hours: {
-        monday: '10:00 - 22:00',
-        tuesday: '10:00 - 22:00',
-        wednesday: '10:00 - 22:00',
-        thursday: '10:00 - 22:00',
-        friday: '10:00 - 22:00',
-        saturday: '10:00 - 23:00',
-        sunday: '10:00 - 23:00',
+        monday: `${formattedOpen} - ${formattedClose}`,
+        tuesday: `${formattedOpen} - ${formattedClose}`,
+        wednesday: `${formattedOpen} - ${formattedClose}`,
+        thursday: `${formattedOpen} - ${formattedClose}`,
+        friday: `${formattedOpen} - ${formattedClose}`,
+        saturday: `${formattedOpen} - ${formattedClose}`,
+        sunday: `${formattedOpen} - ${formattedClose}`,
       },
       languages: restaurant.has_japanese_support ? 'Tiếng Việt, Tiếng Nhật, English' : 'Tiếng Việt, English',
       reviewCount: 0,
       status: restaurant.status,
       rejectReason: restaurant.rejectReason,
+      openingTime: formattedOpen,
+      closingTime: formattedClose,
     };
 
     if (restaurant.menuItems) {

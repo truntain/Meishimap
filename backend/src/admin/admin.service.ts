@@ -136,19 +136,11 @@ export class AdminService {
     await this.restaurantRepository.save(restaurant);
 
     if (restaurant.owner) {
-      // Sinh mật khẩu ngẫu nhiên tạm thời (8 ký tự)
-      const tempPassword = Math.random().toString(36).slice(-8);
-      const salt = await bcrypt.genSalt();
-      const hashedPassword = await bcrypt.hash(tempPassword, salt);
-      
-      restaurant.owner.password = hashedPassword;
-      await this.userRepository.save(restaurant.owner);
-
-      // Gửi email thông báo tài khoản cho đối tác
+      // Gửi email thông báo phê duyệt, thông báo mật khẩu là mật khẩu đối tác tự chọn lúc đăng ký
       await this.mailService.sendApprovalEmail(
         restaurant.owner.email,
         restaurant.owner.name,
-        tempPassword,
+        '(Mật khẩu bạn đã thiết lập khi đăng ký)',
       );
     }
 

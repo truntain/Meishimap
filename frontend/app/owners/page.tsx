@@ -392,7 +392,7 @@ export default function OwnerRestaurantPage() {
   // Menu Modal State
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [menuForm, setMenuForm] = useState({ name: '', price: '', cat: 'sashimi', icon: '🍣', imageUrl: '', desc: '' });
+  const [menuForm, setMenuForm] = useState({ name: '', price: '', cat: 'Sushi & Sashimi', customCat: '', icon: '🍣', imageUrl: '', desc: '' });
 
   useEffect(() => {
     const fetchRestaurant = async () => {
@@ -440,8 +440,8 @@ export default function OwnerRestaurantPage() {
           banner: data.imageUrl || '',
           jpSupport: data.hasJapaneseSupport,
           jpSupportText: data.languages || 'Tiếng Việt, English',
-          openTime: data.hours?.monday?.split(' - ')[0] || '10:00',
-          closeTime: data.hours?.monday?.split(' - ')[1] || '22:00',
+          openTime: data.openingTime || data.hours?.monday?.split(' - ')[0] || '10:00',
+          closeTime: data.closingTime || data.hours?.monday?.split(' - ')[1] || '22:00',
           menu: data.menuItems || [],
           reviews: data.reviews || [],
         };
@@ -532,6 +532,8 @@ export default function OwnerRestaurantPage() {
         description: restaurant.description || '',
         latitude: coords.lat,
         longitude: coords.lng,
+        openingTime: restaurant.openTime,
+        closingTime: restaurant.closeTime,
       };
 
       const res = await fetch('http://localhost:3001/restaurants/my-restaurant', {
@@ -568,8 +570,8 @@ export default function OwnerRestaurantPage() {
         banner: updatedData.imageUrl || '',
         jpSupport: updatedData.hasJapaneseSupport,
         jpSupportText: updatedData.languages || 'Tiếng Việt, English',
-        openTime: updatedData.hours?.monday?.split(' - ')[0] || '10:00',
-        closeTime: updatedData.hours?.monday?.split(' - ')[1] || '22:00',
+        openTime: updatedData.openingTime || updatedData.hours?.monday?.split(' - ')[0] || '10:00',
+        closeTime: updatedData.closingTime || updatedData.hours?.monday?.split(' - ')[1] || '22:00',
         menu: updatedData.menuItems || [],
         reviews: updatedData.reviews || [],
       };
@@ -639,20 +641,41 @@ export default function OwnerRestaurantPage() {
     reader.readAsDataURL(file);
   };
 
+const MENU_CATEGORIES = [
+  'Sushi & Sashimi',
+  'Ramen & Udon & Soba',
+  'Yakiniku (BBQ)',
+  'Izakaya',
+  'Omakase & Kaiseki',
+  'Tempura (Món chiên)',
+  'Tonkatsu (Thịt chiên xù)',
+  'Donburi (Cơm tô Nhật)',
+  'Curry (Cà ri Nhật)',
+  'Bento (Cơm hộp)',
+  'Takoyaki & Okonomiyaki (Ăn vặt Nhật)',
+  'Hotpot / Shabu Shabu (Lẩu Nhật)',
+  'Dessert (Món tráng miệng)',
+  'Drinks / Sake (Đồ uống)',
+  'Món ăn Việt Nam',
+];
+
   const openMenuModal = (index: number | null = null) => {
     setEditingIndex(index);
     if (index !== null) {
       const item = restaurant.menu[index];
+      const itemCat = item.cat || item.category || 'Sushi & Sashimi';
+      const isStandardCat = MENU_CATEGORIES.includes(itemCat);
       setMenuForm({
         name: item.name || '',
         price: typeof item.price === 'number' ? `${item.price}` : (item.price || ''),
-        cat: item.cat || item.category || 'sashimi',
+        cat: isStandardCat ? itemCat : 'Khác',
+        customCat: isStandardCat ? '' : itemCat,
         icon: item.icon || item.emoji || '🍣',
         imageUrl: item.imageUrl || item.image_url || '',
         desc: item.desc || item.description || '',
       });
     } else {
-      setMenuForm({ name: '', price: '', cat: 'sashimi', icon: '🍣', imageUrl: '', desc: '' });
+      setMenuForm({ name: '', price: '', cat: 'Sushi & Sashimi', customCat: '', icon: '🍣', imageUrl: '', desc: '' });
     }
     setShowMenuModal(true);
   };
@@ -669,7 +692,7 @@ export default function OwnerRestaurantPage() {
     const body = {
       name: menuForm.name,
       price: cleanPrice,
-      category: menuForm.cat,
+      category: menuForm.cat === 'Khác' ? menuForm.customCat : menuForm.cat,
       icon: menuForm.icon,
       imageUrl: menuForm.imageUrl || '',
       description: menuForm.desc,
@@ -722,8 +745,8 @@ export default function OwnerRestaurantPage() {
         banner: updatedRestaurant.imageUrl || '',
         jpSupport: updatedRestaurant.hasJapaneseSupport,
         jpSupportText: updatedRestaurant.languages || 'Tiếng Việt, English',
-        openTime: updatedRestaurant.hours?.monday?.split(' - ')[0] || '10:00',
-        closeTime: updatedRestaurant.hours?.monday?.split(' - ')[1] || '22:00',
+        openTime: updatedRestaurant.openingTime || updatedRestaurant.hours?.monday?.split(' - ')[0] || '10:00',
+        closeTime: updatedRestaurant.closingTime || updatedRestaurant.hours?.monday?.split(' - ')[1] || '22:00',
         menu: updatedRestaurant.menuItems || [],
         reviews: updatedRestaurant.reviews || [],
       };
@@ -791,8 +814,8 @@ export default function OwnerRestaurantPage() {
         banner: updatedRestaurant.imageUrl || '',
         jpSupport: updatedRestaurant.hasJapaneseSupport,
         jpSupportText: updatedRestaurant.languages || 'Tiếng Việt, English',
-        openTime: updatedRestaurant.hours?.monday?.split(' - ')[0] || '10:00',
-        closeTime: updatedRestaurant.hours?.monday?.split(' - ')[1] || '22:00',
+        openTime: updatedRestaurant.openingTime || updatedRestaurant.hours?.monday?.split(' - ')[0] || '10:00',
+        closeTime: updatedRestaurant.closingTime || updatedRestaurant.hours?.monday?.split(' - ')[1] || '22:00',
         menu: updatedRestaurant.menuItems || [],
         reviews: updatedRestaurant.reviews || [],
       };
@@ -1069,11 +1092,22 @@ export default function OwnerRestaurantPage() {
               <div className="db-form-field" style={{ marginBottom: 12 }}>
                 <label>{copy.menuCat}</label>
                 <select className="db-select" value={menuForm.cat} onChange={e => setMenuForm({...menuForm, cat: e.target.value})}>
-                  <option value="sashimi">Sashimi</option>
-                  <option value="tempura">Tempura</option>
-                  <option value="ramen">Ramen</option>
-                  <option value="dessert">Tráng miệng (Dessert)</option>
+                  {MENU_CATEGORIES.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                  <option value="Khác">{language === 'vi' ? 'Khác' : 'その他'}</option>
                 </select>
+                {menuForm.cat === 'Khác' && (
+                  <input 
+                    type="text" 
+                    className="db-input" 
+                    placeholder={language === 'vi' ? 'Nhập phân loại khác...' : 'その他のカテゴリを入力...'} 
+                    required 
+                    value={menuForm.customCat} 
+                    onChange={e => setMenuForm({...menuForm, customCat: e.target.value})} 
+                    style={{ marginTop: 8 }}
+                  />
+                )}
               </div>
               <div className="db-form-field" style={{ marginBottom: 12 }}>
                 <label>{copy.menuIcon}</label>
