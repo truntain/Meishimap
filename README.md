@@ -97,7 +97,7 @@ Dữ liệu của MESHIMAP được chuẩn hóa cao trong PostgreSQL với các
 
 ```mermaid
 erDiagram
-    USERS ||--o[1] RESTAURANTS : "owner_of"
+    USERS ||--o| RESTAURANTS : "owner_of"
     USERS ||--o{ BOOKINGS : "places"
     USERS ||--o{ REVIEWS : "writes"
     USERS ||--o{ NOTIFICATIONS : "receives"
@@ -105,7 +105,7 @@ erDiagram
     RESTAURANTS ||--o{ MENU_ITEMS : "has"
     RESTAURANTS ||--o{ BOOKINGS : "receives"
     RESTAURANTS ||--o{ REVIEWS : "gets"
-    RESTAURANTS ||--o|1 RESTAURANT_DOCUMENTS : "verified_by"
+    RESTAURANTS ||--o| RESTAURANT_DOCUMENTS : "verified_by"
 
     USERS {
         int id PK
