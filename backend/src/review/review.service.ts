@@ -86,16 +86,12 @@ export class ReviewService {
     return this.reviewRepository.save(review);
   }
 
-  async report(reviewId: number, ownerId: number, reason: string) {
+  async report(reviewId: number, userId: number, reason: string) {
     const review = await this.reviewRepository.findOne({
       where: { id: reviewId },
-      relations: ['restaurant', 'restaurant.owner'],
     });
     if (!review) {
       throw new NotFoundException('Không tìm thấy đánh giá');
-    }
-    if (!review.restaurant.owner || review.restaurant.owner.id !== ownerId) {
-      throw new NotFoundException('Bạn không sở hữu nhà hàng có đánh giá này');
     }
     review.isReported = true;
     review.reportReason = reason;

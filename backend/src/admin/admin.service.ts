@@ -158,4 +158,14 @@ export class AdminService {
     restaurant.rejectReason = reason;
     return this.restaurantRepository.save(restaurant);
   }
+
+  async deleteRestaurant(id: number) {
+    const restaurant = await this.restaurantRepository.findOne({
+      where: { id },
+    });
+    if (!restaurant) {
+      throw new NotFoundException('Không tìm thấy nhà hàng');
+    }
+    return this.restaurantRepository.remove(restaurant);
+  }
 }

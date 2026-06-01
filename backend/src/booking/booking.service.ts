@@ -97,4 +97,12 @@ export class BookingService {
 
     return updatedBooking;
   }
+
+  async deleteBooking(id: number) {
+    const booking = await this.bookingRepository.findOne({ where: { id } });
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+    return this.bookingRepository.remove(booking);
+  }
 }

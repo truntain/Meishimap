@@ -1,6 +1,6 @@
 import { 
   Controller, Get, Post, Body, Param, ParseIntPipe, 
-  UseGuards, Request, ForbiddenException 
+  UseGuards, Request, ForbiddenException, Delete 
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -45,5 +45,14 @@ export class AdminController {
   ) {
     this.checkAdmin(req);
     return this.adminService.rejectRestaurant(id, rejectReason);
+  }
+
+  @Delete('approvals/:id')
+  deleteRestaurant(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req,
+  ) {
+    this.checkAdmin(req);
+    return this.adminService.deleteRestaurant(id);
   }
 }

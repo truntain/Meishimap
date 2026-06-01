@@ -1,5 +1,5 @@
 // src/booking/booking.controller.ts
-import { Controller, Post, Body, UseGuards, Req, Get, Patch, Param } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Req, Get, Patch, Param, Delete } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -7,7 +7,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @Controller('booking')
 @UseGuards(JwtAuthGuard)
 export class BookingController {
-  constructor(private readonly bookingService: BookingService) {}
+  constructor(private readonly bookingService: BookingService) { }
 
   // API tạo đặt bàn
   @Post()
@@ -29,5 +29,11 @@ export class BookingController {
     @Body() body: { status: any; rejectReason?: string },
   ) {
     return this.bookingService.updateBookingStatus(Number(id), body.status, body.rejectReason);
+  }
+
+  // API xóa đặt bàn
+  @Delete(':id')
+  deleteBooking(@Param('id') id: string) {
+    return this.bookingService.deleteBooking(Number(id));
   }
 }
