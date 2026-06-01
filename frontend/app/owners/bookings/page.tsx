@@ -225,6 +225,26 @@ export default function OwnerBookingsPage() {
     }
   };
 
+  const handleDelete = async (id: any) => {
+    if (!window.confirm(copy.confirmDeleteBooking)) return;
+    const token = Cookies.get('access_token');
+    try {
+      const res = await fetch(`${API_BASE_URL}/booking/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) throw new Error(copy.alertDeleteBookingError);
+
+      setBookings(prev => prev.filter(b => String(b.id) !== String(id)));
+      showAlert(copy.alertDeleteBookingSuccess);
+    } catch (err: any) {
+      showAlert(err.message || 'Error', 'warning');
+    }
+  };
+
   const filteredBookings = bookings
     .filter(b => filter === 'all' || b.status === filter)
     .sort((a, b) => b.date.localeCompare(a.date));
@@ -284,14 +304,17 @@ export default function OwnerBookingsPage() {
                         {b.status === 'rejected' && <span className="db-badge db-badge--rejected" title={`${language === 'vi' ? 'Lý do' : '理由'}: ${b.rejectReason || ''}`}>{copy.statusRejected}</span>}
                       </td>
                       <td>
-                        <div style={{ display: 'flex', gap: 6 }}>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                           {b.status === 'pending' ? (
                             <>
                               <button className="btn btn--dark" style={{ padding: '4px 10px', fontSize: 12, background: '#059669' }} onClick={() => handleApprove(b.id)}>{copy.actionApprove}</button>
                               <button className="btn btn--dark" style={{ padding: '4px 10px', fontSize: 12, background: '#dc2626' }} onClick={() => openRejectModal(b.id)}>{copy.actionReject}</button>
                             </>
                           ) : (
-                            <span style={{ fontSize: 12, color: 'var(--clr-muted)' }}>{copy.actionProcessed}</span>
+                            <>
+                              <span style={{ fontSize: 12, color: 'var(--clr-muted)' }}>{copy.actionProcessed}</span>
+                              <button className="btn btn--dark" style={{ padding: '4px 10px', fontSize: 12, background: '#6b7280' }} onClick={() => handleDelete(b.id)}>{copy.actionDelete}</button>
+                            </>
                           )}
                         </div>
                       </td>

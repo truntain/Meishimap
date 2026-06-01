@@ -147,6 +147,44 @@ export default function AdminApprovalsPage() {
     }
   };
 
+  const handleDeleteRestaurant = async (id: number) => {
+    if (!window.confirm(copy.confirmDeleteRestaurant)) {
+      return;
+    }
+
+    const token = Cookies.get('access_token');
+    if (!token) {
+      showAlert(copy.alertSessionExpired, 'warning');
+      return;
+    }
+
+    try {
+      const res = await fetch(`http://localhost:3001/admin/approvals/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (res.status === 401) {
+        Cookies.remove('access_token');
+        Cookies.remove('user');
+        window.location.href = '/login';
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error('alertDeleteRestaurantError');
+      }
+
+      showAlert(copy.alertDeleteRestaurantSuccess);
+      fetchApprovals();
+    } catch (err: any) {
+      console.error(err);
+      showAlert(err.message === 'alertDeleteRestaurantError' ? copy.alertDeleteRestaurantError : `Lỗi: ${err.message}`, 'warning');
+    }
+  };
+
   const openDetail = (id: number) => {
     setSelectedResId(id);
     setShowDetailModal(true);
@@ -213,7 +251,7 @@ export default function AdminApprovalsPage() {
                       {res.address}
                     </td>
                     <td>{formatDate(res.createdAt)}</td>
-                    <td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
                       {res.status === 'pending' && <span className="db-badge db-badge--pending">{copy.statusPending}</span>}
                       {res.status === 'approved' && <span className="db-badge db-badge--approved">{copy.statusApproved}</span>}
                       {res.status === 'rejected' && <span className="db-badge db-badge--rejected">{copy.statusRejected}</span>}
@@ -223,8 +261,8 @@ export default function AdminApprovalsPage() {
                         {copy.btnView}
                       </button>
                     </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 6 }}>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         {res.status === 'pending' ? (
                           <>
                             <button 
@@ -243,7 +281,16 @@ export default function AdminApprovalsPage() {
                             </button>
                           </>
                         ) : (
-                          <span style={{ fontSize: 12, color: 'var(--clr-muted)' }}>{copy.statusCompleted}</span>
+                          <>
+                            <span style={{ fontSize: 12, color: 'var(--clr-muted)' }}>{copy.statusCompleted}</span>
+                            <button 
+                              className="btn btn--dark" 
+                              style={{ padding: '4px 10px', fontSize: 12, background: '#6b7280' }} 
+                              onClick={() => handleDeleteRestaurant(res.id)}
+                            >
+                              {copy.btnDelete}
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>

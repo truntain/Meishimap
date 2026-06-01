@@ -85,15 +85,18 @@ const resources = {
         successMessagePrefix: 'Cảm ơn bạn đã đặt bàn tại',
         successMessageSuffix: 'Chúng tôi sẽ liên hệ xác nhận qua điện thoại trong vòng 30 phút.',
         ownerReply: 'Phản hồi của chủ nhà hàng',
+        confirmReport: 'Bạn có chắc chắn muốn báo cáo đánh giá này không?',
+        alertReportSuccess: 'Đã gửi báo cáo vi phạm thành công.',
+        alertReportError: 'Không thể gửi báo cáo vi phạm. Vui lòng đăng nhập để thực hiện.',
       },
       home: {
         title: 'Tinh hoa ẩm thực Nhật Bản tại Việt Nam',
         subtitle: 'Khám phá những nhà hàng chuẩn vị, hỗ trợ ngôn ngữ và dịch vụ tận tâm nhất dành cho cộng đồng người Việt - Nhật',
         searchPlaceholder: 'Nhập tên nhà hàng, món ăn, địa chỉ...',
         searchButton: 'Tìm kiếm',
-        chipNearMe: '📍 Tìm quanh đây',
-        chipJapanese: '🇯🇵 Hỗ trợ tiếng Nhật',
-        chipHygiene: '✨ Đảm bảo vệ sinh',
+        chipNearMe: '📍 Hà Nội',
+        chipJapanese: '🍣 Ẩm thực Nhật Bản',
+        chipHygiene: '⭐ Uy tín & Chất lượng',
         featuredTitle: 'Nhà hàng nổi bật',
         featuredSubtitle: 'Lựa chọn hàng đầu cho trải nghiệm ẩm thực tinh tế',
         seeAll: 'Xem tất cả',
@@ -252,6 +255,10 @@ const resources = {
         alertRejectSuccess: 'Đã từ chối đơn đặt bàn này.',
         alertLoadRestaurantError: 'Không thể tải thông tin nhà hàng sở hữu',
         alertLoadBookingsError: 'Không thể lấy danh sách đặt bàn',
+        actionDelete: 'Xóa',
+        confirmDeleteBooking: 'Bạn có chắc muốn xóa yêu cầu đặt bàn này không?',
+        alertDeleteBookingSuccess: 'Đã xóa yêu cầu đặt bàn thành công.',
+        alertDeleteBookingError: 'Không thể xóa yêu cầu đặt bàn.',
 
         // Reviews page
         reviewsTitle: 'Xem đánh giá khách hàng',
@@ -268,6 +275,7 @@ const resources = {
         alertReportSuccess: 'Đã gửi báo cáo vi phạm. Đang chờ Admin xử lý!',
         alertReplySuccess: 'Đã gửi phản hồi đánh giá!',
         alertNoSession: 'Không tìm thấy phiên đăng nhập. Vui lòng đăng nhập lại.',
+        contentCleared: '(Nội dung đã bị xóa bởi Admin)',
       },
       registerRestaurant: {
         heroTitle: 'Trở thành đối tác ẩm thực',
@@ -418,6 +426,9 @@ const resources = {
         modalRejectTitle: 'Lý do từ chối hồ sơ đăng ký',
         labelRejectReasonInput: 'Lý do từ chối phê duyệt',
         placeholderRejectReason: 'Nhập lý do cụ thể...',
+        confirmDeleteRestaurant: 'Bạn có chắc chắn muốn xóa nhà hàng này khỏi hệ thống? Tất cả các thông tin liên quan (đơn đặt bàn, thực đơn, đánh giá) cũng sẽ bị xóa vĩnh viễn.',
+        alertDeleteRestaurantSuccess: 'Đã xóa nhà hàng thành công.',
+        alertDeleteRestaurantError: 'Không thể xóa nhà hàng.',
       }
     }
   },
@@ -498,15 +509,18 @@ const resources = {
         successMessagePrefix: 'ご予約ありがとうございます：',
         successMessageSuffix: '30分以内にお電話で確認させていただきます。',
         ownerReply: 'オーナーからの返信',
+        confirmReport: 'このレビューを報告してもよろしいですか？',
+        alertReportSuccess: '違反報告を送信しました。',
+        alertReportError: '違反報告を送信できませんでした。ログインしてください。',
       },
       home: {
         title: 'ベトナムにおける日本料理 of 真髄',
         subtitle: '日越コミュニティのために、本物の味、言語サポート、そして心のこもったサービスを提供するレストランを見つけましょう',
         searchPlaceholder: 'レストラン名、料理、住所を入力...',
         searchButton: '検索',
-        chipNearMe: '📍 周辺を検索',
-        chipJapanese: '🇯🇵 日本語対応',
-        chipHygiene: '✨ 衛生管理徹底',
+        chipNearMe: '📍 ハノイ',
+        chipJapanese: '🍣 日本料理',
+        chipHygiene: '⭐ 信頼と品質',
         featuredTitle: 'おすすめのレストラン',
         featuredSubtitle: '洗練されたグルメ体験のためのトップセレクション',
         seeAll: 'すべて見る',
@@ -665,6 +679,10 @@ const resources = {
         alertRejectSuccess: '予約を却下しました。',
         alertLoadRestaurantError: '所有しているレストラン情報を読み込めませんでした。',
         alertLoadBookingsError: '予約リストを読み込めませんでした。',
+        actionDelete: '削除',
+        confirmDeleteBooking: 'この予約リクエストを削除してもよろしいですか？',
+        alertDeleteBookingSuccess: '予約リクエストを削除しました。',
+        alertDeleteBookingError: '予約リクエストを削除できませんでした。',
 
         // Reviews page
         reviewsTitle: 'レビュー表示',
@@ -681,6 +699,7 @@ const resources = {
         alertReportSuccess: '違反報告を送信しました。管理者の審査をお待ちください！',
         alertReplySuccess: '返信を送信しました！',
         alertNoSession: 'セッションが見つかりません。再度ログインしてください。',
+        contentCleared: '(レビュー内容は管理者により削除されました)',
       },
       registerRestaurant: {
         heroTitle: 'パートナー加盟店になる',
@@ -831,6 +850,9 @@ const resources = {
         modalRejectTitle: '申請却下の理由',
         labelRejectReasonInput: '却下理由',
         placeholderRejectReason: '具体的な理由を入力してください...',
+        confirmDeleteRestaurant: 'このレストランをシステムから削除してもよろしいですか？関連するすべての情報（予約、メニュー、レビュー）も永久に削除されます。',
+        alertDeleteRestaurantSuccess: 'レストランを削除しました。',
+        alertDeleteRestaurantError: 'レストランを削除できませんでした。',
       }
     }
   }

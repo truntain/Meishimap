@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { detailCopy, useAppLanguage } from '@/config/i18n';
+import { detailCopy, bookingSuccessCopy, useAppLanguage } from '@/config/i18n';
 import { getBeautifulImage } from '@/utils/image';
 import Cookies from 'js-cookie';
 import { io } from 'socket.io-client';
@@ -167,13 +167,13 @@ function normalizeRestaurantDetail(raw: Partial<ApiRestaurant> & { menuItems?: a
     hours: (typeof raw.hours === 'object' && raw.hours !== null)
       ? `${Object.values(raw.hours)[0]} ${isJa ? '(毎日)' : '(Hàng ngày)'}`
       : (raw.hours || (isJa ? '未登録' : 'Chưa cập nhật')),
-    languages: raw.languages || (hasJapaneseSupport 
+    languages: raw.languages || (hasJapaneseSupport
       ? (isJa ? 'ベトナム語、日本語、英語' : 'Tiếng Việt, Tiếng Nhật, English')
       : (isJa ? 'ベトナム語、英語' : 'Tiếng Việt, English')),
     tags: [
       categoryLabel,
-      hasJapaneseSupport 
-        ? (isJa ? '日本語対応' : 'Japanese Speaking') 
+      hasJapaneseSupport
+        ? (isJa ? '日本語対応' : 'Japanese Speaking')
         : (isJa ? '和食スタイル' : 'Japanese Style'),
     ],
     amenities: isJa ? ['📶 無料Wi-Fi', '💳 カード支払い可'] : ['📶 Free Wifi', '💳 Cards Accepted'],
@@ -220,6 +220,7 @@ export default function RestaurantDetailClient() {
   const router = useRouter();
   const { language } = useAppLanguage();
   const copy = detailCopy[language];
+  const successCopy = bookingSuccessCopy[language];
   const restaurantIdParam = params?.id;
   const restaurantId = Array.isArray(restaurantIdParam)
     ? restaurantIdParam[0]
@@ -314,6 +315,40 @@ export default function RestaurantDetailClient() {
     return () => { isMounted = false; };
   }, [restaurantId, language]);
 
+  const handleReportReview = async (reviewId: any) => {
+    if (String(reviewId).startsWith('local-')) {
+      toast.error(language === 'ja' ? 'このレビューは報告できません。' : 'Không thể báo cáo đánh giá này.');
+      return;
+    }
+
+    if (!window.confirm(copy.confirmReport)) return;
+
+    const token = Cookies.get('access_token');
+    if (!token) {
+      toast.error(copy.alertReportError);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/review/${reviewId}/report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ reason: language === 'ja' ? '違反報告' : 'Báo cáo vi phạm' })
+      });
+
+      if (!res.ok) {
+        throw new Error();
+      }
+
+      toast.success(copy.alertReportSuccess);
+    } catch (err) {
+      toast.error(copy.alertReportError);
+    }
+  };
+
   // ── Menu state ──
   const [activeCat, setActiveCat] = useState('all');
   const [menuSearch, setMenuSearch] = useState('');
@@ -322,6 +357,16 @@ export default function RestaurantDetailClient() {
   // ── Booking modal state ──
   const [bookingOpen, setBookingOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
+  const [activeBooking, setActiveBooking] = useState<{
+    id: number;
+    restaurantName: string;
+    date: string;
+    time: string;
+    guests: number;
+    note: string;
+    status: 'pending' | 'approved' | 'rejected' | string;
+    rejectReason?: string;
+  } | null>(null);
   const [bookingDate, setBookingDate] = useState('');
   const [bookingTime, setBookingTime] = useState('18:00');
   const [bookingGuests, setBookingGuests] = useState(2);
@@ -367,8 +412,8 @@ export default function RestaurantDetailClient() {
           setRestaurantError(
             error instanceof Error
               ? (language === 'ja'
-                  ? `Không tải được chi tiết nhà hàng (${error.message}).`
-                  : `Không tải được chi tiết nhà hàng (${error.message}).`)
+                ? `Không tải được chi tiết nhà hàng (${error.message}).`
+                : `Không tải được chi tiết nhà hàng (${error.message}).`)
               : 'Không tải được chi tiết nhà hàng.',
           );
         }
@@ -399,6 +444,69 @@ export default function RestaurantDetailClient() {
       document.body.style.overflow = '';
     };
   }, [bookingOpen, successOpen]);
+
+  // Socket listener for real-time booking status update in the modal
+  useEffect(() => {
+    if (!activeBooking) return;
+
+    const userData = Cookies.get('user');
+    if (!userData) {
+      console.warn('[Socket] No user data found in cookies.');
+      return;
+    }
+
+    let userId: number | null = null;
+    try {
+      const userObj = JSON.parse(decodeURIComponent(userData));
+      userId = userObj.id;
+    } catch {
+      try {
+        const userObj = JSON.parse(userData);
+        userId = userObj.id;
+      } catch (err) {
+        console.error('Failed to parse user cookie in RestaurantDetailClient:', err);
+      }
+    }
+
+    if (!userId) {
+      console.warn('[Socket] No userId parsed from user cookie.');
+      return;
+    }
+
+    console.log('[Socket] Connecting to socket room for userId:', userId, 'activeBookingId:', activeBooking.id);
+    const socket = io(API_BASE_URL);
+
+    socket.on('connect', () => {
+      console.log('[Socket] Connected successfully! Joining room:', `user_${userId}`);
+      socket.emit('join_user_room', userId);
+    });
+
+    socket.on('booking_status_updated', (data: any) => {
+      console.log('[Socket] Received booking_status_updated event:', data);
+      setActiveBooking((prev) => {
+        console.log('[Socket] Comparing prev booking:', prev, 'with updated data:', data);
+        if (prev && String(prev.id) === String(data.id)) {
+          let mappedStatus = data.status;
+          if (data.status === 'confirmed') mappedStatus = 'approved';
+          if (data.status === 'cancelled') mappedStatus = 'rejected';
+          const updated = {
+            ...prev,
+            status: mappedStatus,
+            rejectReason: data.rejectReason || ''
+          };
+          console.log('[Socket] Updating activeBooking state to:', updated);
+          return updated;
+        }
+        console.log('[Socket] Event ignored. prev:', prev, 'data:', data);
+        return prev;
+      });
+    });
+
+    return () => {
+      console.log('[Socket] Disconnecting socket for activeBookingId:', activeBooking.id);
+      socket.disconnect();
+    };
+  }, [activeBooking?.id]);
 
   // ── Menu filter logic ──
   const filteredMenu = useCallback(() => {
@@ -441,15 +549,21 @@ export default function RestaurantDetailClient() {
       });
 
       if (!res.ok) throw new Error('Booking failed');
+      const data = await res.json();
 
       setTimeout(() => {
         setIsSubmitting(false);
         setBookingOpen(false);
-        router.push(
-          `/booking-success?restaurantId=${restaurantId}&restaurantName=${encodeURIComponent(
-            restaurant?.name || ''
-          )}&date=${bookingDate}&time=${bookingTime}&guests=${bookingGuests}`
-        );
+        setActiveBooking({
+          id: data.id,
+          restaurantName: restaurant?.name || '',
+          date: bookingDate,
+          time: bookingTime,
+          guests: bookingGuests,
+          note: bookingNote,
+          status: 'pending'
+        });
+        setSuccessOpen(true);
         setBookingDate('');
         setBookingNote('');
       }, 600);
@@ -663,8 +777,29 @@ export default function RestaurantDetailClient() {
                     <div className="review__name">{review.author}</div>
                     <div className="review__date">{review.date}</div>
                   </div>
-                  <div className="review__stars">
-                    {'★'.repeat(review.stars)}{'☆'.repeat(5 - review.stars)}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                    <button 
+                      onClick={() => handleReportReview(review.id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        padding: '2px',
+                        color: 'var(--clr-muted)',
+                        transition: 'color 0.2s',
+                        lineHeight: 1
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.color = '#ef4444'}
+                      onMouseOut={(e) => e.currentTarget.style.color = 'var(--clr-muted)'}
+                      title={language === 'ja' ? '違反報告' : 'Báo cáo vi phạm'}
+                      className="btn-report-review"
+                    >
+                      🚩
+                    </button>
+                    <div className="review__stars">
+                      {'★'.repeat(review.stars)}{'☆'.repeat(5 - review.stars)}
+                    </div>
                   </div>
                 </div>
                 <p className="review__text">{review.text}</p>
@@ -805,37 +940,131 @@ export default function RestaurantDetailClient() {
         </div>
       )}
 
-      {/* ── Success Modal ── */}
-      {successOpen && (
+      {/* ── Success/Status Modal ── */}
+      {successOpen && activeBooking && (
         <div
           className="modal"
           id="modal-booking-success"
           style={{ display: 'flex' }}
           onClick={e => { if (e.target === e.currentTarget) setSuccessOpen(false); }}
         >
-          <div className="modal__box" style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '56px', marginBottom: '16px' }}>✅</div>
-            <h3 style={{ fontWeight: 700, fontSize: '22px', color: 'var(--clr-dark)', marginBottom: '8px' }}>{copy.successTitle}</h3>
-            <p style={{ color: 'var(--clr-muted)', marginBottom: '8px' }}>
-              {copy.successMessagePrefix} <strong>{restaurant.name}</strong>.
-            </p>
-            <p style={{ color: 'var(--clr-muted)', marginBottom: '24px' }}>
-              {copy.successMessageSuffix}
-            </p>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div className="modal__box" style={{ textAlign: 'center', maxWidth: '480px', width: '90%' }}>
+            {/* Dynamic Status Icon and Title */}
+            {activeBooking.status === 'pending' && (
+              <>
+                <div style={{ fontSize: '56px', marginBottom: '16px', animation: 'pulse 2s infinite' }}>⏳</div>
+                <h3 style={{ fontWeight: 700, fontSize: '22px', color: 'var(--clr-dark)', marginBottom: '8px' }}>
+                  {language === 'ja' ? '予約リクエスト送信完了 (承認待ち)' : 'Yêu cầu đặt bàn đang chờ duyệt'}
+                </h3>
+                <p style={{ color: 'var(--clr-muted)', marginBottom: '24px', fontSize: '14px' }}>
+                  {language === 'ja' 
+                    ? 'システムがリクエストを記録しました。レストランからの返信をお待ちください。' 
+                    : 'Hệ thống đã ghi nhận yêu cầu của bạn, vui lòng chờ phản hồi của nhà hàng.'}
+                </p>
+              </>
+            )}
+
+            {activeBooking.status === 'approved' && (
+              <>
+                <div style={{ fontSize: '56px', marginBottom: '16px' }}>✅</div>
+                <h3 style={{ fontWeight: 700, fontSize: '22px', color: '#2f7d32', marginBottom: '8px' }}>
+                  {language === 'ja' ? '予約が承認されました！' : 'Đặt bàn thành công!'}
+                </h3>
+                <p style={{ color: 'var(--clr-muted)', marginBottom: '24px', fontSize: '14px' }}>
+                  {language === 'ja' 
+                    ? 'ご予約ありがとうございます。ご来店をお待ちしております。' 
+                    : 'Yêu cầu đặt bàn của bạn đã được nhà hàng chấp nhận.'}
+                </p>
+              </>
+            )}
+
+            {activeBooking.status === 'rejected' && (
+              <>
+                <div style={{ fontSize: '56px', marginBottom: '16px' }}>❌</div>
+                <h3 style={{ fontWeight: 700, fontSize: '22px', color: '#d32f2f', marginBottom: '8px' }}>
+                  {language === 'ja' ? '予約が拒否されました' : 'Đặt bàn thất bại'}
+                </h3>
+                <p style={{ color: 'var(--clr-muted)', marginBottom: '16px', fontSize: '14px' }}>
+                  {language === 'ja' 
+                    ? '申し訳ありませんが、ご予約は拒否されました。' 
+                    : 'Yêu cầu đặt bàn của bạn đã bị nhà hàng từ chối.'}
+                </p>
+                {activeBooking.rejectReason && (
+                  <div style={{ backgroundColor: '#ffebee', border: '1px solid #ffcdd2', borderRadius: '8px', padding: '12px', marginBottom: '24px', textAlign: 'left' }}>
+                    <strong style={{ color: '#c62828', fontSize: '13px' }}>
+                      {language === 'ja' ? '却下理由: ' : 'Lý do từ chối: '}
+                    </strong>
+                    <span style={{ fontSize: '13px', color: '#333' }}>{activeBooking.rejectReason}</span>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Booking Info Box */}
+            <div style={{ backgroundColor: '#FAF6F0', borderRadius: '12px', padding: '16px', border: '1px solid rgba(218,194,182,0.3)', textAlign: 'left', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(218,194,182,0.3)', paddingBottom: '8px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: '#877369', textTransform: 'uppercase' }}>
+                  {language === 'ja' ? 'レストラン' : 'Nhà hàng'}
+                </span>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--clr-dark)' }}>
+                  {activeBooking.restaurantName}
+                </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#877369', display: 'block', marginBottom: '2px' }}>
+                    {language === 'ja' ? '日付' : 'Ngày'}
+                  </span>
+                  <span style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>
+                    {activeBooking.date}
+                  </span>
+                </div>
+                <div>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#877369', display: 'block', marginBottom: '2px' }}>
+                    {language === 'ja' ? '時間' : 'Giờ'}
+                  </span>
+                  <span style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>
+                    {activeBooking.time}
+                  </span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(218,194,182,0.3)', paddingTop: '8px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: '#877369' }}>
+                  {language === 'ja' ? '人数' : 'Số người'}
+                </span>
+                <span style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>
+                  {activeBooking.guests === 5
+                    ? (language === 'ja' ? '5人以上' : '5+ người')
+                    : (language === 'ja' ? `${activeBooking.guests}人` : `${activeBooking.guests} người`)}
+                </span>
+              </div>
+              {activeBooking.note && (
+                <div style={{ display: 'flex', flexDirection: 'column', borderTop: '1px solid rgba(218,194,182,0.3)', paddingTop: '8px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#877369', marginBottom: '2px' }}>
+                    {language === 'ja' ? '備考' : 'Ghi chú'}
+                  </span>
+                  <span style={{ fontSize: '13px', color: '#555', fontStyle: 'italic' }}>
+                    {activeBooking.note}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
               <button
                 className="detail-book-btn"
                 style={{ display: 'inline-flex' }}
                 id="btn-close-success"
                 onClick={() => setSuccessOpen(false)}
               >
-                {copy.close}
+                {language === 'ja' ? '閉じる' : 'Đóng'}
               </button>
               <Link
                 href="/"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 20px', background: 'var(--clr-light)', color: 'var(--clr-dark)', borderRadius: '10px', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}
               >
-                {copy.home}
+                {language === 'ja' ? 'ホームへ' : 'Trang chủ'}
               </Link>
             </div>
           </div>

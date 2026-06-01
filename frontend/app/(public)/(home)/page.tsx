@@ -83,9 +83,9 @@ export default function HomePage() {
 
           {/* Chips */}
           <div className="hero__chips fade-in-up delay-3">
-            <button className="chip">{copy.chipNearMe}</button>
-            <button className="chip">{copy.chipJapanese}</button>
-            <button className="chip">{copy.chipHygiene}</button>
+            <span className="chip" style={{ cursor: 'default', pointerEvents: 'none' }}>{copy.chipNearMe}</span>
+            <span className="chip" style={{ cursor: 'default', pointerEvents: 'none' }}>{copy.chipJapanese}</span>
+            <span className="chip" style={{ cursor: 'default', pointerEvents: 'none' }}>{copy.chipHygiene}</span>
           </div>
         </div>
       </section>

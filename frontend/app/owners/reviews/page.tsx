@@ -217,7 +217,13 @@ export default function OwnerReviewsPage() {
                     {'⭐'.repeat(rev.rating)}{'☆'.repeat(5 - rev.rating)}
                   </div>
                 </div>
-                <p className="db-review-content">"{rev.content}"</p>
+                {rev.content ? (
+                  <p className="db-review-content">"{rev.content}"</p>
+                ) : (
+                  <p className="db-review-content" style={{ color: 'var(--clr-muted)', fontStyle: 'italic', fontSize: 13 }}>
+                    {copy.contentCleared}
+                  </p>
+                )}
                 
                 {rev.replies?.map((rep: string, i: number) => (
                   <div className="db-review-reply-box" style={{ marginTop: 8 }} key={i}>

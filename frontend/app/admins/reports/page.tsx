@@ -165,6 +165,40 @@ export default function AdminReportsPage() {
     }
   };
 
+  const handleDeleteReview = async (id: number) => {
+    if (window.confirm(copy.confirmDeleteReview)) {
+      const token = Cookies.get('access_token');
+      if (!token) {
+        showAlert(copy.alertSessionExpired, 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:3001/review/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (res.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+
+        if (!res.ok) {
+          throw new Error('alertDeleteError');
+        }
+
+        showAlert(copy.alertDeleteSuccess);
+        fetchReviews();
+      } catch (err: any) {
+        console.error(err);
+        showAlert(err.message === 'alertDeleteError' ? copy.alertDeleteError : copy.alertDeleteErrorFallback, 'warning');
+      }
+    }
+  };
+
   return (
     <>
       <AdminHeader title={copy.reportsTitle} />
@@ -200,12 +234,13 @@ export default function AdminReportsPage() {
                   <th>{copy.colReviewContent}</th>
                   <th>{copy.colStars}</th>
                   <th>{copy.colReportReason}</th>
+                  <th>{copy.colActions}</th>
                 </tr>
               </thead>
               <tbody>
                 {reportedReviews.length === 0 && (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>
+                    <td colSpan={6} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>
                       {copy.noReportedReviews}
                     </td>
                   </tr>
@@ -258,30 +293,39 @@ export default function AdminReportsPage() {
                       {'⭐'.repeat(rev.stars)}
                     </td>
                     <td style={{ color: '#c53030', fontSize: 13, fontWeight: 500 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                        <span>{rev.reportReason || copy.defaultReportReason}</span>
+                      {rev.reportReason || copy.defaultReportReason}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 6 }}>
                         <button 
                           className="btn" 
                           style={{
-                            padding: '3px 8px',
-                            fontSize: '11px',
-                            background: 'var(--clr-muted)',
+                            padding: '4px 10px',
+                            fontSize: '12px',
+                            background: '#059669',
                             color: '#fff',
                             border: 'none',
                             borderRadius: '4px',
                             cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            marginLeft: '8px'
-                          }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.filter = 'brightness(0.9)';
-                          }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.filter = 'none';
                           }}
                           onClick={() => handleDismissReport(rev.id)}
                         >
                           {copy.btnDismiss}
+                        </button>
+                        <button 
+                          className="btn" 
+                          style={{
+                            padding: '4px 10px',
+                            fontSize: '12px',
+                            background: '#dc2626',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => handleDeleteReview(rev.id)}
+                        >
+                          {copy.btnDelete}
                         </button>
                       </div>
                     </td>

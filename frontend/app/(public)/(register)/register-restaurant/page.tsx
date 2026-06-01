@@ -480,7 +480,7 @@ export default function RegisterRestaurantPage() {
 
       alert(copy.successAlert);
       router.push('/login');
-      
+
     } catch (error: any) {
       setErrorMsg(error.message);
     } finally {
@@ -493,7 +493,7 @@ export default function RegisterRestaurantPage() {
       <div className="auth-hero__text">
         <div>
           <h1 className="auth-hero__title">{copy.heroTitle}</h1>
-          <p className="auth-hero__title-jp">{language === 'vi' ? 'Meshimap パートナー登録' : 'Meshimap Partner Registration'}</p>
+          <p className="auth-hero__title-jp">{language === 'vi' ? 'Meshimap Partner Registration' : 'Meshimap パートナー登録'}</p>
         </div>
         <p className="auth-hero__subtitle">
           {copy.heroSubtitle}
@@ -513,7 +513,7 @@ export default function RegisterRestaurantPage() {
         )}
 
         <form id="register-partner-form" className="auth-form" onSubmit={handleSubmit} noValidate>
-          
+
           <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--clr-primary)', borderBottom: '1px solid var(--clr-border)', paddingBottom: '6px', marginBottom: '4px' }}>
             {copy.sectionAccount}
           </h3>
@@ -523,12 +523,12 @@ export default function RegisterRestaurantPage() {
             <div className="auth-field">
               <label className="auth-label" htmlFor="partner-name">{copy.ownerName}</label>
               <div className="auth-input-wrap">
-                <input 
-                  type="text" 
-                  id="partner-name" 
-                  className="auth-input" 
-                  placeholder={copy.ownerNamePlaceholder} 
-                  required 
+                <input
+                  type="text"
+                  id="partner-name"
+                  className="auth-input"
+                  placeholder={copy.ownerNamePlaceholder}
+                  required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
@@ -539,12 +539,12 @@ export default function RegisterRestaurantPage() {
             <div className="auth-field">
               <label className="auth-label" htmlFor="partner-email">{copy.ownerEmail}</label>
               <div className="auth-input-wrap">
-                <input 
-                  type="email" 
-                  id="partner-email" 
-                  className="auth-input" 
-                  placeholder={copy.ownerEmailPlaceholder} 
-                  required 
+                <input
+                  type="email"
+                  id="partner-email"
+                  className="auth-input"
+                  placeholder={copy.ownerEmailPlaceholder}
+                  required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -555,12 +555,12 @@ export default function RegisterRestaurantPage() {
             <div className="auth-field">
               <label className="auth-label" htmlFor="partner-password">{copy.ownerPassword}</label>
               <div className="auth-input-wrap">
-                <input 
-                  type="password" 
-                  id="partner-password" 
-                  className="auth-input" 
-                  placeholder={copy.ownerPasswordPlaceholder} 
-                  required 
+                <input
+                  type="password"
+                  id="partner-password"
+                  className="auth-input"
+                  placeholder={copy.ownerPasswordPlaceholder}
+                  required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -571,12 +571,12 @@ export default function RegisterRestaurantPage() {
             <div className="auth-field">
               <label className="auth-label" htmlFor="partner-confirm-password">{copy.ownerConfirmPassword}</label>
               <div className="auth-input-wrap">
-                <input 
-                  type="password" 
-                  id="partner-confirm-password" 
-                  className="auth-input" 
-                  placeholder={copy.ownerConfirmPasswordPlaceholder} 
-                  required 
+                <input
+                  type="password"
+                  id="partner-confirm-password"
+                  className="auth-input"
+                  placeholder={copy.ownerConfirmPasswordPlaceholder}
+                  required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
@@ -593,12 +593,12 @@ export default function RegisterRestaurantPage() {
             <div className="auth-field">
               <label className="auth-label" htmlFor="restaurant-name">{copy.restaurantName}</label>
               <div className="auth-input-wrap">
-                <input 
-                  type="text" 
-                  id="restaurant-name" 
-                  className="auth-input" 
-                  placeholder={copy.restaurantNamePlaceholder} 
-                  required 
+                <input
+                  type="text"
+                  id="restaurant-name"
+                  className="auth-input"
+                  placeholder={copy.restaurantNamePlaceholder}
+                  required
                   value={restaurantName}
                   onChange={(e) => setRestaurantName(e.target.value)}
                 />
@@ -609,11 +609,11 @@ export default function RegisterRestaurantPage() {
             <div className="auth-field">
               <label className="auth-label" htmlFor="restaurant-name-jp">{copy.restaurantNameJp}</label>
               <div className="auth-input-wrap">
-                <input 
-                  type="text" 
-                  id="restaurant-name-jp" 
-                  className="auth-input" 
-                  placeholder={copy.restaurantNameJpPlaceholder} 
+                <input
+                  type="text"
+                  id="restaurant-name-jp"
+                  className="auth-input"
+                  placeholder={copy.restaurantNameJpPlaceholder}
                   value={restaurantNameJp}
                   onChange={(e) => setRestaurantNameJp(e.target.value)}
                 />
@@ -626,9 +626,9 @@ export default function RegisterRestaurantPage() {
             <div className="auth-field">
               <label className="auth-label" htmlFor="restaurant-category">{copy.cuisineType}</label>
               <div className="auth-input-wrap">
-                <select 
-                  id="restaurant-category" 
-                  className="auth-input" 
+                <select
+                  id="restaurant-category"
+                  className="auth-input"
                   style={{ appearance: 'auto', paddingRight: '16px' }}
                   value=""
                   onChange={(e) => {
@@ -654,10 +654,10 @@ export default function RegisterRestaurantPage() {
 
               {showCustomInput && (
                 <div className="auth-input-wrap" style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
-                  <input 
-                    type="text" 
-                    className="auth-input" 
-                    placeholder={language === 'vi' ? 'Nhập loại hình ẩm thực khác...' : 'その他の料理ジャンルを入力...'} 
+                  <input
+                    type="text"
+                    className="auth-input"
+                    placeholder={language === 'vi' ? 'Nhập loại hình ẩm thực khác...' : 'その他の料理ジャンルを入力...'}
                     value={customCategory}
                     onChange={(e) => setCustomCategory(e.target.value)}
                     onKeyDown={(e) => {
@@ -701,8 +701,8 @@ export default function RegisterRestaurantPage() {
                   borderRadius: '8px',
                 }}>
                   {categories.map((cat, idx) => (
-                    <span 
-                      key={idx} 
+                    <span
+                      key={idx}
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -747,11 +747,11 @@ export default function RegisterRestaurantPage() {
             <div className="auth-field">
               <label className="auth-label" htmlFor="restaurant-phone">{copy.phone}</label>
               <div className="auth-input-wrap">
-                <input 
-                  type="tel" 
-                  id="restaurant-phone" 
-                  className="auth-input" 
-                  placeholder={copy.phonePlaceholder} 
+                <input
+                  type="tel"
+                  id="restaurant-phone"
+                  className="auth-input"
+                  placeholder={copy.phonePlaceholder}
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
@@ -853,11 +853,11 @@ export default function RegisterRestaurantPage() {
           <div className="auth-field">
             <label className="auth-label" htmlFor="restaurant-description">{copy.description}</label>
             <div className="auth-input-wrap">
-              <textarea 
-                id="restaurant-description" 
-                className="auth-input" 
+              <textarea
+                id="restaurant-description"
+                className="auth-input"
                 style={{ height: '80px', resize: 'vertical' }}
-                placeholder={copy.descriptionPlaceholder} 
+                placeholder={copy.descriptionPlaceholder}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -875,8 +875,8 @@ export default function RegisterRestaurantPage() {
               <div className="auth-input-wrap" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
                 <label className="btn btn--outline" style={{ cursor: 'pointer', padding: '8px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', width: 'auto' }}>
                   <span>{copy.chooseFile}</span>
-                  <input 
-                    type="file" 
+                  <input
+                    type="file"
                     accept="image/*,application/pdf"
                     style={{ display: 'none' }}
                     required
@@ -897,8 +897,8 @@ export default function RegisterRestaurantPage() {
               <div className="auth-input-wrap" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
                 <label className="btn btn--outline" style={{ cursor: 'pointer', padding: '8px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', width: 'auto' }}>
                   <span>{copy.chooseFile}</span>
-                  <input 
-                    type="file" 
+                  <input
+                    type="file"
                     accept="image/*,application/pdf"
                     style={{ display: 'none' }}
                     required
@@ -921,8 +921,8 @@ export default function RegisterRestaurantPage() {
               <div className="auth-input-wrap" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
                 <label className="btn btn--outline" style={{ cursor: 'pointer', padding: '8px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', width: 'auto' }}>
                   <span>{copy.chooseFile}</span>
-                  <input 
-                    type="file" 
+                  <input
+                    type="file"
                     accept="image/*,application/pdf"
                     style={{ display: 'none' }}
                     required
@@ -943,8 +943,8 @@ export default function RegisterRestaurantPage() {
               <div className="auth-input-wrap" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
                 <label className="btn btn--outline" style={{ cursor: 'pointer', padding: '8px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', width: 'auto' }}>
                   <span>{copy.chooseFile}</span>
-                  <input 
-                    type="file" 
+                  <input
+                    type="file"
                     accept="image/*,application/pdf"
                     style={{ display: 'none' }}
                     required

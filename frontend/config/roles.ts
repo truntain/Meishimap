@@ -11,4 +11,4 @@ export const roleConfig: Record<string, string[]> = {
 };
 
 // Các trang công khai (ai cũng vào được)
-export const publicRoutes = ['/login', '/register', '/', '/search', '/restaurant', '/booking'];
+export const publicRoutes = ['/login', '/register', '/', '/search', '/restaurant', '/booking', '/about'];
