@@ -162,10 +162,16 @@ export class AdminService {
   async deleteRestaurant(id: number) {
     const restaurant = await this.restaurantRepository.findOne({
       where: { id },
+      relations: ['owner'],
     });
     if (!restaurant) {
       throw new NotFoundException('Không tìm thấy nhà hàng');
     }
-    return this.restaurantRepository.remove(restaurant);
+    const owner = restaurant.owner;
+    const result = await this.restaurantRepository.remove(restaurant);
+    if (owner) {
+      await this.userRepository.remove(owner);
+    }
+    return result;
   }
 }

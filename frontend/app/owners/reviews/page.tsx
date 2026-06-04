@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import OwnerHeader from '../components/OwnerHeader';
 import Cookies from 'js-cookie';
 import { useAppLanguage, ownerCopy } from '@/config/i18n';
+import { notFound } from 'next/navigation';
 
 export default function OwnerReviewsPage() {
   const { language } = useAppLanguage();
@@ -14,6 +15,11 @@ export default function OwnerReviewsPage() {
   const [replyingId, setReplyingId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
   const [alertMsg, setAlertMsg] = useState<{msg: string, type: string} | null>(null);
+  const [isNotFound, setIsNotFound] = useState(false);
+
+  if (isNotFound) {
+    notFound();
+  }
 
   const fetchReviews = async () => {
     const token = Cookies.get('access_token');
@@ -39,6 +45,11 @@ export default function OwnerReviewsPage() {
         setTimeout(() => {
           window.location.href = '/login';
         }, 2000);
+        return;
+      }
+
+      if (res.status === 404) {
+        setIsNotFound(true);
         return;
       }
 

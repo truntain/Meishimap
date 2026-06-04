@@ -44,6 +44,8 @@ type RestaurantDetail = ApiRestaurant & {
     desc: string;
     badge: string;
   }>;
+  openingTime?: string;
+  closingTime?: string;
 };
 
 const CATEGORY_LABELS = new Map([
@@ -99,7 +101,7 @@ const MENU_ITEM_EMOJIS: Record<string, string> = {
   'set menu': '🍱',
 };
 
-function normalizeRestaurantDetail(raw: Partial<ApiRestaurant> & { menuItems?: any[], hours?: string, languages?: string, reviewCount?: number }, fallbackId: string, language: string): RestaurantDetail | null {
+function normalizeRestaurantDetail(raw: Partial<ApiRestaurant> & { menuItems?: any[], hours?: string, languages?: string, reviewCount?: number, openingTime?: string, closingTime?: string }, fallbackId: string, language: string): RestaurantDetail | null {
   const id = Number(raw.id ?? fallbackId);
   const latitude = Number(raw.latitude);
   const longitude = Number(raw.longitude);
@@ -178,6 +180,8 @@ function normalizeRestaurantDetail(raw: Partial<ApiRestaurant> & { menuItems?: a
     ],
     amenities: isJa ? ['📶 無料Wi-Fi', '💳 カード支払い可'] : ['📶 Free Wifi', '💳 Cards Accepted'],
     menuItems: menuItems.length > 0 ? menuItems : undefined,
+    openingTime: raw.openingTime || '08:00',
+    closingTime: raw.closingTime || '22:00',
   } as any;
 }
 
@@ -302,6 +306,7 @@ export default function RestaurantDetailClient() {
               stars: r.stars,
               text: r.title ? `${r.title} — ${r.content}` : r.content,
               ownerReply: r.ownerReply || r.owner_reply || null,
+              userId: r.user?.id || null,
             };
           });
           setReviews(formattedReviews);
@@ -318,6 +323,16 @@ export default function RestaurantDetailClient() {
   const handleReportReview = async (reviewId: any) => {
     if (String(reviewId).startsWith('local-')) {
       toast.error(language === 'ja' ? 'このレビューは報告できません。' : 'Không thể báo cáo đánh giá này.');
+      return;
+    }
+
+    const review = reviews.find(r => r.id === reviewId);
+    if (review && currentUserId && String(review.userId) === String(currentUserId)) {
+      toast.error(
+        language === 'ja'
+          ? '自分のレビューを報告することはできません。'
+          : 'Không thể báo cáo đánh giá của chính bạn.'
+      );
       return;
     }
 
@@ -374,11 +389,39 @@ export default function RestaurantDetailClient() {
   const [dateError, setDateError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // ── My Bookings state ──
+  const [myBookingsOpen, setMyBookingsOpen] = useState(false);
+  const [myBookings, setMyBookings] = useState<any[]>([]);
+  const [myBookingsLoading, setMyBookingsLoading] = useState(false);
+
+  // ── Current user state ──
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+
   // ── Promo copy state ──
   const [promoCopied, setPromoCopied] = useState(false);
 
-
   const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const userData = Cookies.get('user');
+    if (userData) {
+      try {
+        const userObj = JSON.parse(decodeURIComponent(userData));
+        if (userObj && userObj.id) {
+          setCurrentUserId(Number(userObj.id));
+        }
+      } catch {
+        try {
+          const userObj = JSON.parse(userData);
+          if (userObj && userObj.id) {
+            setCurrentUserId(Number(userObj.id));
+          }
+        } catch (err) {
+          console.error('Failed to parse user cookie in useEffect:', err);
+        }
+      }
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -433,9 +476,9 @@ export default function RestaurantDetailClient() {
 
   // Close modal on backdrop click
   useEffect(() => {
-    if (!bookingOpen && !successOpen) return;
+    if (!bookingOpen && !successOpen && !myBookingsOpen) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { setBookingOpen(false); setSuccessOpen(false); }
+      if (e.key === 'Escape') { setBookingOpen(false); setSuccessOpen(false); setMyBookingsOpen(false); }
     };
     window.addEventListener('keydown', handleKey);
     document.body.style.overflow = 'hidden';
@@ -443,7 +486,7 @@ export default function RestaurantDetailClient() {
       window.removeEventListener('keydown', handleKey);
       document.body.style.overflow = '';
     };
-  }, [bookingOpen, successOpen]);
+  }, [bookingOpen, successOpen, myBookingsOpen]);
 
   // Socket listener for real-time booking status update in the modal
   useEffect(() => {
@@ -527,6 +570,35 @@ export default function RestaurantDetailClient() {
       return;
     }
     setDateError(false);
+
+    const now = new Date();
+    const todayYear = now.getFullYear();
+    const todayMonth = String(now.getMonth() + 1).padStart(2, '0');
+    const todayDay = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${todayYear}-${todayMonth}-${todayDay}`; // YYYY-MM-DD
+
+    const currentHours = now.getHours();
+    const currentMinutes = now.getMinutes();
+    const currentTimeStr = `${String(currentHours).padStart(2, '0')}:${String(currentMinutes).padStart(2, '0')}`;
+
+    if (bookingDate < todayStr) {
+      toast.error(
+        language === 'ja'
+          ? '過去の日付は予約できません。'
+          : 'Không thể đặt bàn vào ngày trong quá khứ.'
+      );
+      return;
+    }
+
+    if (bookingDate === todayStr && bookingTime < currentTimeStr) {
+      toast.error(
+        language === 'ja'
+          ? '現在時刻より前の時間は予約できません。'
+          : 'Không thể đặt bàn vào thời gian trước thời điểm hiện tại.'
+      );
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -591,6 +663,95 @@ export default function RestaurantDetailClient() {
     }
     setBookingOpen(true);
     setDateError(false);
+  };
+
+  const openMyBookings = () => {
+    const token = Cookies.get('access_token');
+    if (!token) {
+      toast.error(
+        language === 'ja'
+          ? '予約履歴を見るにはログインしてください。'
+          : 'Vui lòng đăng nhập để xem danh sách bàn đã đặt!'
+      );
+      router.push('/login');
+      return;
+    }
+    setMyBookingsOpen(true);
+    setMyBookingsLoading(true);
+    fetch(`${API_BASE_URL}/booking/user`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then((data) => {
+        const filtered = data.filter((b: any) => String(b.restaurant?.id) === String(restaurantId));
+        setMyBookings(filtered);
+      })
+      .catch((err) => {
+        console.error('Error fetching my bookings:', err);
+        toast.error(
+          language === 'ja'
+            ? '予約履歴の取得に失敗しました。'
+            : 'Không thể tải danh sách bàn đã đặt.'
+        );
+      })
+      .finally(() => {
+        setMyBookingsLoading(false);
+      });
+  };
+
+  const getStatusBadge = (status: string, rejectReason?: string | null) => {
+    let label = '';
+    let bg = '';
+    let color = '';
+    const isVi = language !== 'ja';
+
+    if (status === 'pending') {
+      label = isVi ? 'Đang chờ duyệt' : '承認待ち';
+      bg = '#fff3cd';
+      color = '#856404';
+    } else if (status === 'confirmed' || status === 'approved') {
+      label = isVi ? 'Thành công' : '承認済み';
+      bg = '#d4edda';
+      color = '#155724';
+    } else if (status === 'cancelled' || status === 'rejected') {
+      label = isVi ? 'Thất bại' : 'キャンセル済';
+      bg = '#f8d7da';
+      color = '#721c24';
+    } else if (status === 'completed') {
+      label = isVi ? 'Hoàn thành' : '来店済み';
+      bg = '#e2e3e5';
+      color = '#383d41';
+    } else {
+      label = status;
+      bg = '#e2e3e5';
+      color = '#383d41';
+    }
+
+    return (
+      <div style={{ display: 'inline-flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
+        <span style={{
+          padding: '4px 10px',
+          borderRadius: '9999px',
+          fontSize: '12px',
+          fontWeight: 600,
+          backgroundColor: bg,
+          color: color,
+          width: 'fit-content'
+        }}>
+          {label}
+        </span>
+        {rejectReason && (status === 'cancelled' || status === 'rejected') && (
+          <span style={{ fontSize: '11px', color: '#c62828', fontStyle: 'italic' }}>
+            {isVi ? 'Lý do từ chối: ' : '却下理由: '}{rejectReason}
+          </span>
+        )}
+      </div>
+    );
   };
 
   const handleGetPromo = () => {
@@ -672,9 +833,27 @@ export default function RestaurantDetailClient() {
               <p className="detail-api-status detail-api-status--warning">{restaurantError}</p>
             )}
           </div>
-          <button className="detail-book-btn" id="btn-open-booking" onClick={openBooking}>
-            <CalendarIcon /> {copy.bookingButton}
-          </button>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <button className="detail-book-btn" id="btn-open-booking" onClick={openBooking}>
+              <CalendarIcon /> {copy.bookingButton}
+            </button>
+            <button 
+              className="detail-book-btn" 
+              id="btn-open-my-bookings" 
+              style={{ 
+                background: 'var(--clr-light)', 
+                color: 'var(--clr-dark)', 
+                border: '1px solid rgba(218,194,182,0.5)',
+                whiteSpace: 'nowrap',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }} 
+              onClick={openMyBookings}
+            >
+              📋 {language === 'ja' ? '予約履歴' : 'Bàn đã đặt'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -778,25 +957,27 @@ export default function RestaurantDetailClient() {
                     <div className="review__date">{review.date}</div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                    <button 
-                      onClick={() => handleReportReview(review.id)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        padding: '2px',
-                        color: 'var(--clr-muted)',
-                        transition: 'color 0.2s',
-                        lineHeight: 1
-                      }}
-                      onMouseOver={(e) => e.currentTarget.style.color = '#ef4444'}
-                      onMouseOut={(e) => e.currentTarget.style.color = 'var(--clr-muted)'}
-                      title={language === 'ja' ? '違反報告' : 'Báo cáo vi phạm'}
-                      className="btn-report-review"
-                    >
-                      🚩
-                    </button>
+                    {(!currentUserId || String(currentUserId) !== String(review.userId)) && (
+                      <button
+                        onClick={() => handleReportReview(review.id)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          padding: '2px',
+                          color: 'var(--clr-muted)',
+                          transition: 'color 0.2s',
+                          lineHeight: 1
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.color = '#ef4444'}
+                        onMouseOut={(e) => e.currentTarget.style.color = 'var(--clr-muted)'}
+                        title={language === 'ja' ? '違反報告' : 'Báo cáo vi phạm'}
+                        className="btn-report-review"
+                      >
+                        🚩
+                      </button>
+                    )}
                     <div className="review__stars">
                       {'★'.repeat(review.stars)}{'☆'.repeat(5 - review.stars)}
                     </div>
@@ -957,8 +1138,8 @@ export default function RestaurantDetailClient() {
                   {language === 'ja' ? '予約リクエスト送信完了 (承認待ち)' : 'Yêu cầu đặt bàn đang chờ duyệt'}
                 </h3>
                 <p style={{ color: 'var(--clr-muted)', marginBottom: '24px', fontSize: '14px' }}>
-                  {language === 'ja' 
-                    ? 'システムがリクエストを記録しました。レストランからの返信をお待ちください。' 
+                  {language === 'ja'
+                    ? 'システムがリクエストを記録しました。レストランからの返信をお待ちください。'
                     : 'Hệ thống đã ghi nhận yêu cầu của bạn, vui lòng chờ phản hồi của nhà hàng.'}
                 </p>
               </>
@@ -971,8 +1152,8 @@ export default function RestaurantDetailClient() {
                   {language === 'ja' ? '予約が承認されました！' : 'Đặt bàn thành công!'}
                 </h3>
                 <p style={{ color: 'var(--clr-muted)', marginBottom: '24px', fontSize: '14px' }}>
-                  {language === 'ja' 
-                    ? 'ご予約ありがとうございます。ご来店をお待ちしております。' 
+                  {language === 'ja'
+                    ? 'ご予約ありがとうございます。ご来店をお待ちしております。'
                     : 'Yêu cầu đặt bàn của bạn đã được nhà hàng chấp nhận.'}
                 </p>
               </>
@@ -985,8 +1166,8 @@ export default function RestaurantDetailClient() {
                   {language === 'ja' ? '予約が拒否されました' : 'Đặt bàn thất bại'}
                 </h3>
                 <p style={{ color: 'var(--clr-muted)', marginBottom: '16px', fontSize: '14px' }}>
-                  {language === 'ja' 
-                    ? '申し訳ありませんが、ご予約は拒否されました。' 
+                  {language === 'ja'
+                    ? '申し訳ありませんが、ご予約は拒否されました。'
                     : 'Yêu cầu đặt bàn của bạn đã bị nhà hàng từ chối.'}
                 </p>
                 {activeBooking.rejectReason && (
@@ -1066,6 +1247,113 @@ export default function RestaurantDetailClient() {
               >
                 {language === 'ja' ? 'ホームへ' : 'Trang chủ'}
               </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── My Bookings List Modal ── */}
+      {myBookingsOpen && (
+        <div
+          className="modal"
+          id="modal-my-bookings"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-my-bookings-title"
+          style={{ display: 'flex' }}
+          onClick={e => { if (e.target === e.currentTarget) setMyBookingsOpen(false); }}
+        >
+          <div className="modal__box" style={{ maxWidth: '540px', width: '95%', maxHeight: '80vh', overflowY: 'auto' }}>
+            <h3 className="modal__title" id="modal-my-bookings-title" style={{ marginBottom: '20px' }}>
+              {language === 'ja' ? 'ご予約履歴' : 'Danh sách bàn đã đặt'} — {restaurant.name}
+            </h3>
+            
+            {myBookingsLoading ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--clr-muted)', fontFamily: 'var(--font-body)' }}>
+                {language === 'ja' ? '読み込み中...' : 'Đang tải dữ liệu...'}
+              </div>
+            ) : myBookings.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--clr-muted)' }}>
+                <div style={{ fontSize: '48px', marginBottom: '12px' }}>📅</div>
+                <p>{language === 'ja' ? 'この店舗 of 予約履歴はありません。' : 'Bạn chưa có bàn đặt nào tại nhà hàng này.'}</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
+                {myBookings.map((b) => (
+                  <div 
+                    key={b.id} 
+                    style={{ 
+                      backgroundColor: '#FAF6F0', 
+                      borderRadius: '12px', 
+                      padding: '16px', 
+                      border: '1px solid rgba(218,194,182,0.3)', 
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid rgba(218,194,182,0.3)', paddingBottom: '8px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--clr-dark)' }}>
+                        #{b.id}
+                      </span>
+                      {getStatusBadge(b.status, b.rejectReason)}
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#877369', display: 'block', marginBottom: '2px' }}>
+                          {language === 'ja' ? '日付' : 'Ngày'}
+                        </span>
+                        <span style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>
+                          {b.bookingDate}
+                        </span>
+                      </div>
+                      
+                      <div>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#877369', display: 'block', marginBottom: '2px' }}>
+                          {language === 'ja' ? '時間' : 'Giờ'}
+                        </span>
+                        <span style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>
+                          {b.bookingTime?.substring(0, 5) || b.bookingTime}
+                        </span>
+                      </div>
+                      
+                      <div>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#877369', display: 'block', marginBottom: '2px' }}>
+                          {language === 'ja' ? '人数' : 'Số người'}
+                        </span>
+                        <span style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>
+                          {b.guests === 5
+                            ? (language === 'ja' ? '5人以上' : '5+ người')
+                            : (language === 'ja' ? `${b.guests}人` : `${b.guests} người`)}
+                        </span>
+                      </div>
+                      
+                      {b.note && (
+                        <div style={{ gridColumn: 'span 2' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 600, color: '#877369', display: 'block', marginBottom: '2px' }}>
+                            {language === 'ja' ? '備考' : 'Ghi chú'}
+                          </span>
+                          <span style={{ fontSize: '13px', color: '#555', fontStyle: 'italic' }}>
+                            {b.note}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
+              <button 
+                type="button" 
+                className="modal__cancel" 
+                onClick={() => setMyBookingsOpen(false)}
+                style={{ margin: 0 }}
+              >
+                {language === 'ja' ? '閉じる' : 'Đóng'}
+              </button>
             </div>
           </div>
         </div>

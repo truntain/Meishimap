@@ -6,6 +6,7 @@ import Cookies from 'js-cookie';
 import { io } from 'socket.io-client';
 import { toast } from 'react-hot-toast';
 import { useAppLanguage, ownerCopy } from '@/config/i18n';
+import { notFound } from 'next/navigation';
 
 const API_BASE_URL = 'http://localhost:3001';
 
@@ -17,6 +18,11 @@ export default function OwnerBookingsPage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [isNotFound, setIsNotFound] = useState(false);
+
+  if (isNotFound) {
+    notFound();
+  }
 
   // Reject Modal
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -52,6 +58,10 @@ export default function OwnerBookingsPage() {
           Cookies.remove('access_token');
           Cookies.remove('user');
           window.location.href = '/login';
+          return;
+        }
+        if (res.status === 404) {
+          setIsNotFound(true);
           return;
         }
         if (!res.ok) {

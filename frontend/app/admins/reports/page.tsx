@@ -355,12 +355,13 @@ export default function AdminReportsPage() {
                   <th>{copy.colOwnerReply}</th>
                   <th>{copy.colStars}</th>
                   <th>{copy.colCreatedDate}</th>
+                  <th>{copy.colActions}</th>
                 </tr>
               </thead>
               <tbody>
                 {allReviews.length === 0 && (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>
+                    <td colSpan={7} style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>
                       {copy.noReviewsSystem}
                     </td>
                   </tr>
@@ -449,6 +450,23 @@ export default function AdminReportsPage() {
                     </td>
                     <td style={{ fontSize: 13 }}>
                       {new Date(rev.createdAt).toLocaleDateString(language === 'ja' ? 'ja-JP' : 'vi-VN')}
+                    </td>
+                    <td>
+                      <button 
+                        className="btn" 
+                        style={{
+                          padding: '4px 10px',
+                          fontSize: '12px',
+                          background: '#dc2626',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => handleDeleteReview(rev.id)}
+                      >
+                        {copy.btnDelete}
+                      </button>
                     </td>
                   </tr>
                 ))}

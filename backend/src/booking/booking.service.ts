@@ -105,4 +105,12 @@ export class BookingService {
     }
     return this.bookingRepository.remove(booking);
   }
+
+  async getBookingsByUser(userId: number) {
+    return this.bookingRepository.find({
+      where: { user: { id: userId } },
+      relations: ['restaurant'],
+      order: { createdAt: 'DESC' },
+    });
+  }
 }

@@ -5,6 +5,7 @@ import OwnerHeader from './components/OwnerHeader';
 import Cookies from 'js-cookie';
 import { getBeautifulImage } from '@/utils/image';
 import { useAppLanguage, ownerCopy } from '@/config/i18n';
+import { notFound } from 'next/navigation';
 
 
 const defaultRestaurant = {
@@ -382,6 +383,11 @@ export default function OwnerRestaurantPage() {
   const copy = ownerCopy[language];
   const [restaurant, setRestaurant] = useState<any>(null);
   const [alertMsg, setAlertMsg] = useState<{msg: string, type: string} | null>(null);
+  const [isNotFound, setIsNotFound] = useState(false);
+
+  if (isNotFound) {
+    notFound();
+  }
 
   // Address parts state
   const [addrDistrict, setAddrDistrict] = useState(HANOI_DISTRICTS[0]);
@@ -414,8 +420,7 @@ export default function OwnerRestaurantPage() {
           }
         });
         if (res.status === 404) {
-          setRestaurant(defaultRestaurant);
-          localStorage.setItem('meshimap_restaurant', JSON.stringify(defaultRestaurant));
+          setIsNotFound(true);
           return;
         }
         if (res.status === 401) {

@@ -3,7 +3,7 @@
 import i18n from 'i18next';
 import { initReactI18next, useTranslation } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 
 export type AppLanguage = 'vi' | 'ja';
 
@@ -286,7 +286,7 @@ const resources = {
         ownerName: 'Họ và tên chủ nhà hàng *',
         ownerNamePlaceholder: 'Nguyễn Văn A',
         ownerEmail: 'Email đăng nhập *',
-        ownerEmailPlaceholder: 'partner@example.com',
+        ownerEmailPlaceholder: 'partner@gamil.com',
         ownerPassword: 'Mật khẩu *',
         ownerPasswordPlaceholder: 'Nhập mật khẩu (tối thiểu 6 ký tự)...',
         ownerConfirmPassword: 'Xác nhận lại mật khẩu *',
@@ -514,7 +514,7 @@ const resources = {
         alertReportError: '違反報告を送信できませんでした。ログインしてください。',
       },
       home: {
-        title: 'ベトナムにおける日本料理 of 真髄',
+        title: 'ベトナムにおける日本料理の真髄',
         subtitle: '日越コミュニティのために、本物の味、言語サポート、そして心のこもったサービスを提供するレストランを見つけましょう',
         searchPlaceholder: 'レストラン名、料理、住所を入力...',
         searchButton: '検索',
@@ -710,7 +710,7 @@ const resources = {
         ownerName: 'オーナーの氏名 *',
         ownerNamePlaceholder: '山田 太郎',
         ownerEmail: 'ログイン用メールアドレス *',
-        ownerEmailPlaceholder: 'partner@example.com',
+        ownerEmailPlaceholder: 'partner@gmail.com',
         ownerPassword: 'パスワード *',
         ownerPasswordPlaceholder: 'パスワードを入力してください（6文字以上）...',
         ownerConfirmPassword: 'パスワードの確認 *',
@@ -880,8 +880,14 @@ if (!i18n.isInitialized) {
 // Backward compatibility helper hook
 export function useAppLanguage() {
   const { i18n: i18nInstance } = useTranslation();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const detectedLang = i18nInstance.language?.split('-')[0] || 'vi';
-  const language = (detectedLang === 'ja' ? 'ja' : 'vi') as AppLanguage;
+  const language = (!mounted ? 'vi' : (detectedLang === 'ja' ? 'ja' : 'vi')) as AppLanguage;
 
   const setLanguage = useCallback((nextLanguage: AppLanguage) => {
     i18nInstance.changeLanguage(nextLanguage);

@@ -16,6 +16,13 @@ export class BookingController {
     return this.bookingService.create(createBookingDto, userId);
   }
 
+  // API lấy danh sách đặt bàn của khách hàng hiện tại
+  @Get('user')
+  getBookingsByUser(@Req() req: any) {
+    const userId = req.user?.userId;
+    return this.bookingService.getBookingsByUser(Number(userId));
+  }
+
   // API lấy danh sách đặt bàn của nhà hàng cho chủ quán
   @Get('restaurant/:restaurantId')
   getBookingsByRestaurant(@Param('restaurantId') restaurantId: string) {
