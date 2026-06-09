@@ -8,8 +8,7 @@ import { getBeautifulImage } from '@/utils/image';
 import Cookies from 'js-cookie';
 import { io } from 'socket.io-client';
 import { toast } from 'react-hot-toast';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '@/config/api';
 
 type ApiRestaurant = {
   id: number;

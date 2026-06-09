@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import AdminHeader from '../components/AdminHeader';
 import Cookies from 'js-cookie';
 import { useAppLanguage, adminCopy } from '@/config/i18n';
+import { API_BASE_URL } from '@/config/api';
 
 export default function AdminReportsPage() {
   const [allReviews, setAllReviews] = useState<any[]>([]);
@@ -22,7 +23,7 @@ export default function AdminReportsPage() {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3001/review/admin/all', {
+      const res = await fetch(`${API_BASE_URL}/review/admin/all`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -68,7 +69,7 @@ export default function AdminReportsPage() {
       }
 
       try {
-        const res = await fetch(`http://localhost:3001/review/${id}/admin-clear`, {
+        const res = await fetch(`${API_BASE_URL}/review/${id}/admin-clear`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -104,7 +105,7 @@ export default function AdminReportsPage() {
       }
 
       try {
-        const res = await fetch(`http://localhost:3001/review/${id}/admin-clear`, {
+        const res = await fetch(`${API_BASE_URL}/review/${id}/admin-clear`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -140,7 +141,7 @@ export default function AdminReportsPage() {
       }
 
       try {
-        const res = await fetch(`http://localhost:3001/review/${id}/dismiss-report`, {
+        const res = await fetch(`${API_BASE_URL}/review/${id}/dismiss-report`, {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -174,7 +175,7 @@ export default function AdminReportsPage() {
       }
 
       try {
-        const res = await fetch(`http://localhost:3001/review/${id}`, {
+        const res = await fetch(`${API_BASE_URL}/review/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`

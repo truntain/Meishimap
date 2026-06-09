@@ -6,6 +6,7 @@ import Cookies from 'js-cookie';
 import { getBeautifulImage } from '@/utils/image';
 import { useAppLanguage, ownerCopy } from '@/config/i18n';
 import { notFound } from 'next/navigation';
+import { API_BASE_URL } from '@/config/api';
 
 
 const defaultRestaurant = {
@@ -414,7 +415,7 @@ export default function OwnerRestaurantPage() {
       }
 
       try {
-        const res = await fetch('http://localhost:3001/restaurants/my-restaurant', {
+        const res = await fetch(`${API_BASE_URL}/restaurants/my-restaurant`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -541,7 +542,7 @@ export default function OwnerRestaurantPage() {
         closingTime: restaurant.closeTime,
       };
 
-      const res = await fetch('http://localhost:3001/restaurants/my-restaurant', {
+      const res = await fetch(`${API_BASE_URL}/restaurants/my-restaurant`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -707,7 +708,7 @@ const MENU_CATEGORIES = [
       let res;
       if (editingIndex !== null) {
         const itemId = restaurant.menu[editingIndex].id;
-        res = await fetch(`http://localhost:3001/restaurants/my-restaurant/menu-items/${itemId}`, {
+        res = await fetch(`${API_BASE_URL}/restaurants/my-restaurant/menu-items/${itemId}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -716,7 +717,7 @@ const MENU_CATEGORIES = [
           body: JSON.stringify(body)
         });
       } else {
-        res = await fetch(`http://localhost:3001/restaurants/my-restaurant/menu-items`, {
+        res = await fetch(`${API_BASE_URL}/restaurants/my-restaurant/menu-items`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -788,7 +789,7 @@ const MENU_CATEGORIES = [
     }
 
     try {
-      const res = await fetch(`http://localhost:3001/restaurants/my-restaurant/menu-items/${itemId}`, {
+      const res = await fetch(`${API_BASE_URL}/restaurants/my-restaurant/menu-items/${itemId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

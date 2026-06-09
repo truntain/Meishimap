@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import AdminHeader from '../components/AdminHeader';
 import Cookies from 'js-cookie';
 import { useAppLanguage, adminCopy } from '@/config/i18n';
+import { API_BASE_URL } from '@/config/api';
 
 export default function AdminApprovalsPage() {
   const [restaurants, setRestaurants] = useState<any[]>([]);
@@ -23,7 +24,7 @@ export default function AdminApprovalsPage() {
     }
 
     try {
-      const res = await fetch('http://localhost:3001/admin/approvals', {
+      const res = await fetch(`${API_BASE_URL}/admin/approvals`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -78,7 +79,7 @@ export default function AdminApprovalsPage() {
     }
 
     try {
-      const res = await fetch(`http://localhost:3001/admin/approvals/${id}/approve`, {
+      const res = await fetch(`${API_BASE_URL}/admin/approvals/${id}/approve`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -116,7 +117,7 @@ export default function AdminApprovalsPage() {
     }
 
     try {
-      const res = await fetch(`http://localhost:3001/admin/approvals/${selectedResId}/reject`, {
+      const res = await fetch(`${API_BASE_URL}/admin/approvals/${selectedResId}/reject`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -159,7 +160,7 @@ export default function AdminApprovalsPage() {
     }
 
     try {
-      const res = await fetch(`http://localhost:3001/admin/approvals/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/approvals/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -326,7 +327,7 @@ export default function AdminApprovalsPage() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     {selectedRes.documents.japaneseProof && (
                       <a 
-                        href={`http://localhost:3001${selectedRes.documents.japaneseProof}`} 
+                        href={`${API_BASE_URL}${selectedRes.documents.japaneseProof}`} 
                         target="_blank" 
                         rel="noreferrer"
                         className="btn btn--outline"
@@ -337,7 +338,7 @@ export default function AdminApprovalsPage() {
                     )}
                     {selectedRes.documents.businessLicense && (
                       <a 
-                        href={`http://localhost:3001${selectedRes.documents.businessLicense}`} 
+                        href={`${API_BASE_URL}${selectedRes.documents.businessLicense}`} 
                         target="_blank" 
                         rel="noreferrer"
                         className="btn btn--outline"
@@ -348,7 +349,7 @@ export default function AdminApprovalsPage() {
                     )}
                     {selectedRes.documents.foodSafetyCert && (
                       <a 
-                        href={`http://localhost:3001${selectedRes.documents.foodSafetyCert}`} 
+                        href={`${API_BASE_URL}${selectedRes.documents.foodSafetyCert}`} 
                         target="_blank" 
                         rel="noreferrer"
                         className="btn btn--outline"
@@ -359,7 +360,7 @@ export default function AdminApprovalsPage() {
                     )}
                     {selectedRes.documents.identityCard && (
                       <a 
-                        href={`http://localhost:3001${selectedRes.documents.identityCard}`} 
+                        href={`${API_BASE_URL}${selectedRes.documents.identityCard}`} 
                         target="_blank" 
                         rel="noreferrer"
                         className="btn btn--outline"

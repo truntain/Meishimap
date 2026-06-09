@@ -1,3 +1,5 @@
+import { API_BASE_URL } from '@/config/api';
+
 export function getBeautifulImage(url: string | null, name: string = ''): string {
   const cleanUrl = url ? url.toLowerCase() : '';
   const cleanName = name ? name.toLowerCase() : '';
@@ -13,7 +15,7 @@ export function getBeautifulImage(url: string | null, name: string = ''): string
   ) {
     // If it's a relative path starting with uploads, ensure it points to backend host
     if (cleanUrl.startsWith('/uploads/') || cleanUrl.startsWith('uploads/')) {
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+      const apiBase = API_BASE_URL;
       const path = url!.startsWith('/') ? url! : `/${url!}`;
       return `${apiBase}${path}`;
     }
