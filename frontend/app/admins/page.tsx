@@ -17,6 +17,7 @@ import { Line, Bar } from 'react-chartjs-2';
 import AdminHeader from './components/AdminHeader';
 import Cookies from 'js-cookie';
 import { useAppLanguage, adminCopy } from '@/config/i18n';
+import { API_BASE_URL } from '@/config/api';
 
 // Register Chart.js components
 ChartJS.register(
@@ -47,7 +48,7 @@ export default function AdminStatsPage() {
       }
 
       try {
-        const res = await fetch('http://localhost:3001/admin/stats', {
+        const res = await fetch(`${API_BASE_URL}/admin/stats`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

@@ -6,9 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import maplibregl, { type ExpressionSpecification } from 'maplibre-gl';
 import { searchCopy, useAppLanguage, type AppLanguage } from '@/config/i18n';
 import { getBeautifulImage } from '@/utils/image';
+import { API_BASE_URL } from '@/config/api';
 
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 const MAP_STYLE_URL = process.env.NEXT_PUBLIC_MAP_STYLE_URL || 'https://tiles.openfreemap.org/styles/liberty';
 const HANOI_CENTER: [number, number] = [105.8544, 21.0285];
 const SATELLITE_SOURCE_ID = 'esri-world-imagery';

@@ -5,6 +5,7 @@ import OwnerHeader from '../components/OwnerHeader';
 import Cookies from 'js-cookie';
 import { useAppLanguage, ownerCopy } from '@/config/i18n';
 import { notFound } from 'next/navigation';
+import { API_BASE_URL } from '@/config/api';
 
 export default function OwnerReviewsPage() {
   const { language } = useAppLanguage();
@@ -32,7 +33,7 @@ export default function OwnerReviewsPage() {
     }
 
     try {
-      const res = await fetch('http://localhost:3001/review/my-restaurant', {
+      const res = await fetch(`${API_BASE_URL}/review/my-restaurant`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -102,7 +103,7 @@ export default function OwnerReviewsPage() {
     }
 
     try {
-      const res = await fetch(`http://localhost:3001/review/${id}/report`, {
+      const res = await fetch(`${API_BASE_URL}/review/${id}/report`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -144,7 +145,7 @@ export default function OwnerReviewsPage() {
     }
 
     try {
-      const res = await fetch(`http://localhost:3001/review/${id}/reply`, {
+      const res = await fetch(`${API_BASE_URL}/review/${id}/reply`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAppLanguage, registerRestaurantCopy, ownerCopy } from '@/config/i18n';
+import { API_BASE_URL } from '@/config/api';
 
 const HANOI_DISTRICTS = [
   'Ba Đình', 'Hoàn Kiếm', 'Tây Hồ', 'Cầu Giấy', 'Đống Đa',
@@ -443,7 +444,7 @@ export default function RegisterRestaurantPage() {
       const coords = await geocodeAddress(addrHouseNumber, addrStreet, addrDistrict);
       const fullAddress = buildFullAddress(addrHouseNumber, addrStreet, addrDistrict);
 
-      const res = await fetch('http://localhost:3001/auth/register-owner', {
+      const res = await fetch(`${API_BASE_URL}/auth/register-owner`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -6,8 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { getBeautifulImage } from '@/utils/image';
 import { writeReviewCopy, useAppLanguage } from '@/config/i18n';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '@/config/api';
 
 function buildRestaurantDetailUrl(id: string) {
   const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;

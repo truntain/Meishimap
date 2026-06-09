@@ -7,8 +7,7 @@ import { io } from 'socket.io-client';
 import { toast } from 'react-hot-toast';
 import { useAppLanguage, ownerCopy } from '@/config/i18n';
 import { notFound } from 'next/navigation';
-
-const API_BASE_URL = 'http://localhost:3001';
+import { API_BASE_URL } from '@/config/api';
 
 export default function OwnerBookingsPage() {
   const { language } = useAppLanguage();

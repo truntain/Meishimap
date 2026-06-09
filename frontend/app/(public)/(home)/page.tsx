@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAppLanguage, homeCopy } from '@/config/i18n';
 import { getBeautifulImage } from '@/utils/image';
+import { API_BASE_URL } from '@/config/api';
 
 interface Restaurant {
   id: number;
@@ -27,7 +28,7 @@ export default function HomePage() {
   const copy = homeCopy[language];
 
   useEffect(() => {
-    fetch('http://localhost:3001/restaurants/featured')
+    fetch(`${API_BASE_URL}/restaurants/featured`)
       .then(res => res.json())
       .then(data => {
         setFeaturedRestaurants(data);

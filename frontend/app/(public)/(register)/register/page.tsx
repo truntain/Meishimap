@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAppLanguage } from '@/config/i18n';
+import { API_BASE_URL } from '@/config/api';
 
 const copy = {
   vi: {
@@ -96,7 +97,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch('http://localhost:3001/auth/register', {
+      const res = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
