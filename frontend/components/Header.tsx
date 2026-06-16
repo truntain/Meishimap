@@ -82,7 +82,6 @@ export default function Header() {
         <nav className="header__nav" id="desktop-nav">
           <Link href="/" className="header__nav-link" data-page="home">Trang chủ</Link>
           <Link href="/search" className="header__nav-link" data-page="search">Tìm kiếm</Link>
-          <Link href="/restaurant/1" className="header__nav-link" data-page="booking">Đặt bàn</Link>
         </nav>
 
         <div className="header__actions">
@@ -116,7 +115,6 @@ export default function Header() {
         <nav className="header__nav" id="desktop-nav">
           <Link href="/" className="header__nav-link" data-page="home">{t('header.home')}</Link>
           <Link href="/search" className="header__nav-link" data-page="search">{t('header.search')}</Link>
-          <Link href="/restaurant/1" className="header__nav-link" data-page="booking">{t('header.booking')}</Link>
         </nav>
       )}
 
@@ -223,8 +221,6 @@ export default function Header() {
           <>
             <Link href="/" className="header__nav-link" onClick={() => setIsMobileMenuOpen(false)}>{t('header.home')}</Link>
             <Link href="/search" className="header__nav-link" onClick={() => setIsMobileMenuOpen(false)}>{t('header.search')}</Link>
-            {/* Đặt bàn → tới trang chi tiết nhà hàng */}
-            <Link href="/restaurant/1" className="header__nav-link" onClick={() => setIsMobileMenuOpen(false)}>{t('header.booking')}</Link>
           </>
         )}
 

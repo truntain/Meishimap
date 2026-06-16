@@ -69,7 +69,7 @@ export default function HomePage() {
           {/* Search bar */}
           <div className="search-bar fade-in-up delay-2">
             <span className="search-bar__icon">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M8.167 14.333A6.167 6.167 0 1 0 8.167 2a6.167 6.167 0 0 0 0 12.333ZM16 16l-2.792-2.792" stroke="#877369" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M8.167 14.333A6.167 6.167 0 1 0 8.167 2a6.167 6.167 0 0 0 0 12.333ZM16 16l-2.792-2.792" stroke="#877369" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </span>
             <input
               type="text"
@@ -102,7 +102,7 @@ export default function HomePage() {
           </div>
           <Link href="/search" className="btn btn--outline" id="btn-see-all">
             {copy.seeAll}
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.333 8h9.334M8.667 5l3 3-3 3" stroke="#6C2F00" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.333 8h9.334M8.667 5l3 3-3 3" stroke="#6C2F00" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </Link>
         </div>
 
@@ -115,7 +115,7 @@ export default function HomePage() {
                 <div className="card__image-wrap">
                   <img src={getBeautifulImage(restaurant.imageUrl, restaurant.name)} alt={restaurant.name} className="card__image" />
                   <div className="card__rating">
-                    <svg width="12" height="11" viewBox="0 0 12 11" fill="#EAB308"><path d="M6 .5 7.545 4.185 11.5 4.635 8.75 7.27l.795 3.925L6 9.125 2.455 11.195l.795-3.925L.5 4.635l3.955-.45Z"/></svg>
+                    <svg width="12" height="11" viewBox="0 0 12 11" fill="#EAB308"><path d="M6 .5 7.545 4.185 11.5 4.635 8.75 7.27l.795 3.925L6 9.125 2.455 11.195l.795-3.925L.5 4.635l3.955-.45Z" /></svg>
                     {restaurant.rating.toFixed(1)}
                   </div>
                 </div>
@@ -125,7 +125,7 @@ export default function HomePage() {
                       <h3 className="card__title">{restaurant.name}</h3>
                       {restaurant.nameJp && <p className="card__title-jp">{restaurant.nameJp}</p>}
                     </div>
-                    <svg width="20" height="19" viewBox="0 0 20 19" fill="none"><path d="M15.833 16.833 10 13.167 4.167 16.833V3.5A1.667 1.667 0 0 1 5.833 1.833h8.334A1.667 1.667 0 0 1 15.833 3.5v13.333Z" stroke="#877369" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <svg width="20" height="19" viewBox="0 0 20 19" fill="none"><path d="M15.833 16.833 10 13.167 4.167 16.833V3.5A1.667 1.667 0 0 1 5.833 1.833h8.334A1.667 1.667 0 0 1 15.833 3.5v13.333Z" stroke="#877369" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   </div>
                   <div className="card__tags">
                     <span className="badge">{restaurant.category.toUpperCase()}</span>
@@ -133,12 +133,12 @@ export default function HomePage() {
                   </div>
                   <div className="card__footer">
                     <span className="card__location">
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.167A3.5 3.5 0 0 1 10.5 4.667C10.5 7.292 7 12.833 7 12.833S3.5 7.292 3.5 4.667A3.5 3.5 0 0 1 7 1.167Z" stroke="#8A8A8A" strokeWidth="1.2"/><circle cx="7" cy="4.667" r="1.167" stroke="#8A8A8A" strokeWidth="1.2"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.167A3.5 3.5 0 0 1 10.5 4.667C10.5 7.292 7 12.833 7 12.833S3.5 7.292 3.5 4.667A3.5 3.5 0 0 1 7 1.167Z" stroke="#8A8A8A" strokeWidth="1.2" /><circle cx="7" cy="4.667" r="1.167" stroke="#8A8A8A" strokeWidth="1.2" /></svg>
                       {restaurant.district || restaurant.city || restaurant.address}
                     </span>
                     <Link href={`/restaurant/${restaurant.id}`} className="btn btn--dark" id={`btn-book-${restaurant.id}`}>
                       {copy.bookNow}
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6.5 3l3 3-3 3" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6.5 3l3 3-3 3" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </Link>
                   </div>
                 </div>
