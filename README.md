@@ -1,4 +1,4 @@
-# 🗺️ MESHIMAP (ITSS-Nihongo2)
+# 🗺️ MESHIMAP
 
 > **MESHIMAP** là một nền tảng tìm kiếm và đặt bàn nhà hàng hỗ trợ tiếng Nhật tại Việt Nam, được phát triển phục vụ cho dự án môn học **ITSS (Information Technology Special Subjects) - Tiếng Nhật 2** tại **Đại học Bách Khoa Hà Nội (HUST)**.
 > Nền tảng được tối ưu hóa nhằm kết nối cộng đồng người Nhật sinh sống, làm việc hoặc du lịch tại Việt Nam với các nhà hàng có khả năng hỗ trợ ngôn ngữ, dịch vụ tiếng Nhật chất lượng cao.
